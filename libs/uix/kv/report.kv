@@ -1,0 +1,126 @@
+# -*- coding: utf-8 -*-
+#
+# This file created with KivyCreatorProject
+# <https://github.com/HeaTTheatR/KivyCreatorProgect
+#
+# Copyright © 2017 Easy
+#
+# For suggestions and questions:
+# <kivydevelopment@gmail.com>
+#
+# LICENSE: MIT
+
+
+
+
+
+
+<Reports>:
+    name: 'report'
+
+    BoxLayout:
+        orientation: 'vertical'
+
+        Screen:
+            name: 'count_clients'
+
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: 0.8, 1
+                pos_hint: {'center_x': 0.5}
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    size_hint: 1, None
+                    size: 0, dp(48)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                    MDLabel:
+                        font_style:"Title"
+                        theme_text_color: 'Secondary'
+                        size_hint: None, None
+                        size: dp(48)*3, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Отчеты'
+                    MDSeparator:
+                        height: dp(2)
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+
+                    MDCheckbox:
+                        id:            date_switch
+                        size_hint:    None, None
+                        size:        dp(48), dp(48)
+                        pos_hint:    {'center_x': 0.5, 'center_y': 0.47}
+                        active:        True
+                        on_release: app.click_date_switch()
+
+                    MDLabel:
+                        id: label_date
+                        font_style:"Title"
+                        theme_text_color: 'Primary'
+                        size_hint: None, None
+                        size: dp(48)*2, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Дата:'
+                    BoxLayout:
+                        border: True
+                        MDLabel:
+                            id: date_from
+                            font_style: 'Headline'
+                            theme_text_color: 'Primary'
+                            size_hint: None, None
+                            size: dp(48)*2.7, dp(48)
+                            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                            text: app.show_today()
+                        MDIconButton:
+                            icon: 'playlist-play'
+                            size_hint: None, None
+                            size: dp(48), dp(48)
+                            pos_hint: {'center_y': 0.42}
+                            on_release: app.show_date_from()
+                    BoxLayout:
+                        border: 1
+                        MDLabel:
+                            id: date_to
+                            font_style: 'Headline'
+                            theme_text_color: 'Primary'
+                            size_hint: None, None
+                            size: dp(48)*2.7, dp(48)
+                            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                            text: app.show_next_day()
+                            disabled: date_switch.active
+                        MDIconButton:
+                            icon: 'playlist-play'
+                            pos_hint: {'center_y': 0.42}
+                            on_release: app.show_date_to()
+                            disabled: date_switch.active
+
+
+
+
+
+
+
+
+                BoxLayout:
+                    size_hint: 0.8, 0.8
+
+                    MDRaisedButton:
+                        text: "Отчет"
+                        opposite_colors: True
+                        size_hint: None, None
+                        size: dp(48)*3, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.9}
+                        on_release: app.count_clients_reload(app.count_clients())
+
+                BoxLayout:
+                    size_hint: 0.8, 0.1
+
+                BoxLayout:
+                    size_hint: 0.8, 0.1
+
+                BoxLayout:
+                    size_hint: 0.8, 0.1

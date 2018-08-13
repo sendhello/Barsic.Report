@@ -1,0 +1,88 @@
+Traceback (most recent call last):
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 619, in _apply_rule
+    setattr(widget_set, key, value)
+  File "kivy\weakproxy.pyx", line 33, in kivy.weakproxy.WeakProxy.__setattr__
+  File "kivy\properties.pyx", line 483, in kivy.properties.Property.__set__
+  File "kivy\properties.pyx", line 524, in kivy.properties.Property.set
+  File "kivy\properties.pyx", line 579, in kivy.properties.Property.dispatch
+  File "kivy\_event.pyx", line 1214, in kivy._event.EventObservers.dispatch
+  File "kivy\_event.pyx", line 1096, in kivy._event.EventObservers._dispatch
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 76, in call_fn
+    setattr(element, key, e_value)
+  File "kivy\weakproxy.pyx", line 33, in kivy.weakproxy.WeakProxy.__setattr__
+  File "kivy\properties.pyx", line 483, in kivy.properties.Property.__set__
+  File "kivy\properties.pyx", line 1470, in kivy.properties.AliasProperty.set
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\widget.py", line 1318, in set_disabled
+    self.inc_disabled()
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\widget.py", line 1325, in inc_disabled
+    self.property('disabled').dispatch(self)
+  File "kivy\properties.pyx", line 562, in kivy.properties.Property.dispatch
+  File "kivy\properties.pyx", line 579, in kivy.properties.Property.dispatch
+  File "kivy\_event.pyx", line 1214, in kivy._event.EventObservers.dispatch
+  File "kivy\_event.pyx", line 1120, in kivy._event.EventObservers._dispatch
+  File "D:\YandexDisk\MyPrograms\Barsic.Report\libs/applibs\kivymd\button.py", line 178, in on_disabled
+    super(BaseButton, self).on_disabled(instance, value)
+AttributeError: 'super' object has no attribute 'on_disabled'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:/YandexDisk/MyPrograms/Barsic.Report/main.py", line 80, in main
+    app.run()
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\app.py", line 800, in run
+    root = self.build()
+  File "D:\YandexDisk\MyPrograms\Barsic.Report\barsicreport2.py", line 98, in build
+    self.screen = StartScreen()  # главный экран программы
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\boxlayout.py", line 131, in __init__
+    super(BoxLayout, self).__init__(**kwargs)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\layout.py", line 76, in __init__
+    super(Layout, self).__init__(**kwargs)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\widget.py", line 348, in __init__
+    Builder.apply(self, ignored_consts=self._kwargs_applied_init)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 469, in apply
+    self._apply_rule(widget, rule, rule, ignored_consts=ignored_consts)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 585, in _apply_rule
+    self._apply_rule(child, crule, rootrule)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 585, in _apply_rule
+    self._apply_rule(child, crule, rootrule)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 585, in _apply_rule
+    self._apply_rule(child, crule, rootrule)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 584, in _apply_rule
+    self.apply(child)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 469, in apply
+    self._apply_rule(widget, rule, rule, ignored_consts=ignored_consts)
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 630, in _apply_rule
+    e), cause=tb)
+kivy.lang.builder.BuilderException: Parser: File "<inline>", line 57:
+...
+     55:                        size:        dp(48), dp(48)
+     56:                        pos_hint:    {'center_x': 0.5, 'center_y': 0.47}
+>>   57:                        active:        True
+     58:                        on_release: app.click_date_switch()
+     59:
+...
+AttributeError: 'super' object has no attribute 'on_disabled'
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 619, in _apply_rule
+    setattr(widget_set, key, value)
+  File "kivy\weakproxy.pyx", line 33, in kivy.weakproxy.WeakProxy.__setattr__
+  File "kivy\properties.pyx", line 483, in kivy.properties.Property.__set__
+  File "kivy\properties.pyx", line 524, in kivy.properties.Property.set
+  File "kivy\properties.pyx", line 579, in kivy.properties.Property.dispatch
+  File "kivy\_event.pyx", line 1214, in kivy._event.EventObservers.dispatch
+  File "kivy\_event.pyx", line 1096, in kivy._event.EventObservers._dispatch
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\lang\builder.py", line 76, in call_fn
+    setattr(element, key, e_value)
+  File "kivy\weakproxy.pyx", line 33, in kivy.weakproxy.WeakProxy.__setattr__
+  File "kivy\properties.pyx", line 483, in kivy.properties.Property.__set__
+  File "kivy\properties.pyx", line 1470, in kivy.properties.AliasProperty.set
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\widget.py", line 1318, in set_disabled
+    self.inc_disabled()
+  File "C:\Users\sa\AppData\Local\Programs\Python\Python37\lib\site-packages\kivy\uix\widget.py", line 1325, in inc_disabled
+    self.property('disabled').dispatch(self)
+  File "kivy\properties.pyx", line 562, in kivy.properties.Property.dispatch
+  File "kivy\properties.pyx", line 579, in kivy.properties.Property.dispatch
+  File "kivy\_event.pyx", line 1214, in kivy._event.EventObservers.dispatch
+  File "kivy\_event.pyx", line 1120, in kivy._event.EventObservers._dispatch
+  File "D:\YandexDisk\MyPrograms\Barsic.Report\libs/applibs\kivymd\button.py", line 178, in on_disabled
+    super(BaseButton, self).on_disabled(instance, value)
+

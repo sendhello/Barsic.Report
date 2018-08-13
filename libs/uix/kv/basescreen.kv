@@ -1,0 +1,49 @@
+# -*- coding: ut-8 -*-
+#
+# This file created with KivyCreatorProject
+# <https://github.com/HeaTTheatR/KivyCreatorProgect
+#
+# Copyright © 2017 Easy
+#
+# For suggestions and questions:
+# <kivydevelopment@gmail.com>
+# 
+# LICENSE: MIT
+
+
+<BaseScreen>:
+    name: 'base'
+
+    BoxLayout:
+        orientation: 'vertical'
+
+        Screen:
+            name: 'count_clients'
+
+            MDLabel:
+                id: name_zone
+                font_style: 'Headline'
+                theme_text_color: 'Secondary'
+                text: str(app.count_clients()[0][2])
+                halign: 'center'
+                size_hint_y: None
+                pos_hint: {'center_x': 0.5, 'center_y': 0.85}
+                height: self.texture_size[1] + dp(4)
+
+            MDLabel:
+                id: count
+                font_style: 'Display3'
+                theme_text_color: 'Primary'
+                text: str(app.count_clients()[0][0])
+                halign: 'center'
+                size_hint_y: None
+                pos_hint: {'center_x': 0.5, 'center_y': 0.75}
+                height: self.texture_size[1] + dp(4)
+
+            MDRaisedButton:
+                text: "Обновить"
+                opposite_colors: True
+                size_hint: None, None
+                size: 4 * dp(48), dp(48)
+                pos_hint: {'center_x': 0.5, 'center_y': 0.1}
+                on_release: app.count_clients_reload(app.count_clients())

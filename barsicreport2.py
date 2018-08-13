@@ -336,3 +336,4 @@ class BarsicReport2(App):
 
 # if __name__ == '__main__':
 #     print(DEVICE_TYPE)
+

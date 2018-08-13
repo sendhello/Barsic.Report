@@ -1,2 +1,2 @@
 # Barsic.Report
-in the development
+This is Developers Version

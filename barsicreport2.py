@@ -15,6 +15,8 @@ import sys
 from ast import literal_eval
 import logging
 from datetime import datetime, timedelta
+import pyodbc
+import re
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -78,7 +80,7 @@ class BarsicReport2(App):
 
     def get_application_config(self):
         return super(BarsicReport2, self).get_application_config(
-                        '{}/%(appname)s.ini'.format(self.directory))
+            '{}/%(appname)s.ini'.format(self.directory))
 
     def build_config(self, config):
         '''Создаёт файл настроек приложения barsicreport2.ini.'''
@@ -217,7 +219,7 @@ class BarsicReport2(App):
 
         if self.exit_interval:
             sys.exit(0)
-            
+
         Clock.schedule_interval(check_interval_press, 1)
         toast(self.translation._('Press Back to Exit'))
 
@@ -280,18 +282,23 @@ class BarsicReport2(App):
             day = datetime.now()
         return (day + timedelta(1)).strftime("%Y-%m-%d")
 
-
-    def count_clients(self):
+    def count_clients(
+            self,
+            driver,
+            server,
+            database,
+            uid,
+            pwd,
+    ):
         """
         Количество человек в зоне
         :return: Количество человек в зоне
         """
-        import pyodbc
 
         logging.info(f'{str(datetime.now()):25}:    Выполнение функции "count_clients" с параметрами (!)[ПАРАМЕТРЫ]')
 
         cnxn = pyodbc.connect(
-            'DRIVER={SQL Server};SERVER=192.168.1.1\SKISRV;DATABASE=AquaPark_Ulyanovsk;UID=sa;PWD=datakrat')
+            f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
         cursor = cnxn.cursor()
 
         cursor.execute("""
@@ -334,6 +341,29 @@ class BarsicReport2(App):
         self.screen.ids.base.ids.name_zone.text = str(count_clients[0][2])
         self.screen.ids.base.ids.count.text = str(count_clients[0][0])
 
-# if __name__ == '__main__':
-#     print(DEVICE_TYPE)
+    def click_count_clients(self):
+        '''
+        Вызов функции count_clients с параметрами из конфига
+        :return:
+        '''
+        config = self.read_config()
+        return self.count_clients(
+            driver=config['driver'],
+            server=config['server'],
+            database=config['database'],
+            uid=config['uid'],
+            pwd=config['pwd'],
+        )
 
+    def read_config(self):
+        config = {}
+        with open('config.ini', encoding='utf-8') as config_file:
+            for line in config_file:
+                if line[0] != '#' and line[0] != '[' and line != '\n' and line != '':
+                    config[line.split('=')[0].strip()] = line.split('=')[1].strip()
+        return config
+
+
+if __name__ == '__main__':
+    #     print(DEVICE_TYPE)
+    BarsicReport2().read_config()

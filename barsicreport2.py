@@ -27,6 +27,7 @@ from kivy.clock import Clock
 from kivy.utils import get_color_from_hex, get_hex_from_color
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty, StringProperty
+from kivymd.dialog import MDDialog
 
 from main import __version__
 from libs.translation import Translation
@@ -111,7 +112,6 @@ class BarsicReport2(App):
         self.screen = StartScreen()  # главный экран программы
         self.manager = self.screen.ids.manager
         self.nav_drawer = self.screen.ids.nav_drawer
-
         return self.screen
 
     def load_all_kv_files(self, directory_kv_files):
@@ -234,6 +234,22 @@ class BarsicReport2(App):
         Clock.schedule_interval(check_interval_press, 1)
         toast(self.translation._('Press Back to Exit'))
 
+    def show_dialog(self, title, text):
+        content = MDLabel(font_style='Body1',
+                          theme_text_color='Secondary',
+                          text=text,
+                          size_hint_y=None,
+                          valign='top')
+        content.bind(texture_size=content.setter('size'))
+        dialog = MDDialog(title=title,
+                               content=content,
+                               size_hint=(.8, None),
+                               height=dp(200),
+                               auto_dismiss=False)
+
+        dialog.add_action_button("Dismiss", action=lambda *x: dialog.dismiss())
+        dialog.open()
+
     def on_lang(self, instance, lang):
         self.translation.switch_lang(lang)
 
@@ -292,6 +308,8 @@ class BarsicReport2(App):
         except AttributeError:
             day = datetime.now()
         return (day + timedelta(1)).strftime("%Y-%m-%d")
+
+# Основной функционал
 
     def count_clients(
             self,
@@ -353,25 +371,34 @@ class BarsicReport2(App):
 
         except pyodbc.OperationalError as e:
             logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
-            result.append(('Нет данных', 0, '', ''))
+            result.append(('Нет данных', 488, 'Ошибка соединения', repr(e)))
         return result
 
-    def count_clients_reload(self, count_clients):
-        self.screen.ids.base.ids.name_zone.text = str(count_clients[0][2])
-        self.screen.ids.base.ids.count.text = str(count_clients[0][0])
-
-    def click_count_clients(self):
-        '''
-        Вызов функции count_clients с параметрами из конфига
-        :return:
-        '''
-        return self.count_clients(
+    def count_clients_print(self):
+        count_clients = self.count_clients(
             driver=self.driver,
             server=self.server,
             database=self.database,
             uid=self.user,
             pwd=self.pwd,
         )
+        self.screen.ids.base.ids.name_zone.text = str(count_clients[len(count_clients) - 1][2])
+        self.screen.ids.base.ids.count.text = str(count_clients[len(count_clients) - 1][0])
+        if count_clients[len(count_clients) - 1][2] == 'Ошибка соединения':
+            self.show_dialog(count_clients[len(count_clients) - 1][2], count_clients[len(count_clients) - 1][3])
+
+    # def click_count_clients(self):
+    #     '''
+    #     Вызов функции count_clients с параметрами из конфига
+    #     :return:
+    #     '''
+    #     return self.count_clients(
+    #         driver=self.driver,
+    #         server=self.server,
+    #         database=self.database,
+    #         uid=self.user,
+    #         pwd=self.pwd,
+    #     )
 
 
 if __name__ == '__main__':

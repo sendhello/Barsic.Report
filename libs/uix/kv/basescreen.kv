@@ -24,7 +24,7 @@
                 id: name_zone
                 font_style: 'Headline'
                 theme_text_color: 'Secondary'
-                text: str(app.click_count_clients()[0][2])
+                text: ''
                 halign: 'center'
                 size_hint_y: None
                 pos_hint: {'center_x': 0.5, 'center_y': 0.85}
@@ -34,7 +34,7 @@
                 id: count
                 font_style: 'Display3'
                 theme_text_color: 'Primary'
-                text: str(app.click_count_clients()[0][0])
+                text: 'Нет данных'
                 halign: 'center'
                 size_hint_y: None
                 pos_hint: {'center_x': 0.5, 'center_y': 0.75}
@@ -46,4 +46,4 @@
                 size_hint: None, None
                 size: 4 * dp(48), dp(48)
                 pos_hint: {'center_x': 0.5, 'center_y': 0.1}
-                on_release: app.count_clients_reload(app.click_count_clients())
+                on_release: app.count_clients_print()

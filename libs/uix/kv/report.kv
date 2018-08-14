@@ -27,7 +27,7 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint: 0.8, 1
-                pos_hint: {'center_x': 0.5}
+                pos_hint: {'center_x': 0.5, 'center_y': 0.85}
 
                 BoxLayout:
                     orientation: 'vertical'
@@ -82,7 +82,6 @@
                             pos_hint: {'center_y': 0.42}
                             on_release: app.show_date_from()
                     BoxLayout:
-                        border: 1
                         MDLabel:
                             id: date_to
                             font_style: 'Headline'
@@ -99,21 +98,87 @@
                             disabled: date_switch.active
 
                 BoxLayout:
-                    size_hint: 0.8, 0.8
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: 4444
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
+                        on_release: app.click_date_switch()
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Финансовый отчет (Excel)'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: 3333
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
+                        on_release: app.click_date_switch()
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Отчет по платежным агентам (Excel)'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: 2222
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
+                        on_release: app.click_date_switch()
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Финансовый отчет (GoogleDocs)'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: 1111
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
+                        on_release: app.click_date_switch()
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'SMS-отчет в Telegram'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
                     MDRaisedButton:
-                        text: "Отчет"
+                        text: "Сформировать отчеты"
                         opposite_colors: True
                         size_hint: None, None
-                        size: dp(48)*3, dp(48)
-                        pos_hint: {'center_x': 0.5, 'center_y': 0.9}
-                        on_release: app.count_clients_reload(app.count_clients())
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        on_release: app.count_clients_print()
 
-                BoxLayout:
-                    size_hint: 0.8, 0.1
-
-                BoxLayout:
-                    size_hint: 0.8, 0.1
-
-                BoxLayout:
-                    size_hint: 0.8, 0.1

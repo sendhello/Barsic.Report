@@ -57,7 +57,8 @@ class BarsicReport2(App):
     theme_cls.theme_style = 'Light'
     lang = StringProperty('ru')
 
-    previous_date = ObjectProperty()
+    previous_date_from = ObjectProperty()
+    previous_date_to = ObjectProperty()
 
     def __init__(self, **kvargs):
         super(BarsicReport2, self).__init__(**kvargs)
@@ -78,6 +79,8 @@ class BarsicReport2(App):
         self.translation = Translation(
             self.lang, 'Ttest', os.path.join(self.directory, 'data', 'locales')
         )
+        self.date_from = datetime.now()
+        self.date_to = self.date_from + timedelta(1)
 
     def get_application_config(self):
         return super(BarsicReport2, self).get_application_config(
@@ -268,11 +271,15 @@ class BarsicReport2(App):
         self.time_dialog.open()
 
     def set_date_from(self, date_obj):
-        self.previous_date = date_obj
+        self.previous_date_from = date_obj
+        self.date_from = datetime.strptime(str(date_obj), '%Y-%m-%d')
         self.root.ids.report.ids.date_from.text = str(date_obj)
+        if self.date_to <= self.date_from:
+            self.root.ids.report.ids.date_to.text = self.show_next_day()
+        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 
     def show_date_from(self):
-        pd = self.previous_date
+        pd = self.previous_date_from
         try:
             MDDatePicker(self.set_date_from,
                          pd.year, pd.month, pd.day).open()
@@ -280,11 +287,15 @@ class BarsicReport2(App):
             MDDatePicker(self.set_date_from).open()
 
     def set_date_to(self, date_obj):
-        self.previous_date = date_obj
+        self.previous_date_to = date_obj
+        self.date_to = datetime.strptime(str(date_obj), '%Y-%m-%d')
         self.root.ids.report.ids.date_to.text = str(date_obj)
+        if self.date_to <= self.date_from:
+            self.root.ids.report.ids.date_from.text = self.show_pre_day()
+        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 
     def show_date_to(self):
-        pd = self.previous_date
+        pd = self.previous_date_to
         try:
             MDDatePicker(self.set_date_to,
                          pd.year, pd.month, pd.day).open()
@@ -299,15 +310,22 @@ class BarsicReport2(App):
             self.root.ids.report.ids.label_date.text = 'Период:'
 
     def show_today(self):
-        return datetime.now().strftime("%Y-%m-%d")
+        return self.date_from.strftime("%Y-%m-%d")
 
     def show_next_day(self):
         try:
-            # day = datetime.strptime('%Y-%m-%d', self.root.ids.report.ids.date_from.text)
-            day = datetime.strptime(self.root.ids.report.ids.date_from.text, "%Y-%m-%d")
+            self.date_to = datetime.strptime(self.root.ids.report.ids.date_from.text, "%Y-%m-%d") + timedelta(1)
         except AttributeError:
-            day = datetime.now()
-        return (day + timedelta(1)).strftime("%Y-%m-%d")
+            self.date_to = datetime.now() + timedelta(1)
+        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
+        return self.date_to.strftime("%Y-%m-%d")
+
+    def show_pre_day(self):
+        try:
+            self.date_from = datetime.strptime(self.root.ids.report.ids.date_to.text, "%Y-%m-%d") - timedelta(1)
+        except AttributeError:
+            self.date_from = datetime.now()
+        return self.date_from.strftime("%Y-%m-%d")
 
 # Основной функционал
 
@@ -387,18 +405,25 @@ class BarsicReport2(App):
         if count_clients[len(count_clients) - 1][2] == 'Ошибка соединения':
             self.show_dialog(count_clients[len(count_clients) - 1][2], count_clients[len(count_clients) - 1][3])
 
-    # def click_count_clients(self):
-    #     '''
-    #     Вызов функции count_clients с параметрами из конфига
-    #     :return:
-    #     '''
-    #     return self.count_clients(
-    #         driver=self.driver,
-    #         server=self.server,
-    #         database=self.database,
-    #         uid=self.user,
-    #         pwd=self.pwd,
-    #     )
+    def set_date(self, date_from=0, date_to=0):
+        """
+        Установка периода формирования отчета
+        :param date_from: datetime - начало периода, если отсутствует, берется из формы
+        :param date_to: datetime - конец периода,  если отсутствует, берется из формы
+        :return:
+        """
+        if date_from:
+            self.date_from = date_from
+        else:
+            self.date_from = datetime.strptime(self.root.ids.report.ids.date_from.text, '%Y-%m-%d')
+        if date_to:
+            self.date_to = date_to
+        else:
+            self.date_to = datetime.strptime(self.root.ids.report.ids.date_to.text, '%Y-%m-%d')
+        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
+
+
+
 
 
 if __name__ == '__main__':

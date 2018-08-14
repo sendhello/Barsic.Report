@@ -28,6 +28,7 @@ from kivy.utils import get_color_from_hex, get_hex_from_color
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty, StringProperty
 from kivymd.dialog import MDDialog
+from kivymd.bottomsheet import MDListBottomSheet, MDGridBottomSheet
 
 from main import __version__
 from libs.translation import Translation
@@ -82,6 +83,11 @@ class BarsicReport2(App):
         self.date_from = datetime.now()
         self.date_to = self.date_from + timedelta(1)
 
+        self.org1 = ''
+        self.org2 = ''
+
+        self.count_sql_error = 0
+
     def get_application_config(self):
         return super(BarsicReport2, self).get_application_config(
             '{}/%(appname)s.ini'.format(self.directory))
@@ -94,9 +100,10 @@ class BarsicReport2(App):
         config.adddefaultsection('MSSQL')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
-        config.setdefault('MSSQL', 'database', 'database')
         config.setdefault('MSSQL', 'user', 'sa')
         config.setdefault('MSSQL', 'pwd', 'password')
+        config.setdefault('MSSQL', 'database1', 'database')
+        config.setdefault('MSSQL', 'database2', 'database')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -105,9 +112,10 @@ class BarsicReport2(App):
         self.lang = self.config.get('General', 'language')
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
-        self.database = self.config.get('MSSQL', 'database')
         self.user = self.config.get('MSSQL', 'user')
         self.pwd = self.config.get('MSSQL', 'pwd')
+        self.database1 = self.config.get('MSSQL', 'database1')
+        self.database2 = self.config.get('MSSQL', 'database2')
 
     def build(self):
         self.set_value_from_config()
@@ -250,8 +258,15 @@ class BarsicReport2(App):
                                height=dp(200),
                                auto_dismiss=False)
 
-        dialog.add_action_button("Dismiss", action=lambda *x: dialog.dismiss())
+        dialog.add_action_button("Закрыть", action=lambda *x: dialog.dismiss())
         dialog.open()
+
+    def show_dialog_sqlerror(self, title, text):
+        if self.count_sql_error > 1:
+            self.show_dialog(title, text)
+            self.count_sql_error = 0
+        else:
+            self.count_sql_error += 1
 
     def on_lang(self, instance, lang):
         self.translation.switch_lang(lang)
@@ -327,8 +342,6 @@ class BarsicReport2(App):
             self.date_from = datetime.now()
         return self.date_from.strftime("%Y-%m-%d")
 
-# Основной функционал
-
     def count_clients(
             self,
             driver,
@@ -390,39 +403,108 @@ class BarsicReport2(App):
         except pyodbc.OperationalError as e:
             logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
             result.append(('Нет данных', 488, 'Ошибка соединения', repr(e)))
+            self.show_dialog(f'Ошибка соединения с {server}: {database}', repr(e))
+        except pyodbc.ProgrammingError as e:
+            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            result.append(('Нет данных', 488, 'Ошибка соединения', repr(e)))
+            self.show_dialog(f'Невозможно открыть {database}', repr(e))
         return result
 
     def count_clients_print(self):
         count_clients = self.count_clients(
             driver=self.driver,
             server=self.server,
-            database=self.database,
+            database=self.database1,
             uid=self.user,
             pwd=self.pwd,
         )
         self.screen.ids.base.ids.name_zone.text = str(count_clients[len(count_clients) - 1][2])
         self.screen.ids.base.ids.count.text = str(count_clients[len(count_clients) - 1][0])
-        if count_clients[len(count_clients) - 1][2] == 'Ошибка соединения':
-            self.show_dialog(count_clients[len(count_clients) - 1][2], count_clients[len(count_clients) - 1][3])
 
-    def set_date(self, date_from=0, date_to=0):
+    def select_org1(self):
+        org_list = self.list_organisation(
+            server=self.server,
+            database=self.database1,
+            uid=self.user,
+            pwd=self.pwd,
+            driver=self.driver,
+        )
+        if org_list:
+            bs = MDListBottomSheet()
+            for org in org_list:
+                bs.add_item(org[2], lambda x: self.click_select_org(org[0], org[2], self.database1), icon='nfc')
+            bs.open()
+
+    def select_org2(self):
+        org_list = self.list_organisation(
+            server=self.server,
+            database=self.database2,
+            uid=self.user,
+            pwd=self.pwd,
+            driver=self.driver,
+        )
+        if org_list:
+            bs = MDListBottomSheet()
+            for org in org_list:
+                bs.add_item(org[2], lambda x: self.click_select_org(org[0], org[2], self.database2), icon='nfc')
+            bs.open()
+
+    def click_select_org(self, id, name, database):
+        if database == self.database1:
+            self.org1 = (id, name)
+            self.screen.ids.report.ids.org1.text = name
+        elif database == self.database2:
+            self.org2 = (id, name)
+            self.screen.ids.report.ids.org2.text = name
+
+
+    def list_organisation(self,
+                          server,
+                          database,
+                          uid,
+                          pwd,
+                          driver,
+                          ):
         """
-        Установка периода формирования отчета
-        :param date_from: datetime - начало периода, если отсутствует, берется из формы
-        :param date_to: datetime - конец периода,  если отсутствует, берется из формы
-        :return:
+        Функция делает запрос в базу Барс и возвращает список заведенных в базе организаций в виде списка кортежей
+        :param server: str - Путь до MS-SQL сервера, например 'SQLEXPRESS\BASE'
+        :param database: str - Имя базы данных Барса, например 'SkiBars2'
+        :param uid: str - Имя пользователя базы данных, например 'sa'
+        :param pwd: str - Пароль пользователя базы данных, например 'pass'
+        :return: list = Список организаций, каджая из которых - кортеж с параметрами организации
         """
-        if date_from:
-            self.date_from = date_from
-        else:
-            self.date_from = datetime.strptime(self.root.ids.report.ids.date_from.text, '%Y-%m-%d')
-        if date_to:
-            self.date_to = date_to
-        else:
-            self.date_to = datetime.strptime(self.root.ids.report.ids.date_to.text, '%Y-%m-%d')
-        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
+        result = []
+        try:
+            logging.info(f'{str(datetime.now()):25}:    Попытка соединения с {server}')
+            cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
+            cursor = cnxn.cursor()
 
-
+            id_type = 1
+            cursor.execute(
+                f"""
+                SELECT
+                    SuperAccountId, Type, Descr, CanRegister, CanPass, IsStuff, IsBlocked, BlockReason, DenyReturn, 
+                    ClientCategoryId, DiscountCard, PersonalInfoId, Address, Inn, ExternalId, RegisterTime,LastTransactionTime, 
+                    LegalEntityRelationTypeId, SellServicePointId, DepositServicePointId, AllowIgnoreStoredPledge, Email, 
+                    Latitude, Longitude, Phone, WebSite, TNG_ProfileId
+                FROM
+                    SuperAccount
+                WHERE
+                    Type={id_type}
+                """)
+            while True:
+                row = cursor.fetchone()
+                if row:
+                    result.append(row)
+                else:
+                    break
+        except pyodbc.OperationalError as e:
+            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            self.show_dialog(f'Ошибка соединения с {server}: {database}', repr(e))
+        except pyodbc.ProgrammingError as e:
+            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            self.show_dialog(f'Невозможно открыть {database}', repr(e))
+        return result
 
 
 

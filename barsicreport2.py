@@ -306,46 +306,54 @@ class BarsicReport2(App):
         :return: Количество человек в зоне
         """
 
-        logging.info(f'{str(datetime.now()):25}:    Выполнение функции "count_clients" с параметрами (!)[ПАРАМЕТРЫ]')
+        logging.info(f'{str(datetime.now()):25}:    Выполнение функции "count_clients"')
 
-        cnxn = pyodbc.connect(
-            f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
-        cursor = cnxn.cursor()
-
-        cursor.execute("""
-                        SELECT
-                            [gr].[c1] as [c11],
-                            [gr].[StockCategory_Id] as [StockCategory_Id1],
-                            [c].[Name],
-                            [c].[NN]
-                        FROM
-                            (
-                                SELECT
-                                    [_].[CategoryId] as [StockCategory_Id],
-                                    Count(*) as [c1]
-                                FROM
-                                    [AccountStock] [_]
-                                        INNER JOIN [SuperAccount] [t1] ON [_].[SuperAccountId] = [t1].[SuperAccountId]
-                                WHERE
-                                    [_].[StockType] = 41 AND
-                                    [t1].[Type] = 0 AND
-                                    [_].[Amount] > 0 AND
-                                    NOT ([t1].[IsStuff] = 1)
-                                GROUP BY
-                                    [_].[CategoryId]
-                            ) [gr]
-                                INNER JOIN [Category] [c] ON [gr].[StockCategory_Id] = [c].[CategoryId]
-                       """)
         result = []
-        while True:
-            row = cursor.fetchone()
-            if row:
-                result.append(row)
-            else:
-                break
-        logging.info(f'{str(datetime.now()):25}:    Результат функции "count_clients": {result}')
-        if not result:
-            result.append(('Пусто', 488, '', '0003'))
+
+        try:
+            logging.info(f'{str(datetime.now()):25}:    Попытка соединения с {server}')
+
+            cnxn = pyodbc.connect(
+                f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
+            cursor = cnxn.cursor()
+
+            cursor.execute("""
+                            SELECT
+                                [gr].[c1] as [c11],
+                                [gr].[StockCategory_Id] as [StockCategory_Id1],
+                                [c].[Name],
+                                [c].[NN]
+                            FROM
+                                (
+                                    SELECT
+                                        [_].[CategoryId] as [StockCategory_Id],
+                                        Count(*) as [c1]
+                                    FROM
+                                        [AccountStock] [_]
+                                            INNER JOIN [SuperAccount] [t1] ON [_].[SuperAccountId] = [t1].[SuperAccountId]
+                                    WHERE
+                                        [_].[StockType] = 41 AND
+                                        [t1].[Type] = 0 AND
+                                        [_].[Amount] > 0 AND
+                                        NOT ([t1].[IsStuff] = 1)
+                                    GROUP BY
+                                        [_].[CategoryId]
+                                ) [gr]
+                                    INNER JOIN [Category] [c] ON [gr].[StockCategory_Id] = [c].[CategoryId]
+                           """)
+            while True:
+                row = cursor.fetchone()
+                if row:
+                    result.append(row)
+                else:
+                    break
+            logging.info(f'{str(datetime.now()):25}:    Результат функции "count_clients": {result}')
+            if not result:
+                result.append(('Пусто', 488, '', '0003'))
+
+        except pyodbc.OperationalError as e:
+            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            result.append(('Нет данных', 0, '', ''))
         return result
 
     def count_clients_reload(self, count_clients):

@@ -50,11 +50,11 @@
                     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
                     MDCheckbox:
-                        id:            date_switch
-                        size_hint:    None, None
-                        size:        dp(48), dp(48)
-                        pos_hint:    {'center_x': 0.5, 'center_y': 0.47}
-                        active:        True
+                        id: date_switch
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
                         on_release: app.click_date_switch()
 
                     MDLabel:
@@ -97,13 +97,6 @@
                             pos_hint: {'center_y': 0.42}
                             on_release: app.show_date_to()
                             disabled: date_switch.active
-
-
-
-
-
-
-
 
                 BoxLayout:
                     size_hint: 0.8, 0.8

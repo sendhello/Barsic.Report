@@ -86,13 +86,24 @@ class BarsicReport2(App):
         '''Создаёт файл настроек приложения barsicreport2.ini.'''
 
         config.adddefaultsection('General')
-        config.setdefault('General', 'language', 'en')
+        config.setdefault('General', 'language', 'ru')
+        config.adddefaultsection('MSSQL')
+        config.setdefault('MSSQL', 'driver', '{SQL Server}')
+        config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
+        config.setdefault('MSSQL', 'database', 'database')
+        config.setdefault('MSSQL', 'user', 'sa')
+        config.setdefault('MSSQL', 'pwd', 'password')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
 
         self.config.read(os.path.join(self.directory, 'barsicreport2.ini'))
         self.lang = self.config.get('General', 'language')
+        self.driver = self.config.get('MSSQL', 'driver')
+        self.server = self.config.get('MSSQL', 'server')
+        self.database = self.config.get('MSSQL', 'database')
+        self.user = self.config.get('MSSQL', 'user')
+        self.pwd = self.config.get('MSSQL', 'pwd')
 
     def build(self):
         self.set_value_from_config()
@@ -346,24 +357,14 @@ class BarsicReport2(App):
         Вызов функции count_clients с параметрами из конфига
         :return:
         '''
-        config = self.read_config()
         return self.count_clients(
-            driver=config['driver'],
-            server=config['server'],
-            database=config['database'],
-            uid=config['uid'],
-            pwd=config['pwd'],
+            driver=self.driver,
+            server=self.server,
+            database=self.database,
+            uid=self.user,
+            pwd=self.pwd,
         )
-
-    def read_config(self):
-        config = {}
-        with open('config.ini', encoding='utf-8') as config_file:
-            for line in config_file:
-                if line[0] != '#' and line[0] != '[' and line != '\n' and line != '':
-                    config[line.split('=')[0].strip()] = line.split('=')[1].strip()
-        return config
 
 
 if __name__ == '__main__':
-    #     print(DEVICE_TYPE)
-    BarsicReport2().read_config()
+    pass

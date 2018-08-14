@@ -291,7 +291,7 @@ class BarsicReport2(App):
         self.previous_date_from = date_obj
         self.date_from = datetime.strptime(str(date_obj), '%Y-%m-%d')
         self.root.ids.report.ids.date_from.text = str(date_obj)
-        if self.date_to <= self.date_from:
+        if self.date_to <= self.date_from or self.root.ids.report.ids.date_switch.active:
             self.root.ids.report.ids.date_to.text = self.show_next_day()
         logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 

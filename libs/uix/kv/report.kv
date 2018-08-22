@@ -90,12 +90,12 @@
                             size: dp(48)*2.7, dp(48)
                             pos_hint: {'center_x': 0.5, 'center_y': 0.5}
                             text: app.show_next_day()
-                            disabled: date_switch.active
+                            #disabled: date_switch.active
                         MDIconButton:
                             icon: 'playlist-play'
                             pos_hint: {'center_y': 0.42}
                             on_release: app.show_date_to()
-                            disabled: date_switch.active
+                            #disabled: date_switch.active
 
                 BoxLayout:
                     size_hint: 0.8, None

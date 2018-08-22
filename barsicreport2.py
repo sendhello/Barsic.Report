@@ -36,6 +36,8 @@ from libs.uix.baseclass.startscreen import StartScreen
 from libs.uix.lists import Lists
 from libs.utils.showplugins import ShowPlugins
 
+from libs import functions
+
 from kivymd.theming import ThemeManager
 from kivymd.label import MDLabel
 from kivymd.time_picker import MDTimePicker
@@ -190,12 +192,22 @@ class BarsicReport2(App):
             [['chevron-left', lambda x: self.back_screen(27)]]
 
     def show_reports(self, *args):
+        """
+        Переход на экран ОТЧЕТЫ
+        :param args:
+        :return:
+        """
         self.nav_drawer.toggle_nav_drawer()
         self.manager.current = 'report'
         self.screen.ids.action_bar.left_action_items = \
             [['chevron-left', lambda x: self.back_screen(27)]]
 
     def show_license(self, *args):
+        """
+        Переход на экран ЛИЦЕНЗИЯ
+        :param args:
+        :return:
+        """
         self.screen.ids.license.ids.text_license.text = \
             self.translation._('%s') % open(
                 os.path.join(self.directory, 'LICENSE'), encoding='utf-8').read()
@@ -207,11 +219,19 @@ class BarsicReport2(App):
             self.translation._('MIT LICENSE')
 
     def select_locale(self, *args):
-        '''Выводит окно со списком имеющихся языковых локализаций для
-        установки языка приложения.'''
+        """
+        Выводит окно со списком имеющихся языковых локализаций для
+        установки языка приложения.
+        :param args:
+        :return:
+        """
 
         def select_locale(name_locale):
-            '''Устанавливает выбранную локализацию.'''
+            """
+            Устанавливает выбранную локализацию.
+            :param name_locale:
+            :return:
+            """
 
             for locale in self.dict_language.keys():
                 if name_locale == self.dict_language[locale]:
@@ -508,6 +528,9 @@ class BarsicReport2(App):
             self.show_dialog(f'Невозможно открыть {database}', repr(e))
         return result
 
+    @functions.to_googleshet
+    @functions.add_sum
+    @functions.convert_to_dict
     def itog_report(
             self,
             server,
@@ -553,47 +576,6 @@ class BarsicReport2(App):
                          f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'
                          f'Скрывать внутренние точки обслуживания: {hide_internal})')
         return report
-
-    def itog_report_convert_to_dict(self, report):
-        """
-        Преобразует список кортежей отчета в словарь
-        :param report: list - Итоговый отчет в формате списка картежей полученный из функции full_report
-        :return: dict - Словарь услуг и их значений
-        """
-        result = {}
-        for row in report:
-            result[row[4]] = (row[1], row[0])
-        return result
-
-    def add_sum(self, report):
-        """
-        Расчитывает и добавляет к словарю-отчету 1 элемент: Итого
-        :param report: dict - словарь-отчет
-        :return: dict - словарь-отчет
-        """
-        sum_service = Decimal(0)
-        sum_many = Decimal(0)
-        for line in report:
-            if not (report[line][0] is None or report[line][0] is None):
-                if line != 'Депозит':
-                    sum_service += report[line][0]
-                sum_many += report[line][1]
-        report['Итого по отчету'] = (sum_service, sum_many)
-        return report
-
-    def decimal_to_googlesheet(self, dict):
-        """
-        Преобразует суммы Decimal в float
-        :param dict:
-        :return:
-        """
-        new_dict = {}
-        for key in dict:
-            if type(dict[key][0]) is Decimal:
-                new_dict[key] = (int(dict[key][0]), float(dict[key][1]))
-            else:
-                new_dict[key] = (dict[key][0], dict[key][1])
-        return new_dict
 
     def read_bitrix_base(self,
                          server,
@@ -678,18 +660,6 @@ class BarsicReport2(App):
                 hide_internal='1',
             )
 
-        # Преобразование в словарь
-        itog_report_org1 = self.itog_report_convert_to_dict(itog_report_org1)
-        itog_report_org2 = self.itog_report_convert_to_dict(itog_report_org2)
-
-        # Добавление ИТОГО
-        itog_report_org1 = self.add_sum(itog_report_org1)
-        itog_report_org2 = self.add_sum(itog_report_org2)
-
-        # Decimal to float
-        itog_report_org1 = self.decimal_to_googlesheet(itog_report_org1)
-        itog_report_org2 = self.decimal_to_googlesheet(itog_report_org2)
-
         report_bitrix = self.read_bitrix_base(
             server=self.server,
             database=self.database_bitrix,
@@ -702,9 +672,9 @@ class BarsicReport2(App):
 
 
 
-        print(itog_report_org1)
-        print(itog_report_org2)
-        print(report_bitrix)
+        print(f'itog_report_org1 = {itog_report_org1}')
+        print(f'itog_report_org2 = {itog_report_org2}')
+        print(f'report_bitrix = {report_bitrix}')
 
 
 if __name__ == '__main__':

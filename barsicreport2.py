@@ -443,41 +443,81 @@ class BarsicReport2(App):
         self.screen.ids.base.ids.name_zone.text = str(count_clients[len(count_clients) - 1][2])
         self.screen.ids.base.ids.count.text = str(count_clients[len(count_clients) - 1][0])
 
-    def select_org1(self):
-        org_list = self.list_organisation(
-            server=self.server,
-            database=self.database1,
-            uid=self.user,
-            pwd=self.pwd,
-            driver=self.driver,
-        )
-        if org_list:
-            bs = MDListBottomSheet()
-            for org in org_list:
-                bs.add_item(org[2], lambda x: self.click_select_org(org[0], org[2], self.database1), icon='nfc')
-            bs.open()
+    # -------------------------------Кнопки вывода списка организаций для выбора----------------------------------------
 
-    def select_org2(self):
-        org_list = self.list_organisation(
+    # def select_org1(self):
+    #     """
+    #     Вывод списка организаций
+    #     :return:
+    #     """
+    #     org_list = self.list_organisation(
+    #         server=self.server,
+    #         database=self.database1,
+    #         uid=self.user,
+    #         pwd=self.pwd,
+    #         driver=self.driver,
+    #     )
+    #     if org_list:
+    #         bs = MDListBottomSheet()
+    #         for org in org_list:
+    #             bs.add_item(org[2], lambda x: self.click_select_org(org[0], org[2], self.database1), icon='nfc')
+    #         bs.open()
+    #
+    # def select_org2(self):
+    #     """
+    #     Вывод списка организаций
+    #     :return:
+    #     """
+    #     org_list = self.list_organisation(
+    #         server=self.server,
+    #         database=self.database2,
+    #         uid=self.user,
+    #         pwd=self.pwd,
+    #         driver=self.driver,
+    #     )
+    #     if org_list:
+    #         bs = MDListBottomSheet()
+    #         for org in org_list:
+    #             bs.add_item(org[2], lambda x: self.click_select_org(org[0], org[2], self.database2), icon='nfc')
+    #         bs.open()
+    #
+    # def click_select_org(self, id, name, database):
+    #     """
+    #     Выбор организации из списка и запись ее в переменную
+    #     :param id:
+    #     :param name:
+    #     :param database:
+    #     :return:
+    #     """
+    #     if database == self.database1:
+    #         self.org1 = (id, name)
+    #         self.screen.ids.report.ids.org1.text = name
+    #     elif database == self.database2:
+    #         self.org2 = (id, name)
+    #         self.screen.ids.report.ids.org2.text = name
+
+    # ---------- Выбор первой организации из списка организаций (Замена кнопкам выбора организаций) --------------------
+
+    def click_select_org(self):
+        """
+        Выбор первой организации из списка организаций
+        """
+        org_list1 = self.list_organisation(
+                server=self.server,
+                database=self.database1,
+                uid=self.user,
+                pwd=self.pwd,
+                driver=self.driver,
+            )
+        org_list2 = self.list_organisation(
             server=self.server,
             database=self.database2,
             uid=self.user,
             pwd=self.pwd,
             driver=self.driver,
         )
-        if org_list:
-            bs = MDListBottomSheet()
-            for org in org_list:
-                bs.add_item(org[2], lambda x: self.click_select_org(org[0], org[2], self.database2), icon='nfc')
-            bs.open()
-
-    def click_select_org(self, id, name, database):
-        if database == self.database1:
-            self.org1 = (id, name)
-            self.screen.ids.report.ids.org1.text = name
-        elif database == self.database2:
-            self.org2 = (id, name)
-            self.screen.ids.report.ids.org2.text = name
+        self.org1 = (org_list1[0][0], org_list1[0][2])
+        self.org2 = (org_list2[0][0], org_list2[0][2])
 
 
     def list_organisation(self,
@@ -632,6 +672,8 @@ class BarsicReport2(App):
         itog_report_org1 = None
         itog_report_org2 = None
         report_bitrix = None
+
+        self.click_select_org()
 
         if self.org1:
             itog_report_org1 = self.itog_report(

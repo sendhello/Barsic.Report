@@ -97,29 +97,29 @@
                             on_release: app.show_date_to()
                             #disabled: date_switch.active
 
-                BoxLayout:
-                    size_hint: 0.8, None
-                    height: dp(48)*2
-                    pos_hint: {'center_x': 0.5}
-                    MDRaisedButton:
-                        id: org1
-                        text: "Выбрать организацию 1"
-                        opposite_colors: True
-                        size_hint: None, None
-                        size: 5 * dp(48), dp(48)
-                        pos_hint: {'center_x': 0.5, 'center_y': 0.6}
-                        on_release: app.select_org1()
-                    Widget:
-                        size_hint: None, None
-                        size: dp(48), dp(48)
-                    MDRaisedButton:
-                        id: org2
-                        text: "Выбрать организацию 2"
-                        opposite_colors: True
-                        size_hint: None, None
-                        size: 5 * dp(48), dp(48)
-                        pos_hint: {'right': 0.5, 'center_y': 0.6}
-                        on_release: app.select_org2()
+                #BoxLayout:
+                #    size_hint: 0.8, None
+                #    height: dp(48)*2
+                #    pos_hint: {'center_x': 0.5}
+                #    MDRaisedButton:
+                #        id: org1
+                #        text: "Выбрать организацию 1"
+                #        opposite_colors: True
+                #        size_hint: None, None
+                #        size: 5 * dp(48), dp(48)
+                #        pos_hint: {'center_x': 0.5, 'center_y': 0.6}
+                #        on_release: app.select_org1()
+                #    Widget:
+                #        size_hint: None, None
+                #        size: dp(48), dp(48)
+                #    MDRaisedButton:
+                #        id: org2
+                #        text: "Выбрать организацию 2"
+                #        opposite_colors: True
+                #        size_hint: None, None
+                #        size: 5 * dp(48), dp(48)
+                #        pos_hint: {'right': 0.5, 'center_y': 0.6}
+                #        on_release: app.select_org2()
 
                 BoxLayout:
                     size_hint: 0.8, None

@@ -53,3 +53,11 @@ def to_googleshet(func):
                 new_dict[key] = (dict[key][0], dict[key][1])
         return new_dict
     return decimal_to_googlesheet
+
+
+def is_int(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False

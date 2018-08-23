@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<Organisations>
+  <UrFace Name="Не учитывать">
+    <Services>
+      <Service Name="Пустая обязательная категория"/>
+    </Services>
+  </UrFace>
+  </UrFace>
+  <UrFace Name="ИТОГО">
+    <Services>
+      <Service Name="Пустая обязательная категория"/>
+      <Service Name="Итого по отчету"/>
+    </Services>
+  </UrFace>
+  <UrFace Name="Дата">
+    <Services>
+      <Service Name="Пустая обязательная категория"/>
+      <Service Name="Дата"/>
+    </Services>
+  </UrFace>
+  <UrFace Name="Депозит">
+    <Services>
+      <Service Name="Пустая обязательная категория"/>
+      <Service Name="Депозит"/>
+    </Services>
+  </UrFace>
+</Organisations>

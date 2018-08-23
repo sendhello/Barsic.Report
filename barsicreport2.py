@@ -17,6 +17,7 @@ import logging
 from datetime import datetime, timedelta
 import pyodbc
 from decimal import Decimal
+from lxml import etree, objectify
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -45,6 +46,7 @@ from kivymd.date_picker import MDDatePicker
 
 from toast import toast
 from dialogs import card
+
 
 
 class BarsicReport2(App):
@@ -89,6 +91,9 @@ class BarsicReport2(App):
         self.org2 = ''
 
         self.count_sql_error = 0
+        self.org_for_finreport = {}
+        self.new_service = []
+        self.orgs = []
 
     def get_application_config(self):
         return super(BarsicReport2, self).get_application_config(
@@ -519,7 +524,6 @@ class BarsicReport2(App):
         self.org1 = (org_list1[0][0], org_list1[0][2])
         self.org2 = (org_list2[0][0], org_list2[0][2])
 
-
     def list_organisation(self,
                           server,
                           database,
@@ -664,19 +668,86 @@ class BarsicReport2(App):
             summ += float(order[6])
         return len(orders), summ
 
+    def read_reportgroup(self, path):
+        """
+        Чтение XML с привязкой групп услуг к услугам
+        :param path:
+        :return:
+        """
+        with open(path, encoding='utf-8') as f:
+            xml = f.read()
+
+        root = objectify.fromstring(xml)
+        orgs_dict = {}
+
+        for org in root.UrFace:
+            orgs_dict[org.get('Name')] = []
+            for serv in org.Services.Service:
+                if serv.get('Name') != 'Пустая обязательная категория':
+                    orgs_dict[org.get('Name')].append(serv.get('Name'))
+
+        return orgs_dict
+
+    def find_new_service(self, service_dict, orgs_dict):
+        """
+        Поиск новых услуг и организаций из XML
+        :param service_dict: Итоговый отчет
+        :param orgs_dict: словарь из XML-файла
+        :return:
+        """
+        servise_set = set()
+
+        for key in orgs_dict:
+            for s in orgs_dict[key]:
+                servise_set.add(s)
+
+        for org in service_dict:
+            if org not in servise_set and org not in self.new_service:
+                self.new_service.append(org)
+                servise_set.add(org)
+
+        for key in orgs_dict:
+            if key not in self.orgs:
+                self.orgs.append(key)
+
+    def distibution_service(self):
+        if self.new_service:
+            service = self.new_service.pop()
+            self.viev_orgs(service)
+        else:
+            print(f'itog_report_org1 = {self.itog_report_org1}')
+            print(f'itog_report_org2 = {self.itog_report_org2}')
+            print(f'report_bitrix = {self.report_bitrix}')
+
+    def viev_orgs(self, service):
+        bs = MDListBottomSheet()
+        bs.add_item(f'К какой огранизации относится услуга "{service}"? (1 из {len(self.new_service) + 1})', lambda x: x)
+        for i in range(len(self.orgs)):
+            if self.orgs[i] != 'ИТОГО' and self.orgs[i] != 'Депозит' and self.orgs[i] != 'Дата':
+                bs.add_item(self.orgs[i], lambda x: self.select_org(service, i), icon='nfc')
+        bs.add_item(f'Добавить новую организацию...', lambda x: x)
+        bs.open()
+
+    def select_org(self, service, i):
+        """
+        Добавляет услугу в список услуг и вызывает distibution_service для других услуг
+        """
+        self.orgs_dict[self.orgs[i]] = service
+        self.distibution_service()
+
     def run_report(self):
         """
         Выполнить отчеты
         :return:
         """
-        itog_report_org1 = None
-        itog_report_org2 = None
-        report_bitrix = None
+        self.itog_report_org1 = None
+        self.itog_report_org2 = None
+        self.report_bitrix = None
 
         self.click_select_org()
 
         if self.org1:
-            itog_report_org1 = self.itog_report(
+            self.itog_report_org1 = self.itog_report(
                 server=self.server,
                 database=self.database1,
                 driver=self.driver,
@@ -689,7 +760,7 @@ class BarsicReport2(App):
                 hide_internal='1',
             )
         if self.org2:
-            itog_report_org2 = self.itog_report(
+            self.itog_report_org2 = self.itog_report(
                 server=self.server,
                 database=self.database2,
                 driver=self.driver,
@@ -702,7 +773,7 @@ class BarsicReport2(App):
                 hide_internal='1',
             )
 
-        report_bitrix = self.read_bitrix_base(
+        self.report_bitrix = self.read_bitrix_base(
             server=self.server,
             database=self.database_bitrix,
             user=self.user,
@@ -712,11 +783,12 @@ class BarsicReport2(App):
             date_to=self.date_to,
         )
 
+        # Чтение XML с привязкой групп услуг к услугам
+        self.orgs_dict = self.read_reportgroup('data/org_for_report.xml')
 
-
-        print(f'itog_report_org1 = {itog_report_org1}')
-        print(f'itog_report_org2 = {itog_report_org2}')
-        print(f'report_bitrix = {report_bitrix}')
+        # Поиск новых услуг
+        self.find_new_service(self.itog_report_org1, self.orgs_dict)
+        self.distibution_service()
 
 
 if __name__ == '__main__':

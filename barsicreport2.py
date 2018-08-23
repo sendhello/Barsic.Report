@@ -105,6 +105,7 @@ class BarsicReport2(App):
         config.adddefaultsection('General')
         config.setdefault('General', 'language', 'ru')
         config.adddefaultsection('MSSQL')
+        config.adddefaultsection('PATH')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
         config.setdefault('MSSQL', 'user', 'sa')
@@ -112,6 +113,7 @@ class BarsicReport2(App):
         config.setdefault('MSSQL', 'database1', 'database')
         config.setdefault('MSSQL', 'database2', 'database')
         config.setdefault('MSSQL', 'database_bitrix', 'database')
+        config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -125,6 +127,7 @@ class BarsicReport2(App):
         self.database1 = self.config.get('MSSQL', 'database1')
         self.database2 = self.config.get('MSSQL', 'database2')
         self.database_bitrix = self.config.get('MSSQL', 'database_bitrix')
+        self.reportXML = self.config.get('PATH', 'reportXML')
 
     def build(self):
         self.set_value_from_config()
@@ -668,13 +671,13 @@ class BarsicReport2(App):
             summ += float(order[6])
         return len(orders), summ
 
-    def read_reportgroup(self, path):
+    def read_reportgroup(self):
         """
         Чтение XML с привязкой групп услуг к услугам
         :param path:
         :return:
         """
-        with open(path, encoding='utf-8') as f:
+        with open(self.reportXML, encoding='utf-8') as f:
             xml = f.read()
 
         root = objectify.fromstring(xml)
@@ -719,21 +722,86 @@ class BarsicReport2(App):
             print(f'itog_report_org2 = {self.itog_report_org2}')
             print(f'report_bitrix = {self.report_bitrix}')
 
+            # with open(self.reportXML, encoding='utf-8') as f:
+            #     xml = f.read()
+            # root = objectify.fromstring(xml)
+            # #Добавляем новые организации
+            # rep = False
+            # for ur in self.orgs_dict:
+            #     for x in root.UrFace:
+            #         if ur == x.get("Name"):
+            #             rep = True
+            #     if not rep:
+            #         new_org = objectify.SubElement(root, "UrFace")
+            #         new_org.set('Name', ur)
+            #         new_servs = objectify.SubElement(new_org, 'Services')
+            #         new_serv = objectify.SubElement(new_servs, 'Service')
+            #         new_serv.set('Name', 'Пустая обязательная категория')
+            #     rep = False
+            #
+            # #Перечисляем существующие организации в файле и добавляем новые строчки
+            # for x in root.UrFace:
+            #     for i in self.orgs_dict[x.get('Name')]:
+            #         Service = objectify.SubElement(x.Services, "Service")
+            #         Service.set("Name", i)
+            #
+            # # удаляем аннотации.
+            # objectify.deannotate(root)
+            # etree.cleanup_namespaces(root)
+            # obj_xml = etree.tostring(root,
+            #                          encoding='utf-8',
+            #                          pretty_print=True,
+            #                          xml_declaration=True
+            #                          )
+            #
+            # # сохраняем данные в файл.
+            # try:
+            #     with open(self.reportXML, "w", encoding='utf_8_sig') as xml_writer:
+            #         xml_writer.write(obj_xml.decode('utf-8'))
+            # except IOError:
+            #     pass
+
     def viev_orgs(self, service):
         bs = MDListBottomSheet()
         bs.add_item(f'К какой огранизации относится услуга "{service}"? (1 из {len(self.new_service) + 1})', lambda x: x)
         for i in range(len(self.orgs)):
             if self.orgs[i] != 'ИТОГО' and self.orgs[i] != 'Депозит' and self.orgs[i] != 'Дата':
-                bs.add_item(self.orgs[i], lambda x: self.select_org(service, i), icon='nfc')
+                bs.add_item(self.orgs[i], lambda x: self.select_org(service, x.text), icon='nfc')
         bs.add_item(f'Добавить новую организацию...', lambda x: x)
         bs.open()
 
-    def select_org(self, service, i):
+    def create_new_org(self, name):
+        """
+        Добавляет новую организацию в словарь и в XML
+        """
+        pass
+
+
+    def select_org(self, service, org):
         """
         Добавляет услугу в список услуг и вызывает distibution_service для других услуг
         """
-        self.orgs_dict[self.orgs[i]] = service
+        self.orgs_dict[org] = service
         self.distibution_service()
+        #Запись новой услуги в XML
+        with open(self.reportXML, encoding='utf-8') as f:
+            xml = f.read()
+        root = objectify.fromstring(xml)
+        # Перечисляем существующие организации в файле и добавляем новые строчки
+        for x in root.UrFace:
+            if x.get('Name') == org:
+                Service = objectify.SubElement(x.Services, "Service")
+                Service.set("Name", service)
+        # удаляем аннотации.
+        objectify.deannotate(root)
+        etree.cleanup_namespaces(root)
+        obj_xml = etree.tostring(root, encoding='utf-8', pretty_print=True, xml_declaration=True)
+        # сохраняем данные в файл.
+        try:
+            with open(self.reportXML, "w", encoding='utf_8_sig') as xml_writer:
+                xml_writer.write(obj_xml.decode('utf-8'))
+        except IOError:
+            pass
 
     def run_report(self):
         """
@@ -784,7 +852,7 @@ class BarsicReport2(App):
         )
 
         # Чтение XML с привязкой групп услуг к услугам
-        self.orgs_dict = self.read_reportgroup('data/org_for_report.xml')
+        self.orgs_dict = self.read_reportgroup()
 
         # Поиск новых услуг
         self.find_new_service(self.itog_report_org1, self.orgs_dict)

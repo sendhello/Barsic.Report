@@ -47,7 +47,7 @@ from kivymd.date_picker import MDDatePicker
 
 from toast import toast
 from dialogs import card
-
+import yandexwebdav
 
 
 class BarsicReport2(App):
@@ -109,6 +109,7 @@ class BarsicReport2(App):
         config.setdefault('General', 'language', 'ru')
         config.adddefaultsection('MSSQL')
         config.adddefaultsection('PATH')
+        config.adddefaultsection('Yandex_Webdav')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
         config.setdefault('MSSQL', 'user', 'sa')
@@ -118,6 +119,12 @@ class BarsicReport2(App):
         config.setdefault('MSSQL', 'database_bitrix', 'database')
         config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
         config.setdefault('PATH', 'agentXML', 'data/org_plat_agent.xml')
+        config.setdefault('PATH', 'local_folder', 'report')
+        config.setdefault('PATH', 'path_aquapark', 'report')
+        config.setdefault('PATH', 'path_beach', 'report')
+        config.setdefault('Yandex_Webdav', 'use_webdav', 'False')
+        config.setdefault('Yandex_Webdav', 'webdav_login', 'login')
+        config.setdefault('Yandex_Webdav', 'webdav_password', 'password')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -133,6 +140,12 @@ class BarsicReport2(App):
         self.database_bitrix = self.config.get('MSSQL', 'database_bitrix')
         self.reportXML = self.config.get('PATH', 'reportXML')
         self.agentXML = self.config.get('PATH', 'agentXML')
+        self.local_folder = self.config.get('PATH', 'local_folder')
+        self.path_aquapark = self.config.get('PATH', 'path_aquapark')
+        self.path_beach = self.config.get('PATH', 'path_beach')
+        self.use_webdav = self.config.get('Yandex_Webdav', 'use_webdav')
+        self.webdav_login = self.config.get('Yandex_Webdav', 'webdav_login')
+        self.webdav_password = self.config.get('Yandex_Webdav', 'webdav_password')
 
     def build(self):
         self.set_value_from_config()
@@ -832,7 +845,7 @@ class BarsicReport2(App):
             service = self.new_agentservice.pop()
             self.viev_agentorgs(service)
         else:
-            print(f'Very Well!')
+            self.save_reports()
 
     def find_new_agentservice(self, service_dict, orgs_dict):
         """
@@ -986,6 +999,50 @@ class BarsicReport2(App):
         result_dict['Online Продажи'] = list(self.report_bitrix)
         # result_dict['ИТОГО'][1] -= result_dict['Депозит'][1]
         return result_dict
+
+    def plagent_report(self):
+        result_dict = {}
+        for key in self.agent_dict:
+            if key != 'Не учитывать':
+                result_dict[key] = [0, 0]
+                for serv in self.agent_dict[key]:
+                    try:
+                        if key == 'Дата':
+                            result_dict[key][0] = self.itog_report_org2[serv][0]
+                            result_dict[key][1] = self.itog_report_org2[serv][1]
+                        elif serv == 'Депозит':
+                            result_dict[key][1] += self.itog_report_org2[serv][1]
+                        elif serv == 'Аквазона':
+                            result_dict[key][1] += self.itog_report_org2[serv][1]
+                        else:
+                            result_dict[key][0] += self.itog_report_org2[serv][0]
+                            result_dict[key][1] += self.itog_report_org2[serv][1]
+                    except KeyError:
+                        pass
+        return result_dict
+
+    def save_reports(self):
+        self.connect_to_webdav()
+        print(f'self.use_webdav = {self.use_webdav}')
+
+    def connect_to_webdav(self):
+        if self.use_webdav:
+            try:
+                options = {
+                    'user': self.webdav_login,
+                    'password': self.webdav_password,
+                }
+                self.webdav_client = yandexwebdav.Config(options)
+                print(self.webdav_client.list('/'))
+                print(self.webdav_client.list(self.path_aquapark))
+            except yandexwebdav.ConnectionException as e:
+                self.use_webdav = False
+                logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+                self.show_dialog('Ошибка соединения с Yandex.Disc',
+                                 repr(e) + f'\n\nОтчеты будут сохранены в папке {self.local_folder},'
+                                           f' и не будут отправлены на Yandex.Disc')
+
+
 
     def run_report(self):
         """

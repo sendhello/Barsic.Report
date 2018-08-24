@@ -1116,7 +1116,8 @@ class BarsicReport2(App):
         ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
         ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
 
-        path = self.local_folder + self.path_aquapark + 'Отчет_платежного_агента_' + date_ + ".xls"
+        path = self.local_folder     + self.path_aquapark + 'Отчет_платежного_агента_' + date_ + ".xls"
+        self.create_path(path)
         while True:
             try:
                 wb.save(path)
@@ -1125,6 +1126,24 @@ class BarsicReport2(App):
                 continue
             break
 
+    def create_path(self, path):
+        """
+        Проверяет наличие указанного пути. В случае отсутствия каких-либо папок создает их
+        :param path:
+        :return:
+        """
+        list_path = path.split('/')
+        if list_path[-1][-4:] == '.xls':
+            list_path.pop()
+        directory = os.getcwd()
+        for folder in list_path:
+            if folder not in os.listdir():
+                os.mkdir(folder)
+                logging.warning(f'{str(datetime.now()):25}:    В директории {os.getcwd()} создана папка {folder}')
+                os.chdir(folder)
+            else:
+                os.chdir(folder)
+        os.chdir(directory)
 
     def run_report(self):
         """

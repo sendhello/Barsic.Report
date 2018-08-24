@@ -30,6 +30,7 @@ from kivy.metrics import dp
 from kivy.properties import ObjectProperty, StringProperty
 from kivymd.dialog import MDDialog
 from kivymd.bottomsheet import MDListBottomSheet, MDGridBottomSheet
+from kivymd.textfields import MDTextField
 
 from main import __version__
 from libs.translation import Translation
@@ -290,13 +291,6 @@ class BarsicReport2(App):
 
         dialog.add_action_button("Закрыть", action=lambda *x: dialog.dismiss())
         dialog.open()
-
-    def show_dialog_sqlerror(self, title, text):
-        if self.count_sql_error > 1:
-            self.show_dialog(title, text)
-            self.count_sql_error = 0
-        else:
-            self.count_sql_error += 1
 
     def on_lang(self, instance, lang):
         self.translation.switch_lang(lang)
@@ -714,6 +708,10 @@ class BarsicReport2(App):
                 self.orgs.append(key)
 
     def distibution_service(self):
+        """
+        Извлекает услугу из списка нвых услуг и вызывает список групп до тех пор пока есть новые услуги,
+        затем передает управление следующей функции
+        """
         if self.new_service:
             service = self.new_service.pop()
             self.viev_orgs(service)
@@ -722,67 +720,85 @@ class BarsicReport2(App):
             print(f'itog_report_org2 = {self.itog_report_org2}')
             print(f'report_bitrix = {self.report_bitrix}')
 
-            # with open(self.reportXML, encoding='utf-8') as f:
-            #     xml = f.read()
-            # root = objectify.fromstring(xml)
-            # #Добавляем новые организации
-            # rep = False
-            # for ur in self.orgs_dict:
-            #     for x in root.UrFace:
-            #         if ur == x.get("Name"):
-            #             rep = True
-            #     if not rep:
-            #         new_org = objectify.SubElement(root, "UrFace")
-            #         new_org.set('Name', ur)
-            #         new_servs = objectify.SubElement(new_org, 'Services')
-            #         new_serv = objectify.SubElement(new_servs, 'Service')
-            #         new_serv.set('Name', 'Пустая обязательная категория')
-            #     rep = False
-            #
-            # #Перечисляем существующие организации в файле и добавляем новые строчки
-            # for x in root.UrFace:
-            #     for i in self.orgs_dict[x.get('Name')]:
-            #         Service = objectify.SubElement(x.Services, "Service")
-            #         Service.set("Name", i)
-            #
-            # # удаляем аннотации.
-            # objectify.deannotate(root)
-            # etree.cleanup_namespaces(root)
-            # obj_xml = etree.tostring(root,
-            #                          encoding='utf-8',
-            #                          pretty_print=True,
-            #                          xml_declaration=True
-            #                          )
-            #
-            # # сохраняем данные в файл.
-            # try:
-            #     with open(self.reportXML, "w", encoding='utf_8_sig') as xml_writer:
-            #         xml_writer.write(obj_xml.decode('utf-8'))
-            # except IOError:
-            #     pass
-
     def viev_orgs(self, service):
+        """
+        Выводит всплывающий список групп, при клике на одну из которых услуга указанная в заголовке добавляется в нее
+        """
         bs = MDListBottomSheet()
-        bs.add_item(f'К какой огранизации относится услуга "{service}"? (1 из {len(self.new_service) + 1})', lambda x: x)
+        bs.add_item(f'К какой группе отчета относится услуга "{service}"? (1 из {len(self.new_service) + 1})',
+                    lambda x: x)
         for i in range(len(self.orgs)):
             if self.orgs[i] != 'ИТОГО' and self.orgs[i] != 'Депозит' and self.orgs[i] != 'Дата':
                 bs.add_item(self.orgs[i], lambda x: self.select_org(service, x.text), icon='nfc')
-        bs.add_item(f'Добавить новую организацию...', lambda x: x)
+        bs.add_item(f'Добавить новую группу отчета...',
+                    lambda x: self.show_dialog_add_org("Новая группа", "Название новой группы", service))
         bs.open()
 
-    def create_new_org(self, name):
+    def show_dialog_add_org(self, title, text, service):
         """
-        Добавляет новую организацию в словарь и в XML
+        Выводит диалоговое окно с возможность ввода имени новой группы и двумя кнопками
         """
-        pass
+        content = MDTextField(hint_text="Persistent helper text222",
+                              helper_text="Text is always here111",
+                              helper_text_mode="persistent",
+                              text=text,
+                              )
+        dialog = MDDialog(title=title,
+                          content=content,
+                          size_hint=(.8, None),
+                          height=dp(200),
+                          auto_dismiss=False)
+        dialog.add_action_button("Отмена", action=lambda *x: (dialog.dismiss(), self.readd_org(service)))
+        dialog.add_action_button("Добавить",
+                                 action=lambda *x: (dialog.dismiss(), self.create_new_org(dialog.content.text, service)))
+        dialog.open()
+
+    def create_new_org(self, name, service):
+        """
+        Добавляет новую организацию в список организаций self.orgs, словарь self.orgs_dict и XML конфигурацию.
+        Возвращает изьятую ранее услугу в список новых услуг с помощью функции self.readd_org
+        """
+        self.orgs.append(name)
+        self.orgs_dict[name] = []
+        self.readd_org(service)
+        with open(self.reportXML, encoding='utf-8') as f:
+            xml = f.read()
+        root = objectify.fromstring(xml)
+        #Добавляем новые организации
+        new_org = objectify.SubElement(root, "UrFace")
+        new_org.set('Name', name)
+        new_servs = objectify.SubElement(new_org, 'Services')
+        new_serv = objectify.SubElement(new_servs, 'Service')
+        new_serv.set('Name', 'Пустая обязательная категория')
+        # удаляем аннотации.
+        objectify.deannotate(root)
+        etree.cleanup_namespaces(root)
+        obj_xml = etree.tostring(root,
+                                 encoding='utf-8',
+                                 pretty_print=True,
+                                 xml_declaration=True
+                                 )
+        # сохраняем данные в файл.
+        try:
+            with open(self.reportXML, "w", encoding='utf_8_sig') as xml_writer:
+                xml_writer.write(obj_xml.decode('utf-8'))
+        except IOError:
+            pass
+
+
+    def readd_org(self, service):
+        """
+        Возвращает изьятую ранее услугу в список новых услуг, затем вызывает функцию распределения
+        """
+        self.new_service.append(service)
+        self.distibution_service()
 
 
     def select_org(self, service, org):
         """
-        Добавляет услугу в список услуг и вызывает distibution_service для других услуг
+        Добавляет услугу в список услуг и вызывает функцию распределения для других услуг
         """
         self.orgs_dict[org] = service
-        self.distibution_service()
         #Запись новой услуги в XML
         with open(self.reportXML, encoding='utf-8') as f:
             xml = f.read()
@@ -802,6 +818,7 @@ class BarsicReport2(App):
                 xml_writer.write(obj_xml.decode('utf-8'))
         except IOError:
             pass
+        self.distibution_service()
 
     def run_report(self):
         """

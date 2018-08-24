@@ -38,6 +38,42 @@ def add_sum(func):
         return report
     return add_sum_wrapper
 
+def add_date(func):
+    def add_sum_wrapper(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+            org,
+            date_from,
+            date_to,
+            hide_zeroes='0',
+            hide_internal='1',
+    ):
+        """
+        Добавляет к словарю-отчету 1 элемент: Дата
+        :param report: dict - словарь-отчет
+        :return: dict - словарь-отчет
+        """
+        report = func(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+            org,
+            date_from,
+            date_to,
+            hide_zeroes='0',
+            hide_internal='1',
+        )
+        report['Дата'] = (date_from, date_to)
+        return report
+    return add_sum_wrapper
+
 
 def to_googleshet(func):
     def decimal_to_googlesheet(*args, **kwargs):

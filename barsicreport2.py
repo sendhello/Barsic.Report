@@ -48,6 +48,8 @@ from kivymd.date_picker import MDDatePicker
 from toast import toast
 from dialogs import card
 import yandexwebdav
+import xlwt
+import itertools
 
 
 class BarsicReport2(App):
@@ -587,6 +589,7 @@ class BarsicReport2(App):
         return result
 
     @functions.to_googleshet
+    @functions.add_date
     @functions.add_sum
     @functions.convert_to_dict
     def itog_report(
@@ -974,56 +977,57 @@ class BarsicReport2(App):
         Форминует финансовый отчет в установленном формате
         :return - dict
         """
-        result_dict = {}
+        self.finreport_dict = {}
         for key in self.orgs_dict:
             if key != 'Не учитывать':
-                result_dict[key] = [0.00, 0.00]
+                self.finreport_dict[key] = [0.00, 0.00]
                 for serv in self.orgs_dict[key]:
                     try:
                         if key == 'Нулевые':
-                            result_dict[key][0] += self.itog_report_org1[serv][0]
-                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.finreport_dict[key][0] += self.itog_report_org1[serv][0]
+                            self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
                         elif key == 'Дата':
-                            result_dict[key][0] = self.itog_report_org1[serv][0]
-                            result_dict[key][1] = self.itog_report_org1[serv][1]
+                            self.finreport_dict[key][0] = self.itog_report_org1[serv][0]
+                            self.finreport_dict[key][1] = self.itog_report_org1[serv][1]
                         elif serv == 'Депозит':
-                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
                         elif serv == 'Аквазона':
-                            result_dict['Кол-во проходов'] = [self.itog_report_org1[serv][0], 0]
-                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.finreport_dict['Кол-во проходов'] = [self.itog_report_org1[serv][0], 0]
+                            self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
                         else:
-                            result_dict[key][0] += self.itog_report_org1[serv][0]
-                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.finreport_dict[key][0] += self.itog_report_org1[serv][0]
+                            self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
                     except KeyError:
                         pass
-        result_dict['Online Продажи'] = list(self.report_bitrix)
-        # result_dict['ИТОГО'][1] -= result_dict['Депозит'][1]
-        return result_dict
+                self.finreport_dict['Online Продажи'] = list(self.report_bitrix)
+        # self.finreport_dict['ИТОГО'][1] -= self.finreport_dict['Депозит'][1]
 
-    def plagent_report(self):
-        result_dict = {}
+    def agent_report(self):
+        self.agentreport_dict = {}
         for key in self.agent_dict:
             if key != 'Не учитывать':
-                result_dict[key] = [0, 0]
+                self.agentreport_dict[key] = [0, 0]
                 for serv in self.agent_dict[key]:
                     try:
                         if key == 'Дата':
-                            result_dict[key][0] = self.itog_report_org2[serv][0]
-                            result_dict[key][1] = self.itog_report_org2[serv][1]
+                            self.agentreport_dict[key][0] = self.itog_report_org1[serv][0]
+                            self.agentreport_dict[key][1] = self.itog_report_org1[serv][1]
                         elif serv == 'Депозит':
-                            result_dict[key][1] += self.itog_report_org2[serv][1]
+                            self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
                         elif serv == 'Аквазона':
-                            result_dict[key][1] += self.itog_report_org2[serv][1]
+                            self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
                         else:
-                            result_dict[key][0] += self.itog_report_org2[serv][0]
-                            result_dict[key][1] += self.itog_report_org2[serv][1]
+                            self.agentreport_dict[key][0] += self.itog_report_org1[serv][0]
+                            self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
                     except KeyError:
                         pass
-        return result_dict
 
     def save_reports(self):
         self.connect_to_webdav()
-        print(f'self.use_webdav = {self.use_webdav}')
+        self.fin_report()
+        self.agent_report()
+        self.export_fin_report()
+
 
     def connect_to_webdav(self):
         if self.use_webdav:
@@ -1042,6 +1046,84 @@ class BarsicReport2(App):
                                  repr(e) + f'\n\nОтчеты будут сохранены в папке {self.local_folder},'
                                            f' и не будут отправлены на Yandex.Disc')
 
+    def export_fin_report(self):
+        font0 = xlwt.Font()
+        font0.name = 'Arial'
+        font0.colour_index = 0
+        font0.bold = True
+
+        style0 = xlwt.XFStyle()
+        style0.font = font0
+
+        style1 = xlwt.XFStyle()
+        style1.num_format_str = '0'
+
+        style2 = xlwt.XFStyle()
+        style2.num_format_str = '0.00'
+
+        wb = xlwt.Workbook()
+        ws = wb.add_sheet('Фин отчет')
+        col_width = 200 * 20
+
+        try:
+            for i in itertools.count():
+                ws.col(i).width = col_width
+        except ValueError:
+            pass
+
+        first_col = ws.col(0)
+        first_col.width = 200 * 20
+        second_col = ws.col(1)
+        second_col.width = 200 * 20
+
+        default_book_style = wb.default_style
+        default_book_style.font.height = 20 * 36  # 36pt
+
+        ws.write(0, 0, 'Дата', style0)
+        ws.write(0, 1, 'Кол-во проходов', style0)
+        ws.write(0, 2, 'Общая сумма', style0)
+        ws.write(0, 3, 'Сумма KPI', style0)
+        ws.write(0, 4, 'Билеты Кол-во', style0)
+        ws.write(0, 5, 'Билеты Сумма', style0)
+        ws.write(0, 6, 'Билеты Средний чек', style0)
+        ws.write(0, 7, 'Общепит Кол-во', style0)
+        ws.write(0, 8, 'Общепит Сумма', style0)
+        ws.write(0, 9, 'Общепит Средний чек', style0)
+        ws.write(0, 10, 'Прочее Кол-во', style0)
+        ws.write(0, 11, 'Прочее Сумма', style0)
+        ws.write(0, 12, 'Online Продажи Кол-во', style0)
+        ws.write(0, 13, 'Online Продажи Сумма', style0)
+        ws.write(0, 14, 'Online Продажи Средний чек', style0)
+        ws.write(0, 15, 'Сумма безнал', style0)
+        if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
+            date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")
+        else:
+            date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
+                    f'{datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}'
+        ws.write(1, 0, date_, style1)
+        ws.write(1, 1, self.finreport_dict['Кол-во проходов'][0], style1)
+        ws.write(1, 2, self.finreport_dict['ИТОГО'][1], style2)
+        ws.write(1, 3, '=C2-L2+N2+P2+Q2', style2)
+        ws.write(1, 4, self.finreport_dict['Билеты аквапарка'][0], style1)
+        ws.write(1, 5, self.finreport_dict['Билеты аквапарка'][1], style2)
+        ws.write(1, 6, '=ЕСЛИОШИБКА(F2/E2;0)', style2)
+        ws.write(1, 7, self.finreport_dict['Общепит'][0], style1)
+        ws.write(1, 8, self.finreport_dict['Общепит'][1], style2)
+        ws.write(1, 9, '=ЕСЛИОШИБКА(I2/H2;0)', style2)
+        ws.write(1, 10, self.finreport_dict['Прочее'][0], style1)
+        ws.write(1, 11, self.finreport_dict['Прочее'][1], style2)
+        ws.write(1, 12, self.finreport_dict['Online Продажи'][0], style1)
+        ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
+        ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
+
+        path = self.local_folder + self.path_aquapark + 'Отчет_платежного_агента_' + date_ + ".xls"
+        while True:
+            try:
+                wb.save(path)
+            except PermissionError:
+                input(f'Закройте файл "{path}". \nДля повторной попытки нажмите Enter...')
+                continue
+            break
 
 
     def run_report(self):

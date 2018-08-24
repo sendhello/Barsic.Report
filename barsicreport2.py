@@ -716,9 +716,7 @@ class BarsicReport2(App):
             service = self.new_service.pop()
             self.viev_orgs(service)
         else:
-            print(f'itog_report_org1 = {self.itog_report_org1}')
-            print(f'itog_report_org2 = {self.itog_report_org2}')
-            print(f'report_bitrix = {self.report_bitrix}')
+            print(f'FIN = {self.fin_report()}')
 
     def viev_orgs(self, service):
         """
@@ -819,6 +817,37 @@ class BarsicReport2(App):
         except IOError:
             pass
         self.distibution_service()
+
+    def fin_report(self):
+        """
+        Форминует финансовый отчет в установленном формате
+        :return - dict
+        """
+        result_dict = {}
+        for key in self.orgs_dict:
+            if key != 'Не учитывать':
+                result_dict[key] = [0.00, 0.00]
+                for serv in self.orgs_dict[key]:
+                    try:
+                        if key == 'Нулевые':
+                            result_dict[key][0] += self.itog_report_org1[serv][0]
+                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                        elif key == 'Дата':
+                            result_dict[key][0] = self.itog_report_org1[serv][0]
+                            result_dict[key][1] = self.itog_report_org1[serv][1]
+                        elif serv == 'Депозит':
+                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                        elif serv == 'Аквазона':
+                            result_dict['Кол-во проходов'] = [self.itog_report_org1[serv][0], 0]
+                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                        else:
+                            result_dict[key][0] += self.itog_report_org1[serv][0]
+                            result_dict[key][1] += self.itog_report_org1[serv][1]
+                    except KeyError:
+                        pass
+        result_dict['Online Продажи'] = list(self.report_bitrix)
+        # result_dict['ИТОГО'][1] -= result_dict['Депозит'][1]
+        return result_dict
 
     def run_report(self):
         """

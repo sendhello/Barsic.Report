@@ -95,6 +95,8 @@ class BarsicReport2(App):
         self.org_for_finreport = {}
         self.new_service = []
         self.orgs = []
+        self.new_agentservice = []
+        self.agentorgs = []
 
     def get_application_config(self):
         return super(BarsicReport2, self).get_application_config(
@@ -115,6 +117,7 @@ class BarsicReport2(App):
         config.setdefault('MSSQL', 'database2', 'database')
         config.setdefault('MSSQL', 'database_bitrix', 'database')
         config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
+        config.setdefault('PATH', 'agentXML', 'data/org_plat_agent.xml')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -129,6 +132,7 @@ class BarsicReport2(App):
         self.database2 = self.config.get('MSSQL', 'database2')
         self.database_bitrix = self.config.get('MSSQL', 'database_bitrix')
         self.reportXML = self.config.get('PATH', 'reportXML')
+        self.agentXML = self.config.get('PATH', 'agentXML')
 
     def build(self):
         self.set_value_from_config()
@@ -665,13 +669,13 @@ class BarsicReport2(App):
             summ += float(order[6])
         return len(orders), summ
 
-    def read_reportgroup(self):
+    def read_reportgroup(self, XML):
         """
         Чтение XML с привязкой групп услуг к услугам
         :param path:
         :return:
         """
-        with open(self.reportXML, encoding='utf-8') as f:
+        with open(XML, encoding='utf-8') as f:
             xml = f.read()
 
         root = objectify.fromstring(xml)
@@ -716,7 +720,7 @@ class BarsicReport2(App):
             service = self.new_service.pop()
             self.viev_orgs(service)
         else:
-            print(f'FIN = {self.fin_report()}')
+            self.agentservice()
 
     def viev_orgs(self, service):
         """
@@ -818,6 +822,140 @@ class BarsicReport2(App):
             pass
         self.distibution_service()
 
+    def agentservice(self):
+        self.agent_dict = self.read_reportgroup(self.agentXML)
+        self.find_new_agentservice(self.itog_report_org1, self.agent_dict)
+        self.distibution_agentservice()
+
+    def distibution_agentservice(self):
+        if self.new_agentservice:
+            service = self.new_agentservice.pop()
+            self.viev_agentorgs(service)
+        else:
+            print(f'Very Well!')
+
+    def find_new_agentservice(self, service_dict, orgs_dict):
+        """
+        Поиск новых услуг и организаций из XML
+        :param service_dict: Итоговый отчет
+        :param orgs_dict: словарь из XML-файла
+        :return:
+        """
+        servise_set = set()
+
+        for key in orgs_dict:
+            for s in orgs_dict[key]:
+                servise_set.add(s)
+
+        for org in service_dict:
+            if org not in servise_set and org not in self.new_agentservice:
+                self.new_agentservice.append(org)
+                servise_set.add(org)
+
+        for key in orgs_dict:
+            if key not in self.agentorgs:
+                self.agentorgs.append(key)
+
+    def viev_agentorgs(self, service):
+        """
+        Выводит всплывающий список организаций,
+        при клике на одну из которых услуга указанная в заголовке добавляется в нее
+        """
+        bs = MDListBottomSheet()
+        bs.add_item(f'К какой организации относится услуга "{service}"? (1 из {len(self.new_agentservice) + 1})',
+                    lambda x: x)
+        for i in range(len(self.agentorgs)):
+            if self.agentorgs[i] != 'ИТОГО' and self.agentorgs[i] != 'Депозит' and self.agentorgs[i] != 'Дата':
+                bs.add_item(self.agentorgs[i], lambda x: self.select_agentorg(service, x.text), icon='nfc')
+        bs.add_item(f'Добавить новую организацию...',
+                    lambda x: self.show_dialog_add_agentorg('Наименование организации', 'ООО Рога и Копыта', service))
+        bs.open()
+
+    def select_agentorg(self, service, org):
+        """
+        Добавляет услугу в список услуг и вызывает функцию распределения для других услуг
+        """
+        self.agent_dict[org] = service
+        #Запись новой услуги в XML
+        with open(self.agentXML, encoding='utf-8') as f:
+            xml = f.read()
+        root = objectify.fromstring(xml)
+        # Перечисляем существующие организации в файле и добавляем новые строчки
+        for x in root.UrFace:
+            if x.get('Name') == org:
+                Service = objectify.SubElement(x.Services, "Service")
+                Service.set("Name", service)
+        # удаляем аннотации.
+        objectify.deannotate(root)
+        etree.cleanup_namespaces(root)
+        obj_xml = etree.tostring(root, encoding='utf-8', pretty_print=True, xml_declaration=True)
+        # сохраняем данные в файл.
+        try:
+            with open(self.agentXML, "w", encoding='utf_8_sig') as xml_writer:
+                xml_writer.write(obj_xml.decode('utf-8'))
+        except IOError:
+            pass
+        self.distibution_agentservice()
+
+    def show_dialog_add_agentorg(self, title, text, service):
+        """
+        Выводит диалоговое окно с возможность ввода имени новой организыции и двумя кнопками
+        """
+        content = MDTextField(hint_text="Persistent helper text222",
+                              helper_text="Text is always here111",
+                              helper_text_mode="persistent",
+                              text=text,
+                              )
+        dialog = MDDialog(title=title,
+                          content=content,
+                          size_hint=(.8, None),
+                          height=dp(200),
+                          auto_dismiss=False)
+        dialog.add_action_button("Отмена", action=lambda *x: (dialog.dismiss(), self.readd_agentorg(service)))
+        dialog.add_action_button("Добавить",
+                                 action=lambda *x: (dialog.dismiss(), self.create_new_agentorg(dialog.content.text, service)))
+        dialog.open()
+
+    def create_new_agentorg(self, name, service):
+        """
+        Добавляет новую организацию в список организаций self.orgs, словарь self.orgs_dict и XML конфигурацию.
+        Возвращает изьятую ранее услугу в список новых услуг с помощью функции self.readd_org
+        """
+        self.agentorgs.append(name)
+        self.agent_dict[name] = []
+        self.readd_agentorg(service)
+        with open(self.agentXML, encoding='utf-8') as f:
+            xml = f.read()
+        root = objectify.fromstring(xml)
+        #Добавляем новые организации
+        new_org = objectify.SubElement(root, "UrFace")
+        new_org.set('Name', name)
+        new_servs = objectify.SubElement(new_org, 'Services')
+        new_serv = objectify.SubElement(new_servs, 'Service')
+        new_serv.set('Name', 'Пустая обязательная категория')
+        # удаляем аннотации.
+        objectify.deannotate(root)
+        etree.cleanup_namespaces(root)
+        obj_xml = etree.tostring(root,
+                                 encoding='utf-8',
+                                 pretty_print=True,
+                                 xml_declaration=True
+                                 )
+        # сохраняем данные в файл.
+        try:
+            with open(self.agentXML, "w", encoding='utf_8_sig') as xml_writer:
+                xml_writer.write(obj_xml.decode('utf-8'))
+        except IOError:
+            pass
+
+
+    def readd_agentorg(self, service):
+        """
+        Возвращает изьятую ранее услугу в список новых услуг, затем вызывает функцию распределения
+        """
+        self.new_agentservice.append(service)
+        self.distibution_agentservice()
+
     def fin_report(self):
         """
         Форминует финансовый отчет в установленном формате
@@ -898,7 +1036,7 @@ class BarsicReport2(App):
         )
 
         # Чтение XML с привязкой групп услуг к услугам
-        self.orgs_dict = self.read_reportgroup()
+        self.orgs_dict = self.read_reportgroup(self.reportXML)
 
         # Поиск новых услуг
         self.find_new_service(self.itog_report_org1, self.orgs_dict)

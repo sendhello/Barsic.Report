@@ -1027,7 +1027,7 @@ class BarsicReport2(App):
         self.fin_report()
         self.agent_report()
         self.export_fin_report()
-
+        self.export_agent_report()
 
     def connect_to_webdav(self):
         if self.use_webdav:
@@ -1118,6 +1118,89 @@ class BarsicReport2(App):
         ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
 
         path = self.local_folder + self.path_aquapark + 'Финансовый_отчет_' + date_ + ".xls"
+        path = self.create_path(path)
+        self.save_file(path, wb)
+
+    def export_agent_report(self):
+        font0 = xlwt.Font()
+        font0.name = 'Arial'
+        font0.colour_index = 0
+        font0.bold = True
+
+        style0 = xlwt.XFStyle()
+        style0.font = font0
+
+        style1 = xlwt.XFStyle()
+        style1.num_format_str = '0'
+        style1.borders.bottom = 1
+        style1.borders.left = 1
+        style1.borders.right = 1
+        style1.borders.top = 1
+
+        style2 = xlwt.XFStyle()
+        style2.num_format_str = '0.00'
+        style2.borders.bottom = 1
+        style2.borders.left = 1
+        style2.borders.right = 1
+        style2.borders.top = 1
+
+        style3 = xlwt.XFStyle()
+        style3.font = font0
+        style3.num_format_str = '0'
+        style3.borders.bottom = 1
+        style3.borders.left = 1
+        style3.borders.right = 1
+        style3.borders.top = 1
+
+        style4 = xlwt.XFStyle()
+        style4.font = font0
+        style4.num_format_str = '0.00'
+        style4.borders.bottom = 1
+        style4.borders.left = 1
+        style4.borders.right = 1
+        style4.borders.top = 1
+
+        wb = xlwt.Workbook()
+        ws = wb.add_sheet('Отчет платежного агента')
+        col_width = 200 * 20
+
+        try:
+            for i in itertools.count():
+                ws.col(i).width = col_width
+        except ValueError:
+            pass
+
+        first_col = ws.col(0)
+        first_col.width = 700 * 20
+        second_col = ws.col(1)
+        second_col.width = 300 * 20
+
+        default_book_style = wb.default_style
+        default_book_style.font.height = 20 * 44  # 36pt
+
+        if self.agentreport_dict['Дата'][0] + timedelta(1) == self.agentreport_dict["Дата"][1]:
+            date_ = datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")
+        else:
+            date_ = f'{datetime.strftime(report_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(report_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}'
+        head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА {date_}г.'
+        ws.write(0, 0, head, style0)
+        # ws.write(0, 1, date_, style1)
+        ws.write(2, 0, 'Наименование поставщика услуг', style3)
+        ws.write(2, 1, 'Сумма', style3)
+
+        i = 3
+        for key in self.agentreport_dict:
+            if key != 'Дата':
+                if key == 'ИТОГО':
+                    ws.write(i, 0, key, style3)
+                    ws.write(i, 1, self.agentreport_dict[key][1], style4)
+                    i += 1
+                else:
+                    ws.write(i, 0, key, style1)
+                    ws.write(i, 1, self.agentreport_dict[key][1], style2)
+                    i += 1
+
+        path = self.local_folder + self.path_aquapark + 'Отчет_платежного_агента_' + date_ + ".xls"
         path = self.create_path(path)
         self.save_file(path, wb)
 

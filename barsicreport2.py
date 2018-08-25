@@ -1023,29 +1023,11 @@ class BarsicReport2(App):
                         pass
 
     def save_reports(self):
-        self.connect_to_webdav()
         self.fin_report()
         self.agent_report()
         self.export_fin_report()
         self.export_agent_report()
-
-    def connect_to_webdav(self):
-        if self.use_webdav:
-            try:
-                options = {
-                    'user': self.webdav_login,
-                    'password': self.webdav_password,
-                }
-                self.webdav_client = yandexwebdav.Config(options)
-                logging.info(f'{str(datetime.now()):25}:    Соединение с Yandex.Disc - {self.webdav_login}...')
-                self.webdav_client.list('/')
-            except yandexwebdav.ConnectionException as e:
-                self.use_webdav = False
-                logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
-                self.show_dialog('Ошибка соединения с Yandex.Disc',
-                                 repr(e) + f'\nОтчеты будут сохранены в папке {self.local_folder},'
-                                           f' и не будут отправлены на Yandex.Disc.\n'
-                                           f'Для повторной попытки перезапустите приложение.')
+        self.sync_to_webdav()
 
     def export_fin_report(self):
         font0 = xlwt.Font()
@@ -1216,7 +1198,7 @@ class BarsicReport2(App):
         if list_path[-1][-4:] == '.xls' or list_path[-1]:
             end_path = list_path.pop()
         list_path.append(self.date_from.strftime('%Y'))
-        list_path.append(self.date_from.strftime('%m') + ' - ' + self.date_from.strftime('%B'))
+        list_path.append(self.date_from.strftime('%m') + '-' + self.date_from.strftime('%B'))
         directory = os.getcwd()
         for folder in list_path:
             if folder not in os.listdir():
@@ -1238,6 +1220,61 @@ class BarsicReport2(App):
             self.show_dialog(f'Ошибка записи файла',
                              f'Файл "{path}" занят другим процессом.\nДля повтора попытки закройте это сообщение',
                              func=self.save_file, path=path, file=file)
+
+    def sync_to_webdav(self):
+        if self.use_webdav:
+            try:
+                options = {
+                    'user': self.webdav_login,
+                    'password': self.webdav_password,
+                }
+                self.webdav_client = yandexwebdav.Config(options)
+                logging.info(f'{str(datetime.now()):25}:    Соединение с Yandex.Disc - {self.webdav_login}...')
+                self.webdav_client.list('/')
+            except yandexwebdav.ConnectionException as e:
+                self.use_webdav = False
+                logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+                self.show_dialog('Ошибка соединения с Yandex.Disc',
+                                 repr(e) + f'\nОтчеты будут сохранены в папке {self.local_folder},'
+                                           f' и не будут отправлены на Yandex.Disc.\n'
+                                           f'Для повторной попытки перезапустите приложение.')
+            else:
+############################################################################################################################################################
+                path = 'test/' + self.path_aquapark
+                self.create_path_webdav(path)
+
+    def create_path_webdav(self, path):
+        """
+        Проверяет наличие указанного пути. В случае отсутствия каких-либо папок создает их
+        :param path:
+        :return:
+        """
+        list_path = path.split('/')
+        path = ''
+        end_path = ''
+        if list_path[-1][-4:] == '.xls' or list_path[-1] == '':
+            end_path = list_path.pop()
+        list_path.append(self.date_from.strftime('%Y'))
+        list_path.append(self.date_from.strftime('%m') + '-' + self.date_from.strftime('%B'))
+        directory = '/'
+        list_path_yandex = []
+        for folder in list_path:
+            folder = directory + folder + '/'
+            directory = folder
+            list_path_yandex.append(folder)
+        directory = '/'
+        for folder in list_path_yandex:
+            folders_list = []
+            folders_list_yandex = list(self.webdav_client.list(directory))
+            for key in folders_list_yandex[0]:
+                folders_list.append(key)
+            if folder not in folders_list:
+                self.webdav_client.mkdir(folder)
+                directory = folder
+            else:
+                directory = folder
+        path = list_path_yandex[-1]
+        return path
 
     def run_report(self):
         """

@@ -295,7 +295,7 @@ class BarsicReport2(App):
         Clock.schedule_interval(check_interval_press, 1)
         toast(self.translation._('Press Back to Exit'))
 
-    def show_dialog(self, title, text):
+    def show_dialog(self, title, text, func=functions.func_pass, **kwargs):
         content = MDLabel(font_style='Body1',
                           theme_text_color='Secondary',
                           text=text,
@@ -308,7 +308,7 @@ class BarsicReport2(App):
                                height=dp(200),
                                auto_dismiss=False)
 
-        dialog.add_action_button("Закрыть", action=lambda *x: dialog.dismiss())
+        dialog.add_action_button("Закрыть", action=lambda *x: (dialog.dismiss(), func(**kwargs)))
         dialog.open()
 
     def on_lang(self, instance, lang):
@@ -1037,14 +1037,15 @@ class BarsicReport2(App):
                     'password': self.webdav_password,
                 }
                 self.webdav_client = yandexwebdav.Config(options)
-                print(self.webdav_client.list('/'))
-                print(self.webdav_client.list(self.path_aquapark))
+                logging.info(f'{str(datetime.now()):25}:    Соединение с Yandex.Disc - {self.webdav_login}...')
+                self.webdav_client.list('/')
             except yandexwebdav.ConnectionException as e:
                 self.use_webdav = False
                 logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
                 self.show_dialog('Ошибка соединения с Yandex.Disc',
-                                 repr(e) + f'\n\nОтчеты будут сохранены в папке {self.local_folder},'
-                                           f' и не будут отправлены на Yandex.Disc')
+                                 repr(e) + f'\nОтчеты будут сохранены в папке {self.local_folder},'
+                                           f' и не будут отправлены на Yandex.Disc.\n'
+                                           f'Для повторной попытки перезапустите приложение.')
 
     def export_fin_report(self):
         font0 = xlwt.Font()
@@ -1116,15 +1117,9 @@ class BarsicReport2(App):
         ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
         ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
 
-        path = self.local_folder     + self.path_aquapark + 'Отчет_платежного_агента_' + date_ + ".xls"
-        self.create_path(path)
-        while True:
-            try:
-                wb.save(path)
-            except PermissionError:
-                input(f'Закройте файл "{path}". \nДля повторной попытки нажмите Enter...')
-                continue
-            break
+        path = self.local_folder + self.path_aquapark + 'Финансовый_отчет_' + date_ + ".xls"
+        path = self.create_path(path)
+        self.save_file(path, wb)
 
     def create_path(self, path):
         """
@@ -1133,17 +1128,33 @@ class BarsicReport2(App):
         :return:
         """
         list_path = path.split('/')
-        if list_path[-1][-4:] == '.xls':
-            list_path.pop()
+        path = ''
+        end_path = ''
+        if list_path[-1][-4:] == '.xls' or list_path[-1]:
+            end_path = list_path.pop()
+        list_path.append(self.date_from.strftime('%Y'))
+        list_path.append(self.date_from.strftime('%m') + ' - ' + self.date_from.strftime('%B'))
         directory = os.getcwd()
         for folder in list_path:
             if folder not in os.listdir():
                 os.mkdir(folder)
-                logging.warning(f'{str(datetime.now()):25}:    В директории {os.getcwd()} создана папка {folder}')
+                logging.warning(f'{str(datetime.now()):25}:    В директории "{os.getcwd()}" создана папка "{folder}"')
                 os.chdir(folder)
             else:
                 os.chdir(folder)
+            path += folder + '/'
+        path += end_path
         os.chdir(directory)
+        return path
+
+    def save_file(self, path, file):
+        try:
+            file.save(path)
+        except PermissionError as e:
+            logging.error(f'{str(datetime.now()):25}:    Файл "{path}" занят другим процессом.\n{repr(e)}')
+            self.show_dialog(f'Ошибка записи файла',
+                             f'Файл "{path}" занят другим процессом.\nДля повтора попытки закройте это сообщение',
+                             func=self.save_file, path=path, file=file)
 
     def run_report(self):
         """

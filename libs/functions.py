@@ -97,3 +97,6 @@ def is_int(value):
         return True
     except ValueError:
         return False
+
+def func_pass():
+    pass

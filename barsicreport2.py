@@ -47,7 +47,7 @@ from kivymd.date_picker import MDDatePicker
 
 from toast import toast
 from dialogs import card
-import yandexwebdav
+import yadisk
 import xlwt
 import itertools
 
@@ -111,7 +111,7 @@ class BarsicReport2(App):
         config.setdefault('General', 'language', 'ru')
         config.adddefaultsection('MSSQL')
         config.adddefaultsection('PATH')
-        config.adddefaultsection('Yandex_Webdav')
+        config.adddefaultsection('Yadisk')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
         config.setdefault('MSSQL', 'user', 'sa')
@@ -124,9 +124,8 @@ class BarsicReport2(App):
         config.setdefault('PATH', 'local_folder', 'report')
         config.setdefault('PATH', 'path_aquapark', 'report')
         config.setdefault('PATH', 'path_beach', 'report')
-        config.setdefault('Yandex_Webdav', 'use_webdav', 'False')
-        config.setdefault('Yandex_Webdav', 'webdav_login', 'login')
-        config.setdefault('Yandex_Webdav', 'webdav_password', 'password')
+        config.setdefault('Yadisk', 'use_yadisk', 'False')
+        config.setdefault('Yadisk', 'yadisk_token', 'token')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -145,9 +144,8 @@ class BarsicReport2(App):
         self.local_folder = self.config.get('PATH', 'local_folder')
         self.path_aquapark = self.config.get('PATH', 'path_aquapark')
         self.path_beach = self.config.get('PATH', 'path_beach')
-        self.use_webdav = self.config.get('Yandex_Webdav', 'use_webdav')
-        self.webdav_login = self.config.get('Yandex_Webdav', 'webdav_login')
-        self.webdav_password = self.config.get('Yandex_Webdav', 'webdav_password')
+        self.use_yadisk = self.config.get('Yadisk', 'use_yadisk')
+        self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
 
     def build(self):
         self.set_value_from_config()
@@ -309,6 +307,23 @@ class BarsicReport2(App):
                                auto_dismiss=False)
 
         dialog.add_action_button("Закрыть", action=lambda *x: (dialog.dismiss(), func(**kwargs)))
+        dialog.open()
+
+    def show_dialog_variant(self, title, text, func=functions.func_pass, **kwargs):
+        content = MDLabel(font_style='Body1',
+                          theme_text_color='Secondary',
+                          text=text,
+                          size_hint_y=None,
+                          valign='top')
+        content.bind(texture_size=content.setter('size'))
+        dialog = MDDialog(title=title,
+                               content=content,
+                               size_hint=(.8, None),
+                               height=dp(200),
+                               auto_dismiss=False)
+
+        dialog.add_action_button("ДА", action=lambda *x: (dialog.dismiss(), func(**kwargs)))
+        dialog.add_action_button("Нет", action=lambda *x: (dialog.dismiss(), False))
         dialog.open()
 
     def on_lang(self, instance, lang):
@@ -1003,6 +1018,10 @@ class BarsicReport2(App):
         # self.finreport_dict['ИТОГО'][1] -= self.finreport_dict['Депозит'][1]
 
     def agent_report(self):
+        """
+        Форминует отчет платежного агента в установленном формате
+        :return - dict
+        """
         self.agentreport_dict = {}
         for key in self.agent_dict:
             if key != 'Не учитывать':
@@ -1023,13 +1042,20 @@ class BarsicReport2(App):
                         pass
 
     def save_reports(self):
+        """
+        Функция управления
+        """
         self.fin_report()
         self.agent_report()
-        self.export_fin_report()
-        self.export_agent_report()
-        self.sync_to_webdav()
+        fin_report_path = self.export_fin_report()
+        agent_report_path = self.export_agent_report()
+        self.sync_to_yadisk(fin_report_path, self.yadisk_token)
+        self.sync_to_yadisk(agent_report_path, self.yadisk_token)
 
     def export_fin_report(self):
+        """
+        Сохраняет Финансовый отчет в виде Excel-файла в локальную директорию
+        """
         font0 = xlwt.Font()
         font0.name = 'Arial'
         font0.colour_index = 0
@@ -1079,10 +1105,10 @@ class BarsicReport2(App):
         ws.write(0, 14, 'Online Продажи Средний чек', style0)
         ws.write(0, 15, 'Сумма безнал', style0)
         if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
-            date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")
+            date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")
         else:
-            date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
-                    f'{datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}'
+            date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
         ws.write(1, 0, date_, style1)
         ws.write(1, 1, self.finreport_dict['Кол-во проходов'][0], style1)
         ws.write(1, 2, self.finreport_dict['ИТОГО'][1], style2)
@@ -1099,11 +1125,15 @@ class BarsicReport2(App):
         ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
         ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
 
-        path = self.local_folder + self.path_aquapark + 'Финансовый_отчет_' + date_ + ".xls"
+        path = self.local_folder + self.path_aquapark + date_ + '_Финансовый_отчет' + ".xls"
         path = self.create_path(path)
         self.save_file(path, wb)
+        return path
 
     def export_agent_report(self):
+        """
+        Сохраняет отчет платежного агента в виде Excel-файла в локальную директорию
+        """
         font0 = xlwt.Font()
         font0.name = 'Arial'
         font0.colour_index = 0
@@ -1161,10 +1191,15 @@ class BarsicReport2(App):
         default_book_style.font.height = 20 * 44  # 36pt
 
         if self.agentreport_dict['Дата'][0] + timedelta(1) == self.agentreport_dict["Дата"][1]:
-            date_ = datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")
+            date_ = datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")
+            head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
+                   f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")}г.'
         else:
-            date_ = f'{datetime.strftime(report_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(report_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}'
-        head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА {date_}г.'
+            date_ = f'{datetime.strftime(agentreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(agentreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
+            head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
+                   f'{datetime.strftime(agentreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
+                   f'{datetime.strftime(agentreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}г.'
         ws.write(0, 0, head, style0)
         # ws.write(0, 1, date_, style1)
         ws.write(2, 0, 'Наименование поставщика услуг', style3)
@@ -1182,15 +1217,14 @@ class BarsicReport2(App):
                     ws.write(i, 1, self.agentreport_dict[key][1], style2)
                     i += 1
 
-        path = self.local_folder + self.path_aquapark + 'Отчет_платежного_агента_' + date_ + ".xls"
+        path = self.local_folder + self.path_aquapark + date_ + '_Отчет_платежного_агента' + ".xls"
         path = self.create_path(path)
         self.save_file(path, wb)
+        return path
 
     def create_path(self, path):
         """
         Проверяет наличие указанного пути. В случае отсутствия каких-либо папок создает их
-        :param path:
-        :return:
         """
         list_path = path.split('/')
         path = ''
@@ -1213,6 +1247,10 @@ class BarsicReport2(App):
         return path
 
     def save_file(self, path, file):
+        """
+        Проверяет не занят ли файл другим процессом и если нет, то перезаписывает его, в противном
+        случае выводит диалоговое окно с предложением закрыть файл и продолжить
+        """
         try:
             file.save(path)
         except PermissionError as e:
@@ -1221,31 +1259,52 @@ class BarsicReport2(App):
                              f'Файл "{path}" занят другим процессом.\nДля повтора попытки закройте это сообщение',
                              func=self.save_file, path=path, file=file)
 
-    def sync_to_webdav(self):
-        if self.use_webdav:
-            try:
-                options = {
-                    'user': self.webdav_login,
-                    'password': self.webdav_password,
-                }
-                self.webdav_client = yandexwebdav.Config(options)
-                logging.info(f'{str(datetime.now()):25}:    Соединение с Yandex.Disc - {self.webdav_login}...')
-                self.webdav_client.list('/')
-            except yandexwebdav.ConnectionException as e:
-                self.use_webdav = False
-                logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
-                self.show_dialog('Ошибка соединения с Yandex.Disc',
-                                 repr(e) + f'\nОтчеты будут сохранены в папке {self.local_folder},'
-                                           f' и не будут отправлены на Yandex.Disc.\n'
-                                           f'Для повторной попытки перезапустите приложение.')
-            else:
-############################################################################################################################################################
-                path = 'test/' + self.path_aquapark
-                self.create_path_webdav(path)
-
-    def create_path_webdav(self, path):
+    def sync_to_yadisk(self, local_path, token):
         """
-        Проверяет наличие указанного пути. В случае отсутствия каких-либо папок создает их
+        Копирует локальные файлы в Яндекс Диск
+        """
+        if self.use_yadisk:
+            logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
+            self.yadisk = yadisk.YaDisk(token=token)
+            if self.yadisk.check_token():
+                path = 'test/' + self.path_aquapark
+                remote_folder = self.create_path_yadisk(path)
+                remote_path = remote_folder + local_path.split('/')[-1]
+                logging.info(f'{str(datetime.now()):25}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
+                files_list_yandex = list(self.yadisk.listdir(remote_folder))
+                files_list = []
+                for key in files_list_yandex:
+                    if key['file']:
+                        files_list.append(remote_folder + key['name'])
+                if remote_path not in files_list:
+                    self.yadisk.upload(local_path, remote_path)
+                    logging.info(
+                        f'{str(datetime.now()):25}:    '
+                        f'Файл "{local_path.split("/")[-1]}" отправлен в "{remote_folder}" YaDisk...')
+                else:
+                    logging.warning(
+                        f'{str(datetime.now()):25}:    '
+                        f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"')
+                    def rewrite_file():
+                        self.yadisk.remove(remote_path, permanently=True)
+                        self.yadisk.upload(local_path, remote_path)
+                        logging.warning(
+                            f'{str(datetime.now()):25}:    '
+                            f'Файл "{local_path.split("/")[-1]}" успешно обновлен')
+                    self.show_dialog_variant('Файл уже существует',
+                                             f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"'
+                                             f'\nЗаменить?',
+                                             rewrite_file
+                                             )
+            else:
+                logging.error(f'{str(datetime.now()):25}:    Ошибка YaDisk: token не валиден')
+                self.show_dialog('Ошибка соединения с Yandex.Disc',
+                                 f'\nОтчеты сохранены в папке {self.local_folder} '
+                                 f'и не будут отправлены на Yandex.Disc.')
+
+    def create_path_yadisk(self, path):
+        """
+        Проверяет наличие указанного пути в Яндекс Диске. В случае отсутствия каких-либо папок создает их
         :param path:
         :return:
         """
@@ -1259,21 +1318,23 @@ class BarsicReport2(App):
         directory = '/'
         list_path_yandex = []
         for folder in list_path:
-            folder = directory + folder + '/'
-            directory = folder
+            folder = directory + folder
+            directory = folder + '/'
             list_path_yandex.append(folder)
         directory = '/'
         for folder in list_path_yandex:
             folders_list = []
-            folders_list_yandex = list(self.webdav_client.list(directory))
-            for key in folders_list_yandex[0]:
-                folders_list.append(key)
+            folders_list_yandex = list(self.yadisk.listdir(directory))
+            for key in folders_list_yandex:
+                if not key['file']:
+                    folders_list.append(directory + key['name'])
             if folder not in folders_list:
-                self.webdav_client.mkdir(folder)
-                directory = folder
+                self.yadisk.mkdir(folder)
+                logging.info(f'{str(datetime.now()):25}:    Создание новой папки в YandexDisk - "{folder}"')
+                directory = folder + '/'
             else:
-                directory = folder
-        path = list_path_yandex[-1]
+                directory = folder + '/'
+        path = list_path_yandex[-1] + '/'
         return path
 
     def run_report(self):

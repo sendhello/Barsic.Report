@@ -1281,7 +1281,7 @@ class BarsicReport2(App):
             logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
             self.yadisk = yadisk.YaDisk(token=token)
             if self.yadisk.check_token():
-                path = 'test/' + self.path_aquapark
+                path = '/' + self.path_aquapark
                 remote_folder = self.create_path_yadisk(path)
                 remote_path = remote_folder + local_path.split('/')[-1]
                 logging.info(f'{str(datetime.now()):25}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
@@ -1852,7 +1852,7 @@ class BarsicReport2(App):
             fin_report_path = self.export_fin_report()
             if self.use_yadisk:
                 self.sync_to_yadisk(fin_report_path, self.yadisk_token)
-        if self.agent_report():
+        if self.agentreport_xls:
             agent_report_path = self.export_agent_report()
             if self.use_yadisk:
                 self.sync_to_yadisk(agent_report_path, self.yadisk_token)

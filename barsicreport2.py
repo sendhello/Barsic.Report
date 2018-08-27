@@ -38,7 +38,7 @@ from libs.uix.baseclass.startscreen import StartScreen
 from libs.uix.lists import Lists
 from libs.utils.showplugins import ShowPlugins
 
-from libs import functions
+from libs import functions, to_google_sheets
 
 from kivymd.theming import ThemeManager
 from kivymd.label import MDLabel
@@ -50,6 +50,11 @@ from dialogs import card
 import yadisk
 import xlwt
 import itertools
+
+import webbrowser
+import httplib2
+import apiclient.discovery
+from oauth2client.service_account import ServiceAccountCredentials
 
 
 class BarsicReport2(App):
@@ -124,6 +129,7 @@ class BarsicReport2(App):
         config.setdefault('PATH', 'local_folder', 'report')
         config.setdefault('PATH', 'path_aquapark', 'report')
         config.setdefault('PATH', 'path_beach', 'report')
+        config.setdefault('PATH', 'CREDENTIALS_FILE', 'data/1720aecc5640.json')
         config.setdefault('Yadisk', 'use_yadisk', 'False')
         config.setdefault('Yadisk', 'yadisk_token', 'token')
 
@@ -144,6 +150,7 @@ class BarsicReport2(App):
         self.local_folder = self.config.get('PATH', 'local_folder')
         self.path_aquapark = self.config.get('PATH', 'path_aquapark')
         self.path_beach = self.config.get('PATH', 'path_beach')
+        self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
         self.use_yadisk = self.config.get('Yadisk', 'use_yadisk')
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
 
@@ -293,7 +300,7 @@ class BarsicReport2(App):
         Clock.schedule_interval(check_interval_press, 1)
         toast(self.translation._('Press Back to Exit'))
 
-    def show_dialog(self, title, text, func=functions.func_pass, **kwargs):
+    def show_dialog(self, title, text, func=functions.func_pass, *args, **kwargs):
         content = MDLabel(font_style='Body1',
                           theme_text_color='Secondary',
                           text=text,
@@ -306,10 +313,10 @@ class BarsicReport2(App):
                                height=dp(200),
                                auto_dismiss=False)
 
-        dialog.add_action_button("Закрыть", action=lambda *x: (dialog.dismiss(), func(**kwargs)))
+        dialog.add_action_button("Закрыть", action=lambda *x: (dialog.dismiss(), func(*args, **kwargs)))
         dialog.open()
 
-    def show_dialog_variant(self, title, text, func=functions.func_pass, **kwargs):
+    def show_dialog_variant(self, title, text, func=functions.func_pass, *args, **kwargs):
         content = MDLabel(font_style='Body1',
                           theme_text_color='Secondary',
                           text=text,
@@ -322,7 +329,7 @@ class BarsicReport2(App):
                                height=dp(200),
                                auto_dismiss=False)
 
-        dialog.add_action_button("ДА", action=lambda *x: (dialog.dismiss(), func(**kwargs)))
+        dialog.add_action_button("ДА", action=lambda *x: (dialog.dismiss(), func(*args, **kwargs)))
         dialog.add_action_button("Нет", action=lambda *x: (dialog.dismiss(), False))
         dialog.open()
 
@@ -1051,6 +1058,8 @@ class BarsicReport2(App):
         agent_report_path = self.export_agent_report()
         self.sync_to_yadisk(fin_report_path, self.yadisk_token)
         self.sync_to_yadisk(agent_report_path, self.yadisk_token)
+        self.export_to_google_sheet()
+        self.open_googlesheet()
 
     def export_fin_report(self):
         """
@@ -1336,6 +1345,459 @@ class BarsicReport2(App):
                 directory = folder + '/'
         path = list_path_yandex[-1] + '/'
         return path
+
+    def export_to_google_sheet(self):
+        """
+        Формирование и заполнение google-таблицы
+        """
+
+        #self.CREDENTIALS_FILE # имя файла с закрытым ключом
+
+        self.sheet_width = 17
+        height = 35
+
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,
+                                                                       ['https://www.googleapis.com/auth/spreadsheets',
+                                                                        'https://www.googleapis.com/auth/drive'])
+        httpAuth = credentials.authorize(httplib2.Http())
+        self.googleservice = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+
+        data_report = datetime.strftime(self.finreport_dict['Дата'][0], '%m')
+        month = [
+            '',
+            'Январь',
+            'Ферраль',
+            'Март',
+            'Апрель',
+            'Май',
+            'Июнь',
+            'Июль',
+            'Август',
+            'Сентябрь',
+            'Октябрь',
+            'Ноябрь',
+            'Декабрь',
+        ]
+        data_report = month[int(data_report)]
+
+        doc_name = f"Итоговый отчет по Аквапарку - {data_report} {datetime.strftime(self.finreport_dict['Дата'][0], '%Y')}"
+
+        if self.finreport_dict['Дата'][0] + timedelta(1) != self.finreport_dict['Дата'][1]:
+            logging.info(f'{str(datetime.now()):25}:    Экспорт отчета в Google Sheet за несколько дней невозможен!')
+            self.show_dialog('Ошибка экспорта в Google.Sheet', 'Экспорт отчета в Google Sheet за несколько дней невозможен!')
+        else:
+            with open("data/links_of_reports.txt", 'r', encoding='utf-8') as f:
+                links = f.read()
+                links = links.split("\n")
+
+                in_links = False
+                for line in links:
+                    if line[:7] == datetime.strftime(self.finreport_dict['Дата'][0], '%m.%Y'):
+                        in_links = True
+
+            if in_links:
+                pass
+
+            else:
+                # Создание документа
+                self.spreadsheet = self.googleservice.spreadsheets().create(body={
+                    'properties': {'title': doc_name, 'locale': 'ru_RU'},
+                    'sheets': [{'properties': {'sheetType': 'GRID',
+                                               'sheetId': 0,
+                                               'title': 'Сводный',
+                                               'gridProperties': {'rowCount': height, 'columnCount': self.sheet_width}}},
+                               {'properties': {'sheetType': 'GRID',
+                                               'sheetId': 1,
+                                               'title': 'Расширенный',
+                                               'gridProperties': {'rowCount': height, 'columnCount': 100}}}
+                               ]
+                }).execute()
+
+                # Доступы к документу
+                driveService = apiclient.discovery.build('drive', 'v3', http=httpAuth)
+                shareRes = driveService.permissions().create(
+                    fileId=self.spreadsheet['spreadsheetId'],
+                    body={'type': 'anyone', 'role': 'reader'},  # доступ на чтение кому угодно
+                    fields='id'
+                ).execute()
+                # Возможные значения writer, commenter, reader
+                # доступ на Запись определенным пользователоям
+                shareRes = driveService.permissions().create(
+                    fileId=self.spreadsheet['spreadsheetId'],
+                    body={'type': 'user', 'role': 'writer', 'emailAddress': 'bazhenov.in@gmail.com'},
+                    fields='id'
+                ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'writer', 'emailAddress': 'it@imperial-hotel.org'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'writer', 'emailAddress': 'nilova@imperial-hotel.org'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'aquaulet73@yandex.ru'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'popov@imperial-hotel.org'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'ulkdmsport@gmail.com'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'mkt123@list.ru'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'reader', 'emailAddress': '1306ya@mail.ru'},
+                #     fields='id'
+                # ).execute()
+                # shareRes = driveService.permissions().create(
+                #     fileId=self.spreadsheet['spreadsheetId'],
+                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'alexei_region73@mail.ru'},
+                #     fields='id'
+                # ).execute()
+
+                sheetId = 0
+
+                # Ширина столбцов
+                ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
+                                                  self.spreadsheet['sheets'][sheetId]['properties']['title'])
+                ss.prepare_setColumnWidth(0, 100)
+                ss.prepare_setColumnWidth(1, 120)
+                ss.prepare_setColumnsWidth(2, 3, 120)
+                ss.prepare_setColumnWidth(4, 65)
+                ss.prepare_setColumnWidth(5, 120)
+                ss.prepare_setColumnWidth(6, 100)
+                ss.prepare_setColumnWidth(7, 65)
+                ss.prepare_setColumnWidth(8, 120)
+                ss.prepare_setColumnWidth(9, 100)
+                ss.prepare_setColumnWidth(10, 65)
+                ss.prepare_setColumnWidth(11, 120)
+                ss.prepare_setColumnWidth(12, 65)
+                ss.prepare_setColumnWidth(13, 120)
+                ss.prepare_setColumnWidth(14, 100)
+                ss.prepare_setColumnWidth(15, 120)
+                ss.prepare_setColumnWidth(16, 120)
+
+                # Объединение ячеек
+                ss.prepare_mergeCells("A1:A2")
+                ss.prepare_mergeCells("B1:B2")
+                ss.prepare_mergeCells("C1:C2")
+                ss.prepare_mergeCells("D1:D2")
+                ss.prepare_mergeCells("E1:G1")
+                ss.prepare_mergeCells("H1:J1")
+                ss.prepare_mergeCells("K1:L1")
+                ss.prepare_mergeCells("M1:O1")
+                ss.prepare_mergeCells("P1:P2")
+                ss.prepare_mergeCells("Q1:Q2")
+
+                # Задание параметров группе ячеек
+                # Жирный, по центру
+                ss.prepare_setCellsFormat('A1:Q2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
+                #                           fields='userEnteredFormat.numberFormat')
+
+                # Заполнение таблицы
+                ss.prepare_setValues("A1:Q2", [["Дата", "Кол-во проходов", "Общая сумма", "Сумма KPI", "Билеты", "",
+                                                "", "Общепит", "", "", "Прочее", "", "Online Продажи", "", "",
+                                                "Сумма безнал", "Сумма Biglion"],
+                                               ["", "", "", "", "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма",
+                                                "Средний чек", "Кол-во", "Сумма", "Кол-во", "Сумма", "Средний чек", "",
+                                                ""]],
+                                     "ROWS")
+                # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
+
+                # Цвет фона ячеек
+                ss.prepare_setCellsFormat("A1:Q2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                                          fields="userEnteredFormat.backgroundColor")
+
+                # Бордер
+                for i in range(2):
+                    for j in range(self.sheet_width):
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "right": {"style": "SOLID", "width": 1,
+                                      "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+
+                ss.runPrepared()
+
+                links.append(f"{datetime.strftime(self.finreport_dict['Дата'][0], '%m.%Y')} {self.spreadsheet['spreadsheetId']}")
+
+                with open("data/links_of_reports.txt", 'w', encoding='utf-8') as f:
+                    f.write("\n".join(links))
+                logging.info(
+                    f'{str(datetime.now()):25}:    Создана новая таблица с Id: {self.spreadsheet["spreadsheetId"]}')
+
+            self.spreadsheet = self.googleservice.spreadsheets().get(spreadsheetId=links[-1][8:], ranges=[],
+                                                     includeGridData=True).execute()
+
+            # -------------------------------- ЗАПОЛНЕНИЕ ДАННЫМИ ------------------------------------------------
+
+            # Печать таблицы в консоль
+            # s = ''
+            # for line_table in spreadsheet['sheets'][0]['data'][0]['rowData']:
+            #     for cell in line_table['values']:
+            #         try:
+            #             s += cell['formattedValue'] + " | "
+            #         except KeyError:
+            #             pass
+            #     print(s)
+            #     s = ''
+
+            # Проверка нет ли текущей даты в таблице
+            self.nex_line = 1
+            self.reprint = -1
+
+            for line_table in self.spreadsheet['sheets'][0]['data'][0]['rowData']:
+                try:
+                    if line_table['values'][0]['formattedValue'] == datetime.strftime(self.finreport_dict['Дата'][0],
+                                                                                      '%d.%m.%Y'):
+                        self.show_dialog_variant(f'Перезаписать эту строку?',
+                                                 f'Строка за {datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} уже существует в таблице!',
+                                                 self.rewrite_google_sheet,
+                                                 )
+                        break
+                    elif line_table['values'][0]['formattedValue'] == "ИТОГО":
+                        self.write_google_sheet()
+                        break
+                    else:
+                        self.nex_line += 1
+                except KeyError:
+                    self.nex_line += 1
+
+            # width_table = len(self.spreadsheet['sheets'][0]['data'][0]['rowData'][0]['values'])
+
+    def rewrite_google_sheet(self):
+        """
+        Заполнение google-таблицы в случае, если данные уже существуют
+        """
+        self.reprint = 1
+        self.write_google_sheet()
+
+    def write_google_sheet(self):
+        """
+        Заполнение google-таблицы
+        """
+        sheetId = 0
+        ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
+                                          self.spreadsheet['sheets'][sheetId]['properties']['title'])
+
+        # Заполнение строки с данными
+        ss.prepare_setValues(f"A{self.nex_line}:Q{self.nex_line}",
+                             [[datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
+                               f"{self.finreport_dict['Кол-во проходов'][0]}",
+                               self.finreport_dict['ИТОГО'][1],
+                               f"=C{self.nex_line}-L{self.nex_line}+N{self.nex_line}+P{self.nex_line}+Q{self.nex_line}",
+                               self.finreport_dict['Билеты аквапарка'][0],
+                               self.finreport_dict['Билеты аквапарка'][1],
+                               f"=IFERROR(F{self.nex_line}/E{self.nex_line};0)",
+                               self.finreport_dict['Общепит'][0],
+                               self.finreport_dict['Общепит'][1],
+                               f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
+                               self.finreport_dict['Прочее'][0],
+                               self.finreport_dict['Прочее'][1],
+                               self.finreport_dict['Online Продажи'][0],
+                               self.finreport_dict['Online Продажи'][1],
+                               f"=IFERROR(N{self.nex_line}/M{self.nex_line};0)",
+                               0,
+                               0,
+                               ]],
+                             "ROWS")
+
+        # Задание форматы вывода строки
+        ss.prepare_setCellsFormats(f"A{self.nex_line}:Q{self.nex_line}", [[{'numberFormat': {'type': 'DATE',
+                                                                                   'pattern': 'dd.mm.yyyy'}},
+                                                                 {'numberFormat': {}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}},
+                                                                 {'numberFormat': {'type': 'CURRENCY',
+                                                                                   'pattern': '#,##0.00[$ ₽]'}}]])
+
+        # Цвет фона ячеек
+        if self.nex_line % 2 != 0:
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:Q{self.nex_line}",
+                                      {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
+                                      fields="userEnteredFormat.backgroundColor")
+
+        # Бордер
+        for j in range(self.sheet_width):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+
+        ss.runPrepared()
+
+        # ------------------------------------------- Заполнение ИТОГО --------------------------------------
+
+        # Вычисление последней строки в таблице
+        for i, line_table in enumerate(self.spreadsheet['sheets'][0]['data'][0]['rowData']):
+            try:
+                if line_table['values'][0]['formattedValue'] == "ИТОГО":
+                    # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
+                    if self.reprint == 1:
+                        height_table = i + 1
+                    if self.reprint == -1:
+                        height_table = i + 2
+                    break
+                else:
+                    height_table = 4
+            except KeyError:
+                pass
+
+        #
+        ss.prepare_setValues(f"A{height_table}:Q{height_table}",
+                             [[f'ИТОГО',
+                               f"=SUM(B3:B{height_table - 1})",
+                               f"=SUM(C3:C{height_table - 1})",
+                               f"=SUM(D3:D{height_table - 1})",
+                               f"=SUM(E3:E{height_table - 1})",
+                               f"=SUM(F3:F{height_table - 1})",
+                               f"=SUM(G3:G{height_table - 1})",
+                               f"=SUM(H3:H{height_table - 1})",
+                               f"=SUM(I3:i{height_table - 1})",
+                               f"=SUM(J3:J{height_table - 1})",
+                               f"=SUM(K3:K{height_table - 1})",
+                               f"=SUM(L3:L{height_table - 1})",
+                               f"=SUM(M3:M{height_table - 1})",
+                               f"=SUM(N3:N{height_table - 1})",
+                               f"=SUM(O3:O{height_table - 1})",
+                               f"=SUM(P3:P{height_table - 1})",
+                               f"=SUM(Q3:Q{height_table - 1})",
+                               ]],
+                             "ROWS")
+
+        # Задание форматы вывода строки
+        ss.prepare_setCellsFormats(f"A{height_table}:Q{height_table}", [[{'numberFormat': {}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}}]])
+
+        ss.prepare_setCellsFormat(f"A{height_table}:Q{height_table}",
+                                  {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}})
+
+        # Цвет фона ячеек
+        ss.prepare_setCellsFormat(f"A{height_table}:Q{height_table}",
+                                  {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                  fields="userEnteredFormat.backgroundColor")
+
+        # Бордер
+        for j in range(self.sheet_width):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+
+        ss.runPrepared()
+
+    def open_googlesheet(self):
+        self.show_dialog_variant(f'Открыть Google-отчет?',
+                                 'Открыть Google-отчет?',
+                                 webbrowser.open,
+                                 self.spreadsheet['spreadsheetUrl']
+                                 )
 
     def run_report(self):
         """

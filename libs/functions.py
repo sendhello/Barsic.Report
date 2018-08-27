@@ -100,3 +100,9 @@ def is_int(value):
 
 def func_pass():
     pass
+
+def htmlColorToJSON(htmlColor):
+    if htmlColor.startswith("#"):
+        htmlColor = htmlColor[1:]
+    return {"red": int(htmlColor[0:2], 16) / 255.0, "green": int(htmlColor[2:4], 16) / 255.0,
+            "blue": int(htmlColor[4:6], 16) / 255.0}

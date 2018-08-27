@@ -125,12 +125,12 @@
                     size_hint: 0.8, None
                     size: 0, dp(48)
                     MDCheckbox:
-                        id: 4444
+                        id: finreport_xls
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
                         active: True
-                        on_release: app.click_date_switch()
+                        on_release: app.off_checkbox(finreport_xls)
                     MDLabel:
                         font_style: 'Headline'
                         theme_text_color: 'Primary'
@@ -143,7 +143,7 @@
                     size_hint: 0.8, None
                     size: 0, dp(48)
                     MDCheckbox:
-                        id: 3333
+                        id: agentreport_xls
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
@@ -156,12 +156,28 @@
                         size: 0, dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
                         text: 'Отчет по платежным агентам (Excel)'
-
                 BoxLayout:
                     size_hint: 0.8, None
                     size: 0, dp(48)
                     MDCheckbox:
-                        id: 2222
+                        id: use_yadisk
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
+                        on_release: app.click_date_switch()
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Использовать Yandex.Disk'
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: finreport_google
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
@@ -179,7 +195,7 @@
                     size_hint: 0.8, None
                     size: 0, dp(48)
                     MDCheckbox:
-                        id: 1111
+                        id: finreport_telegram
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}

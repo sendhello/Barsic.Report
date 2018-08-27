@@ -115,10 +115,11 @@ class BarsicReport2(App):
 
         config.adddefaultsection('General')
         config.setdefault('General', 'language', 'ru')
+        config.setdefault('General', 'finreport_xls', 'False')
+        config.setdefault('General', 'finreport_google', 'False')
+        config.setdefault('General', 'finreport_telegram', 'False')
+        config.setdefault('General', 'agentreport_xls', 'False')
         config.adddefaultsection('MSSQL')
-        config.adddefaultsection('PATH')
-        config.adddefaultsection('Yadisk')
-        config.adddefaultsection('Telegram')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
         config.setdefault('MSSQL', 'user', 'sa')
@@ -126,14 +127,17 @@ class BarsicReport2(App):
         config.setdefault('MSSQL', 'database1', 'database')
         config.setdefault('MSSQL', 'database2', 'database')
         config.setdefault('MSSQL', 'database_bitrix', 'database')
+        config.adddefaultsection('PATH')
         config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
         config.setdefault('PATH', 'agentXML', 'data/org_plat_agent.xml')
         config.setdefault('PATH', 'local_folder', 'report')
         config.setdefault('PATH', 'path_aquapark', 'report')
         config.setdefault('PATH', 'path_beach', 'report')
         config.setdefault('PATH', 'CREDENTIALS_FILE', 'data/1720aecc5640.json')
+        config.adddefaultsection('Yadisk')
         config.setdefault('Yadisk', 'use_yadisk', 'False')
         config.setdefault('Yadisk', 'yadisk_token', 'token')
+        config.adddefaultsection('Telegram')
         config.setdefault('Telegram', 'telegram_token', '111111111:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         config.setdefault('Telegram', 'telegram_chanel_id', '111111111111')
         config.setdefault('Telegram', 'telegram_proxy', 'http://10.10.10.10:80')
@@ -144,6 +148,10 @@ class BarsicReport2(App):
 
         self.config.read(os.path.join(self.directory, 'barsicreport2.ini'))
         self.lang = self.config.get('General', 'language')
+        self.finreport_xls = bool(self.config.get('General', 'finreport_xls'))
+        self.finreport_google = bool(self.config.get('General', 'finreport_google'))
+        self.finreport_telegram = bool(self.config.get('General', 'finreport_telegram'))
+        self.agentreport_xls = bool(self.config.get('General', 'agentreport_xls'))
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
         self.user = self.config.get('MSSQL', 'user')
@@ -157,7 +165,7 @@ class BarsicReport2(App):
         self.path_aquapark = self.config.get('PATH', 'path_aquapark')
         self.path_beach = self.config.get('PATH', 'path_beach')
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
-        self.use_yadisk = self.config.get('Yadisk', 'use_yadisk')
+        self.use_yadisk = bool(self.config.get('Yadisk', 'use_yadisk'))
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
@@ -1058,20 +1066,6 @@ class BarsicReport2(App):
                     except KeyError:
                         pass
 
-    def save_reports(self):
-        """
-        Функция управления
-        """
-        self.fin_report()
-        self.agent_report()
-        fin_report_path = self.export_fin_report()
-        agent_report_path = self.export_agent_report()
-        self.sync_to_yadisk(fin_report_path, self.yadisk_token)
-        self.sync_to_yadisk(agent_report_path, self.yadisk_token)
-        self.export_to_google_sheet()
-        self.open_googlesheet()
-        self.send_message_to_telegram()
-
     def export_fin_report(self):
         """
         Сохраняет Финансовый отчет в виде Excel-файла в локальную директорию
@@ -1839,6 +1833,34 @@ class BarsicReport2(App):
         SetProxy = telepot.api.set_proxy(self.telegram_proxy, basic_auth=self.telegram_basic_auth)
         bot = telepot.Bot(self.telegram_token)
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
+
+    def off_checkbox(self, id):
+        # self.root.ids.report.ids.finreport_xls.active = False
+        # self.config.set('General', 'finreport_xls', 'False')
+        # self.finreport_google = bool(self.config.get('General', 'finreport_google'))
+        # self.finreport_telegram = bool(self.config.get('General', 'finreport_telegram'))
+        # self.agentreport_xls = bool(self.config.get('General', 'agentreport_xls'))
+        pass
+
+    def save_reports(self):
+        """
+        Функция управления
+        """
+        self.fin_report()
+        self.agent_report()
+        if self.finreport_xls:
+            fin_report_path = self.export_fin_report()
+            if self.use_yadisk:
+                self.sync_to_yadisk(fin_report_path, self.yadisk_token)
+        if self.agent_report():
+            agent_report_path = self.export_agent_report()
+            if self.use_yadisk:
+                self.sync_to_yadisk(agent_report_path, self.yadisk_token)
+        if self.finreport_google:
+            self.export_to_google_sheet()
+            self.open_googlesheet()
+        if self.finreport_telegram:
+            self.send_message_to_telegram()
 
     def run_report(self):
         """

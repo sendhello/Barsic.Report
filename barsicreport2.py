@@ -55,6 +55,7 @@ import webbrowser
 import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
+import telepot
 
 
 class BarsicReport2(App):
@@ -117,6 +118,7 @@ class BarsicReport2(App):
         config.adddefaultsection('MSSQL')
         config.adddefaultsection('PATH')
         config.adddefaultsection('Yadisk')
+        config.adddefaultsection('Telegram')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
         config.setdefault('MSSQL', 'user', 'sa')
@@ -132,6 +134,10 @@ class BarsicReport2(App):
         config.setdefault('PATH', 'CREDENTIALS_FILE', 'data/1720aecc5640.json')
         config.setdefault('Yadisk', 'use_yadisk', 'False')
         config.setdefault('Yadisk', 'yadisk_token', 'token')
+        config.setdefault('Telegram', 'telegram_token', '111111111:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+        config.setdefault('Telegram', 'telegram_chanel_id', '111111111111')
+        config.setdefault('Telegram', 'telegram_proxy', 'http://10.10.10.10:80')
+        config.setdefault('Telegram', 'telegram_basic_auth', '("login", "password")')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -153,6 +159,10 @@ class BarsicReport2(App):
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
         self.use_yadisk = self.config.get('Yadisk', 'use_yadisk')
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
+        self.telegram_token = self.config.get('Telegram', 'telegram_token')
+        self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
+        self.telegram_proxy = self.config.get('Telegram', 'telegram_proxy')
+        self.telegram_basic_auth = self.config.get('Telegram', 'telegram_basic_auth')
 
     def build(self):
         self.set_value_from_config()
@@ -1060,6 +1070,7 @@ class BarsicReport2(App):
         self.sync_to_yadisk(agent_report_path, self.yadisk_token)
         self.export_to_google_sheet()
         self.open_googlesheet()
+        self.send_message_to_telegram()
 
     def export_fin_report(self):
         """
@@ -1798,6 +1809,36 @@ class BarsicReport2(App):
                                  webbrowser.open,
                                  self.spreadsheet['spreadsheetUrl']
                                  )
+
+    def sms_report(self):
+        resporse = 'Отчет по аквапарку за '
+        if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
+            resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
+        else:
+            resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(aqua_report["Дата"][1], "%d.%m.%Y")}:\n'
+        if self.finreport_dict['ИТОГО'][1]:
+            resporse += f'Люди - {self.finreport_dict["Кол-во проходов"][0]};\n'
+            resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1]:.2f} ₽;\n'
+            resporse += f'По общепиту - {self.finreport_dict["Общепит"][1]:.2f} ₽;\n'
+            resporse += f'Термозона - {self.finreport_dict["Термозона"][1]:.2f} ₽;\n'
+            resporse += f'Прочее - {self.finreport_dict["Прочее"][1]:.2f} ₽;\n'
+            resporse += f'Общая по БАРСу - {self.finreport_dict["ИТОГО"][1]:.2f} ₽;\n'
+            resporse += f'ONLINE продажи - {self.finreport_dict["Online Продажи"][1]:.2f} ₽;\n'
+        if self.itog_report_org2['Итого по отчету'][1]:
+            # resporse += 'Отчет по пляжу за '
+            # if beach_report['Дата'][0] + timedelta(1) == beach_report['Дата'][1]:
+            #     resporse += f'{datetime.strftime(beach_report["Дата"][0], "%d.%m.%Y")}:\n'
+            # else:
+            #     resporse += f'{datetime.strftime(beach_report["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(beach_report["Дата"][0], "%d.%m.%Y")}:\n'
+            resporse += f'Люди (пляж) - {self.itog_report_org2["Летняя зона | БЕЗЛИМИТ | 1 проход"][0]};\n'
+            resporse += f'Итого по пляжу - {self.itog_report_org2["Итого по отчету"][1]:.2f} ₽;\n'
+        resporse += f'Без ЧП.'
+        return resporse
+
+    def send_message_to_telegram(self):
+        SetProxy = telepot.api.set_proxy(self.telegram_proxy, basic_auth=self.telegram_basic_auth)
+        bot = telepot.Bot(self.telegram_token)
+        bot.sendMessage(self.telegram_chanel_id, self.sms_report())
 
     def run_report(self):
         """

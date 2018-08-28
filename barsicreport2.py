@@ -581,6 +581,7 @@ class BarsicReport2(App):
         )
         self.org1 = (org_list1[0][0], org_list1[0][2])
         self.org2 = (org_list2[0][0], org_list2[0][2])
+        logging.info(f'{str(datetime.now()):25}:    Выбраны организации {org_list1[0][2]} и {org_list2[0][2]}')
 
     def list_organisation(self,
                           server,
@@ -597,6 +598,7 @@ class BarsicReport2(App):
         :param pwd: str - Пароль пользователя базы данных, например 'pass'
         :return: list = Список организаций, каджая из которых - кортеж с параметрами организации
         """
+        logging.info(f'{str(datetime.now()):25}:    Поиск организаций...')
         result = []
         try:
             logging.info(f'{str(datetime.now()):25}:    Попытка соединения с {server}')
@@ -699,6 +701,7 @@ class BarsicReport2(App):
         :param date_to:  str - Конец отчетного периода в формате: 'YYYYMMDD 00:00:00'
         :return: list = Список организаций, каджая из которых - кортеж с параметрами организации
         """
+        logging.info(f'{str(datetime.now()):25}:    Чтение online-продаж...')
         date_from = (date_from - timedelta(1)).strftime("%Y%m%d") + " 19:00:00"
         date_to = (date_to - timedelta(1)).strftime("%Y%m%d") + " 19:00:00"
 
@@ -818,6 +821,8 @@ class BarsicReport2(App):
         Добавляет новую организацию в список организаций self.orgs, словарь self.orgs_dict и XML конфигурацию.
         Возвращает изьятую ранее услугу в список новых услуг с помощью функции self.readd_org
         """
+        logging.info(f'{str(datetime.now()):25}:    Добавление новой группы - {name}')
+        logging.info(f'{str(datetime.now()):25}:    Добавление услуги {service} в группу {name}')
         self.orgs.append(name)
         self.orgs_dict[name] = []
         self.readd_org(service)
@@ -858,6 +863,7 @@ class BarsicReport2(App):
         """
         Добавляет услугу в список услуг и вызывает функцию распределения для других услуг
         """
+        logging.info(f'{str(datetime.now()):25}:    Добавление услуги {service} в группу {org}')
         self.orgs_dict[org] = service
         #Запись новой услуги в XML
         with open(self.reportXML, encoding='utf-8') as f:
@@ -1019,6 +1025,7 @@ class BarsicReport2(App):
         Форминует финансовый отчет в установленном формате
         :return - dict
         """
+        logging.info(f'{str(datetime.now()):25}:    Формирование финансового отчета')
         self.finreport_dict = {}
         for key in self.orgs_dict:
             if key != 'Не учитывать':
@@ -1049,6 +1056,7 @@ class BarsicReport2(App):
         Форминует отчет платежного агента в установленном формате
         :return - dict
         """
+        logging.info(f'{str(datetime.now()):25}:    Формирование отчета платежного агента')
         self.agentreport_dict = {}
         for key in self.agent_dict:
             if key != 'Не учитывать':
@@ -1140,8 +1148,8 @@ class BarsicReport2(App):
         ws.write(1, 12, self.finreport_dict['Online Продажи'][0], style1)
         ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
         ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
-
         path = self.local_folder + self.path_aquapark + date_ + '_Финансовый_отчет' + ".xls"
+        logging.info(f'{str(datetime.now()):25}:    Сохранение финансового отчета в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -1234,6 +1242,7 @@ class BarsicReport2(App):
                     i += 1
 
         path = self.local_folder + self.path_aquapark + date_ + '_Отчет_платежного_агента' + ".xls"
+        logging.info(f'{str(datetime.now()):25}:    Сохранение отчета платежного агента в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -1242,6 +1251,7 @@ class BarsicReport2(App):
         """
         Проверяет наличие указанного пути. В случае отсутствия каких-либо папок создает их
         """
+        logging.info(f'{str(datetime.now()):25}:    Проверка локальных путей сохранения файлов...')
         list_path = path.split('/')
         path = ''
         end_path = ''
@@ -1279,6 +1289,7 @@ class BarsicReport2(App):
         """
         Копирует локальные файлы в Яндекс Диск
         """
+        logging.info(f'{str(datetime.now()):25}:    Копирование отчета {local_path} в Яндекс.Диск...')
         if self.use_yadisk:
             logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
             self.yadisk = yadisk.YaDisk(token=token)
@@ -1324,6 +1335,7 @@ class BarsicReport2(App):
         :param path:
         :return:
         """
+        logging.info(f'{str(datetime.now()):25}:    Проверка путей сохранения файлов на Яндекс.Диске...')
         list_path = path.split('/')
         path = ''
         end_path = ''
@@ -1357,6 +1369,7 @@ class BarsicReport2(App):
         """
         Формирование и заполнение google-таблицы
         """
+        logging.info(f'{str(datetime.now()):25}:    Сохранение Финансового отчета в Google-таблицах...')
 
         #self.CREDENTIALS_FILE # имя файла с закрытым ключом
 
@@ -1604,6 +1617,7 @@ class BarsicReport2(App):
         """
         Заполнение google-таблицы в случае, если данные уже существуют
         """
+        logging.warning(f'{str(datetime.now()):25}:    Перезапись уже существующей строки...')
         self.reprint = 1
         self.write_google_sheet()
 
@@ -1808,6 +1822,7 @@ class BarsicReport2(App):
         """
         Открывает брацзев с текущей гугл-таблицей
         """
+        logging.info(f'{str(datetime.now()):25}:    Открытие файла-отчета в браузере...')
         self.show_dialog_variant(f'Открыть Google-отчет?',
                                  'Открыть Google-отчет?',
                                  webbrowser.open,
@@ -1819,6 +1834,7 @@ class BarsicReport2(App):
         Составляет текстовую версию финансового отчета
         :return: str
         """
+        logging.info(f'{str(datetime.now()):25}:    Составление SMS-отчета...')
         resporse = 'Отчет по аквапарку за '
         if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
@@ -1847,6 +1863,7 @@ class BarsicReport2(App):
         """
         Отправка отчета в telegram
         """
+        logging.info(f'{str(datetime.now()):25}:    Отправка SMS-отчета в Telegram-канал...')
         SetProxy = telepot.api.set_proxy(self.telegram_proxy, basic_auth=self.telegram_basic_auth)
         bot = telepot.Bot(self.telegram_token)
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
@@ -1855,6 +1872,7 @@ class BarsicReport2(App):
         """
         Установка чекбоксов в соответствии с настройками INI-файла
         """
+        logging.info(f'{str(datetime.now()):25}:    Загрузка настроек...')
         self.root.ids.report.ids.finreport_xls.active = self.finreport_xls
         self.root.ids.report.ids.agentreport_xls.active = self.agentreport_xls
         self.root.ids.report.ids.use_yadisk.active = self.use_yadisk
@@ -1870,16 +1888,8 @@ class BarsicReport2(App):
         self.config.set('General', name, str(checkbox))
         setattr(self, name, checkbox)
         self.config.write()
+        logging.info(f'{str(datetime.now()):25}:    Параметр {name} изменен на значение {checkbox}')
 
-        # self.config.set('General', 'finreport_xls', 'False')
-        # self.finreport_google = bool(self.config.get('General', 'finreport_google'))
-        # self.finreport_telegram = bool(self.config.get('General', 'finreport_telegram'))
-        # self.agentreport_xls = bool(self.config.get('General', 'agentreport_xls'))
-        #
-        #
-        # self.finreport_google = to_bool(self.config.get('General', 'finreport_google'))
-        # self.finreport_telegram = to_bool(self.config.get('General', 'finreport_telegram'))
-        # self.agentreport_xls = to_bool(self.config.get('General', 'agentreport_xls'))
 
     def save_reports(self):
         """

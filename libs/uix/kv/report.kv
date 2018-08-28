@@ -125,12 +125,32 @@
                     size_hint: 0.8, None
                     size: 0, dp(48)
                     MDCheckbox:
-                        id: finreport_xls
+                        id: split_by_days
+                        name: "split_by_days"
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
                         active: True
-                        on_release: app.off_checkbox(finreport_xls)
+                        on_release: app.change_checkbox(split_by_days.name, split_by_days.active)
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Разбивать период по дням'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: finreport_xls
+                        name: "finreport_xls"
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        active: True
+                        on_release: app.change_checkbox(finreport_xls.name, finreport_xls.active)
                     MDLabel:
                         font_style: 'Headline'
                         theme_text_color: 'Primary'
@@ -144,11 +164,12 @@
                     size: 0, dp(48)
                     MDCheckbox:
                         id: agentreport_xls
+                        name: "agentreport_xls"
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
                         active: True
-                        on_release: app.click_date_switch()
+                        on_release: app.change_checkbox(agentreport_xls.name, agentreport_xls.active)
                     MDLabel:
                         font_style: 'Headline'
                         theme_text_color: 'Primary'
@@ -161,11 +182,12 @@
                     size: 0, dp(48)
                     MDCheckbox:
                         id: use_yadisk
+                        name: "use_yadisk"
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
                         active: True
-                        on_release: app.click_date_switch()
+                        on_release: app.change_checkbox(use_yadisk.name, use_yadisk.active)
                     MDLabel:
                         font_style: 'Headline'
                         theme_text_color: 'Primary'
@@ -178,11 +200,12 @@
                     size: 0, dp(48)
                     MDCheckbox:
                         id: finreport_google
+                        name: "finreport_google"
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
                         active: True
-                        on_release: app.click_date_switch()
+                        on_release: app.change_checkbox(finreport_google.name, finreport_google.active)
                     MDLabel:
                         font_style: 'Headline'
                         theme_text_color: 'Primary'
@@ -196,11 +219,12 @@
                     size: 0, dp(48)
                     MDCheckbox:
                         id: finreport_telegram
+                        name: "finreport_telegram"
                         size_hint: None, None
                         size: dp(48), dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.47}
                         active: True
-                        on_release: app.click_date_switch()
+                        on_release: app.change_checkbox(finreport_telegram.name, finreport_telegram.active)
                     MDLabel:
                         font_style: 'Headline'
                         theme_text_color: 'Primary'

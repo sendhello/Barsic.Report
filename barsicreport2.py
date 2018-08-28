@@ -111,14 +111,14 @@ class BarsicReport2(App):
             '{}/%(appname)s.ini'.format(self.directory))
 
     def build_config(self, config):
-        '''Создаёт файл настроек приложения barsicreport2.ini.'''
-
+        """Создаёт файл настроек приложения barsicreport2.ini."""
         config.adddefaultsection('General')
         config.setdefault('General', 'language', 'ru')
         config.setdefault('General', 'finreport_xls', 'False')
         config.setdefault('General', 'finreport_google', 'False')
         config.setdefault('General', 'finreport_telegram', 'False')
         config.setdefault('General', 'agentreport_xls', 'False')
+        config.setdefault('General', 'split_by_days', 'False')
         config.adddefaultsection('MSSQL')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
@@ -145,13 +145,13 @@ class BarsicReport2(App):
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
-
         self.config.read(os.path.join(self.directory, 'barsicreport2.ini'))
         self.lang = self.config.get('General', 'language')
-        self.finreport_xls = self.config.get('General', 'finreport_xls')
-        self.finreport_google = self.config.get('General', 'finreport_google')
-        self.finreport_telegram = self.config.get('General', 'finreport_telegram')
-        self.agentreport_xls = self.config.get('General', 'agentreport_xls')
+        self.finreport_xls = functions.to_bool(self.config.get('General', 'finreport_xls'))
+        self.finreport_google = functions.to_bool(self.config.get('General', 'finreport_google'))
+        self.finreport_telegram = functions.to_bool(self.config.get('General', 'finreport_telegram'))
+        self.agentreport_xls = functions.to_bool(self.config.get('General', 'agentreport_xls'))
+        self.split_by_days = functions.to_bool(self.config.get('General', 'split_by_days'))
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
         self.user = self.config.get('MSSQL', 'user')
@@ -165,7 +165,7 @@ class BarsicReport2(App):
         self.path_aquapark = self.config.get('PATH', 'path_aquapark')
         self.path_beach = self.config.get('PATH', 'path_beach')
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
-        self.use_yadisk = self.config.get('Yadisk', 'use_yadisk')
+        self.use_yadisk = functions.to_bool(self.config.get('Yadisk', 'use_yadisk'))
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
@@ -252,6 +252,8 @@ class BarsicReport2(App):
         self.manager.current = 'report'
         self.screen.ids.action_bar.left_action_items = \
             [['chevron-left', lambda x: self.back_screen(27)]]
+        # Загрузка параметров из INI-файла
+        self.load_checkbox()
 
     def show_license(self, *args):
         """
@@ -1803,6 +1805,9 @@ class BarsicReport2(App):
         ss.runPrepared()
 
     def open_googlesheet(self):
+        """
+        Открывает брацзев с текущей гугл-таблицей
+        """
         self.show_dialog_variant(f'Открыть Google-отчет?',
                                  'Открыть Google-отчет?',
                                  webbrowser.open,
@@ -1810,6 +1815,10 @@ class BarsicReport2(App):
                                  )
 
     def sms_report(self):
+        """
+        Составляет текстовую версию финансового отчета
+        :return: str
+        """
         resporse = 'Отчет по аквапарку за '
         if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
@@ -1835,17 +1844,42 @@ class BarsicReport2(App):
         return resporse
 
     def send_message_to_telegram(self):
+        """
+        Отправка отчета в telegram
+        """
         SetProxy = telepot.api.set_proxy(self.telegram_proxy, basic_auth=self.telegram_basic_auth)
         bot = telepot.Bot(self.telegram_token)
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
 
-    def off_checkbox(self, id):
-        # self.root.ids.report.ids.finreport_xls.active = False
+    def load_checkbox(self):
+        """
+        Установка чекбоксов в соответствии с настройками INI-файла
+        """
+        self.root.ids.report.ids.finreport_xls.active = self.finreport_xls
+        self.root.ids.report.ids.agentreport_xls.active = self.agentreport_xls
+        self.root.ids.report.ids.use_yadisk.active = self.use_yadisk
+        self.root.ids.report.ids.finreport_google.active = self.finreport_google
+        self.root.ids.report.ids.finreport_telegram.active = self.finreport_telegram
+
+    def change_checkbox(self, name, checkbox):
+        """
+        Изменяет состояние элемента конфигурации и записывает в INI-файл
+        :param name: Имя чекбокса
+        :param checkbox: Состояние active чекбокса
+        """
+        self.config.set('General', name, str(checkbox))
+        setattr(self, name, checkbox)
+        self.config.write()
+
         # self.config.set('General', 'finreport_xls', 'False')
         # self.finreport_google = bool(self.config.get('General', 'finreport_google'))
         # self.finreport_telegram = bool(self.config.get('General', 'finreport_telegram'))
         # self.agentreport_xls = bool(self.config.get('General', 'agentreport_xls'))
-        pass
+        #
+        #
+        # self.finreport_google = to_bool(self.config.get('General', 'finreport_google'))
+        # self.finreport_telegram = to_bool(self.config.get('General', 'finreport_telegram'))
+        # self.agentreport_xls = to_bool(self.config.get('General', 'agentreport_xls'))
 
     def save_reports(self):
         """
@@ -1853,24 +1887,23 @@ class BarsicReport2(App):
         """
         self.fin_report()
         self.agent_report()
-        if self.finreport_xls == 'True':
+        if self.finreport_xls:
             fin_report_path = self.export_fin_report()
-            if self.use_yadisk == 'True':
+            if self.use_yadisk:
                 self.sync_to_yadisk(fin_report_path, self.yadisk_token)
-        if self.agentreport_xls == 'True':
+        if self.agentreport_xls:
             agent_report_path = self.export_agent_report()
-            if self.use_yadisk == 'True':
+            if self.use_yadisk:
                 self.sync_to_yadisk(agent_report_path, self.yadisk_token)
-        if self.finreport_google == 'True':
+        if self.finreport_google:
             self.export_to_google_sheet()
             self.open_googlesheet()
-        if self.finreport_telegram == 'True':
+        if self.finreport_telegram:
             self.send_message_to_telegram()
 
     def run_report(self):
         """
         Выполнить отчеты
-        :return:
         """
         self.itog_report_org1 = None
         self.itog_report_org2 = None

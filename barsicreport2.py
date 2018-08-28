@@ -148,10 +148,10 @@ class BarsicReport2(App):
 
         self.config.read(os.path.join(self.directory, 'barsicreport2.ini'))
         self.lang = self.config.get('General', 'language')
-        self.finreport_xls = bool(self.config.get('General', 'finreport_xls'))
-        self.finreport_google = bool(self.config.get('General', 'finreport_google'))
-        self.finreport_telegram = bool(self.config.get('General', 'finreport_telegram'))
-        self.agentreport_xls = bool(self.config.get('General', 'agentreport_xls'))
+        self.finreport_xls = self.config.get('General', 'finreport_xls')
+        self.finreport_google = self.config.get('General', 'finreport_google')
+        self.finreport_telegram = self.config.get('General', 'finreport_telegram')
+        self.agentreport_xls = self.config.get('General', 'agentreport_xls')
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
         self.user = self.config.get('MSSQL', 'user')
@@ -165,7 +165,7 @@ class BarsicReport2(App):
         self.path_aquapark = self.config.get('PATH', 'path_aquapark')
         self.path_beach = self.config.get('PATH', 'path_beach')
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
-        self.use_yadisk = bool(self.config.get('Yadisk', 'use_yadisk'))
+        self.use_yadisk = self.config.get('Yadisk', 'use_yadisk')
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
@@ -1281,7 +1281,7 @@ class BarsicReport2(App):
             logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
             self.yadisk = yadisk.YaDisk(token=token)
             if self.yadisk.check_token():
-                path = '/' + self.path_aquapark
+                path = '' + self.path_aquapark
                 remote_folder = self.create_path_yadisk(path)
                 remote_path = remote_folder + local_path.split('/')[-1]
                 logging.info(f'{str(datetime.now()):25}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
@@ -1541,6 +1541,12 @@ class BarsicReport2(App):
                                       "endColumnIndex": j + 1},
                             "right": {"style": "SOLID", "width": 1,
                                       "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "left": {"style": "SOLID", "width": 1,
+                                      "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
 
                 ss.runPrepared()
 
@@ -1569,7 +1575,7 @@ class BarsicReport2(App):
 
             # Проверка нет ли текущей даты в таблице
             self.nex_line = 1
-            self.reprint = -1
+            self.reprint = 2
 
             for line_table in self.spreadsheet['sheets'][0]['data'][0]['rowData']:
                 try:
@@ -1579,14 +1585,16 @@ class BarsicReport2(App):
                                                  f'Строка за {datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} уже существует в таблице!',
                                                  self.rewrite_google_sheet,
                                                  )
+                        self.reprint = 0
                         break
                     elif line_table['values'][0]['formattedValue'] == "ИТОГО":
-                        self.write_google_sheet()
                         break
                     else:
                         self.nex_line += 1
                 except KeyError:
                     self.nex_line += 1
+            if self.reprint:
+                self.write_google_sheet()
 
             # width_table = len(self.spreadsheet['sheets'][0]['data'][0]['rowData'][0]['values'])
 
@@ -1699,10 +1707,7 @@ class BarsicReport2(App):
             try:
                 if line_table['values'][0]['formattedValue'] == "ИТОГО":
                     # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
-                    if self.reprint == 1:
-                        height_table = i + 1
-                    if self.reprint == -1:
-                        height_table = i + 2
+                    height_table = i + self.reprint
                     break
                 else:
                     height_table = 4
@@ -1848,18 +1853,18 @@ class BarsicReport2(App):
         """
         self.fin_report()
         self.agent_report()
-        if self.finreport_xls:
+        if self.finreport_xls == 'True':
             fin_report_path = self.export_fin_report()
-            if self.use_yadisk:
+            if self.use_yadisk == 'True':
                 self.sync_to_yadisk(fin_report_path, self.yadisk_token)
-        if self.agentreport_xls:
+        if self.agentreport_xls == 'True':
             agent_report_path = self.export_agent_report()
-            if self.use_yadisk:
+            if self.use_yadisk == 'True':
                 self.sync_to_yadisk(agent_report_path, self.yadisk_token)
-        if self.finreport_google:
+        if self.finreport_google == 'True':
             self.export_to_google_sheet()
             self.open_googlesheet()
-        if self.finreport_telegram:
+        if self.finreport_telegram == 'True':
             self.send_message_to_telegram()
 
     def run_report(self):

@@ -14,7 +14,7 @@ import os
 import sys
 from ast import literal_eval
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pyodbc
 from decimal import Decimal
 from lxml import etree, objectify
@@ -119,6 +119,7 @@ class BarsicReport2(App):
         config.setdefault('General', 'finreport_telegram', 'False')
         config.setdefault('General', 'agentreport_xls', 'False')
         config.setdefault('General', 'split_by_days', 'False')
+        config.setdefault('General', 'date_switch', 'True')
         config.adddefaultsection('MSSQL')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
@@ -151,7 +152,9 @@ class BarsicReport2(App):
         self.finreport_google = functions.to_bool(self.config.get('General', 'finreport_google'))
         self.finreport_telegram = functions.to_bool(self.config.get('General', 'finreport_telegram'))
         self.agentreport_xls = functions.to_bool(self.config.get('General', 'agentreport_xls'))
-        self.split_by_days = functions.to_bool(self.config.get('General', 'split_by_days'))
+        # self.split_by_days = functions.to_bool(self.config.get('General', 'split_by_days'))
+        self.split_by_days = False
+        self.date_switch = functions.to_bool(self.config.get('General', 'date_switch'))
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
         self.user = self.config.get('MSSQL', 'user')
@@ -254,6 +257,7 @@ class BarsicReport2(App):
             [['chevron-left', lambda x: self.back_screen(27)]]
         # Загрузка параметров из INI-файла
         self.load_checkbox()
+        self.set_date_from(datetime.now().date())
 
     def show_license(self, *args):
         """
@@ -353,6 +357,23 @@ class BarsicReport2(App):
         dialog.add_action_button("Нет", action=lambda *x: (dialog.dismiss(), False))
         dialog.open()
 
+    def show_dialog_variant2(self, title, text, func_yes=functions.func_pass, func_no=functions.func_pass):
+        content = MDLabel(font_style='Body1',
+                          theme_text_color='Secondary',
+                          text=text,
+                          size_hint_y=None,
+                          valign='top')
+        content.bind(texture_size=content.setter('size'))
+        dialog = MDDialog(title=title,
+                               content=content,
+                               size_hint=(.8, None),
+                               height=dp(200),
+                               auto_dismiss=False)
+
+        dialog.add_action_button("ДА", action=lambda *x: (dialog.dismiss(), func_yes))
+        dialog.add_action_button("Нет", action=lambda *x: (dialog.dismiss(), func_no))
+        dialog.open()
+
     def on_lang(self, instance, lang):
         self.translation.switch_lang(lang)
 
@@ -375,7 +396,7 @@ class BarsicReport2(App):
         self.date_from = datetime.strptime(str(date_obj), '%Y-%m-%d')
         self.root.ids.report.ids.date_from.text = str(date_obj)
         if self.date_to <= self.date_from or self.root.ids.report.ids.date_switch.active:
-            self.root.ids.report.ids.date_to.text = self.show_next_day()
+            self.set_date_to(date_obj + timedelta(1))
         logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 
     def show_date_from(self):
@@ -391,41 +412,38 @@ class BarsicReport2(App):
         self.date_to = datetime.strptime(str(date_obj), '%Y-%m-%d')
         self.root.ids.report.ids.date_to.text = str(date_obj)
         if self.date_to <= self.date_from:
-            self.root.ids.report.ids.date_from.text = self.show_pre_day()
+            self.set_date_from(date_obj - timedelta(1))
         logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 
     def show_date_to(self):
-        pd = self.previous_date_to
-        try:
-            MDDatePicker(self.set_date_to,
-                         pd.year, pd.month, pd.day).open()
-        except AttributeError:
-            MDDatePicker(self.set_date_to).open()
+        if self.root.ids.report.ids.date_switch.active:
+            pass
+        else:
+            pd = self.previous_date_to
+            try:
+                MDDatePicker(self.set_date_to,
+                             pd.year, pd.month, pd.day).open()
+            except AttributeError:
+                MDDatePicker(self.set_date_to).open()
 
     def click_date_switch(self):
         if self.root.ids.report.ids.date_switch.active:
+            self.date_switch = True
             self.root.ids.report.ids.label_date.text = 'Дата:'
-            self.root.ids.report.ids.date_to.text = self.show_next_day()
+            self.set_date_to(self.date_from.date() + timedelta(1))
+            self.root.ids.report.ids.date_to.theme_text_color = 'Secondary'
+            self.root.ids.report.ids.split_by_days.active = False
+            self.root.ids.report.ids.split_by_days.disabled = True
+            self.root.ids.report.ids.split_by_days_text.theme_text_color = 'Secondary'
+            self.change_checkbox('split_by_days', False)
         else:
+            self.date_switch = False
             self.root.ids.report.ids.label_date.text = 'Период:'
-
-    def show_today(self):
-        return self.date_from.strftime("%Y-%m-%d")
-
-    def show_next_day(self):
-        try:
-            self.date_to = datetime.strptime(self.root.ids.report.ids.date_from.text, "%Y-%m-%d") + timedelta(1)
-        except AttributeError:
-            self.date_to = datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d') + timedelta(1)
-        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
-        return self.date_to.strftime("%Y-%m-%d")
-
-    def show_pre_day(self):
-        try:
-            self.date_from = datetime.strptime(self.root.ids.report.ids.date_to.text, "%Y-%m-%d") - timedelta(1)
-        except AttributeError:
-            self.date_from = datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
-        return self.date_from.strftime("%Y-%m-%d")
+            self.root.ids.report.ids.date_to.theme_text_color = 'Primary'
+            self.root.ids.report.ids.split_by_days.disabled = False
+            self.root.ids.report.ids.split_by_days.active = True
+            self.root.ids.report.ids.split_by_days_text.theme_text_color = 'Primary'
+            self.change_checkbox('split_by_days', True)
 
     def count_clients(
             self,
@@ -1318,7 +1336,10 @@ class BarsicReport2(App):
                         logging.warning(
                             f'{str(datetime.now()):25}:    '
                             f'Файл "{local_path.split("/")[-1]}" успешно обновлен')
-                    self.show_dialog_variant('Файл уже существует',
+                    if self.root.ids.report.ids.split_by_days.active:
+                        rewrite_file()
+                    else:
+                        self.show_dialog_variant('Файл уже существует',
                                              f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"'
                                              f'\nЗаменить?',
                                              rewrite_file
@@ -1596,10 +1617,14 @@ class BarsicReport2(App):
                 try:
                     if line_table['values'][0]['formattedValue'] == datetime.strftime(self.finreport_dict['Дата'][0],
                                                                                       '%d.%m.%Y'):
-                        self.show_dialog_variant(f'Перезаписать эту строку?',
-                                                 f'Строка за {datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} уже существует в таблице!',
-                                                 self.rewrite_google_sheet,
-                                                 )
+                        if self.root.ids.report.ids.split_by_days.active:
+                            self.rewrite_google_sheet()
+                        else:
+                            self.show_dialog_variant(f'Перезаписать эту строку? Строка за '
+                                                     f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} '
+                                                     f'уже существует в таблице!',
+                                                     self.rewrite_google_sheet,
+                                                     )
                         self.reprint = 0
                         break
                     elif line_table['values'][0]['formattedValue'] == "ИТОГО":
@@ -1822,12 +1847,14 @@ class BarsicReport2(App):
         """
         Открывает брацзев с текущей гугл-таблицей
         """
-        logging.info(f'{str(datetime.now()):25}:    Открытие файла-отчета в браузере...')
-        self.show_dialog_variant(f'Открыть Google-отчет?',
-                                 'Открыть Google-отчет?',
-                                 webbrowser.open,
-                                 self.spreadsheet['spreadsheetUrl']
-                                 )
+        if not self.open_browser:
+            logging.info(f'{str(datetime.now()):25}:    Открытие файла-отчета в браузере...')
+            self.show_dialog_variant(f'Открыть Google-отчет?',
+                                     'Открыть Google-отчет?',
+                                     webbrowser.open,
+                                     self.spreadsheet['spreadsheetUrl']
+                                     )
+            self.open_browser = True
 
     def sms_report(self):
         """
@@ -1873,6 +1900,7 @@ class BarsicReport2(App):
         Установка чекбоксов в соответствии с настройками INI-файла
         """
         logging.info(f'{str(datetime.now()):25}:    Загрузка настроек...')
+        self.root.ids.report.ids.split_by_days.active = self.split_by_days
         self.root.ids.report.ids.finreport_xls.active = self.finreport_xls
         self.root.ids.report.ids.agentreport_xls.active = self.agentreport_xls
         self.root.ids.report.ids.use_yadisk.active = self.use_yadisk
@@ -1911,7 +1939,7 @@ class BarsicReport2(App):
         if self.finreport_telegram:
             self.send_message_to_telegram()
 
-    def run_report(self):
+    def load_report(self):
         """
         Выполнить отчеты
         """
@@ -1957,14 +1985,34 @@ class BarsicReport2(App):
             date_from=self.date_from,
             date_to=self.date_to,
         )
-
         # Чтение XML с привязкой групп услуг к услугам
         self.orgs_dict = self.read_reportgroup(self.reportXML)
-
         # Поиск новых услуг
         self.find_new_service(self.itog_report_org1, self.orgs_dict)
         self.distibution_service()
 
+    def run_report(self):
+        self.open_browser = False
+
+        if self.date_switch:
+            self.load_report()
+            pass
+        else:
+            if self.split_by_days:
+                period = []
+                while True:
+                    period.append(self.date_from)
+                    if self.date_from + timedelta(1) == self.date_to:
+                        break
+                    else:
+                        self.date_from = self.date_from + timedelta(1)
+                for date in period:
+                    self.date_from = date
+                    self.date_to = date + timedelta(1)
+                    self.load_report()
+                self.date_from = datetime.strptime(self.root.ids.report.ids.date_from.text, "%Y-%m-%d")
+            else:
+                self.load_report()
 
 if __name__ == '__main__':
     pass

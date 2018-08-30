@@ -519,15 +519,34 @@ class BarsicReport2(App):
         return result
 
     def count_clients_print(self):
-        count_clients = self.count_clients(
+        in_zone = self.count_clients(
             driver=self.driver,
             server=self.server,
             database=self.database1,
             uid=self.user,
             pwd=self.pwd,
         )
-        self.screen.ids.base.ids.name_zone.text = str(count_clients[len(count_clients) - 1][2])
-        self.screen.ids.base.ids.count.text = str(count_clients[len(count_clients) - 1][0])
+        self.click_select_org()
+        try:
+            count_clients = int(self.itog_report(
+                    server=self.server,
+                    database=self.database1,
+                    driver=self.driver,
+                    user=self.user,
+                    pwd=self.pwd,
+                    org=self.org1[0],
+                    date_from=datetime.now(),
+                    date_to=datetime.now()+timedelta(1),
+                    hide_zeroes='0',
+                    hide_internal='1',
+                )['Аквазона'][0])
+        except KeyError:
+            count_clients = 0
+
+        self.screen.ids.base.ids.count_clients.text = str(count_clients)
+        self.screen.ids.base.ids.name_zone.text = str(in_zone[len(in_zone) - 1][2])
+        self.screen.ids.base.ids.count.text = str(in_zone[len(in_zone) - 1][0])
+
 
     # -------------------------------Кнопки вывода списка организаций для выбора----------------------------------------
 

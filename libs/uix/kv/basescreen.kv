@@ -19,7 +19,6 @@
 
         Screen:
             name: 'count_clients'
-
             MDLabel:
                 id: name_zone
                 font_style: 'Headline'
@@ -29,7 +28,6 @@
                 size_hint_y: None
                 pos_hint: {'center_x': 0.5, 'center_y': 0.85}
                 height: self.texture_size[1] + dp(4)
-
             MDLabel:
                 id: count
                 font_style: 'Display3'
@@ -38,6 +36,25 @@
                 halign: 'center'
                 size_hint_y: None
                 pos_hint: {'center_x': 0.5, 'center_y': 0.75}
+                height: self.texture_size[1] + dp(4)
+
+            MDLabel:
+                id: clients_name
+                font_style: 'Headline'
+                theme_text_color: 'Secondary'
+                text: 'Всего посетило / Всего клиентов'
+                halign: 'center'
+                size_hint_y: None
+                pos_hint: {'center_x': 0.5, 'center_y': 0.45}
+                height: self.texture_size[1] + dp(4)
+            MDLabel:
+                id: count_clients
+                font_style: 'Display2'
+                theme_text_color: 'Primary'
+                text: 'Нет данных'
+                halign: 'center'
+                size_hint_y: None
+                pos_hint: {'center_x': 0.5, 'center_y': 0.35}
                 height: self.texture_size[1] + dp(4)
 
             MDRaisedButton:

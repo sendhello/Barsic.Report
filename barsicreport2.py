@@ -18,6 +18,7 @@ from datetime import datetime, timedelta, date
 import pyodbc
 from decimal import Decimal
 from lxml import etree, objectify
+import csv
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -120,6 +121,7 @@ class BarsicReport2(App):
         config.setdefault('General', 'agentreport_xls', 'False')
         config.setdefault('General', 'split_by_days', 'False')
         config.setdefault('General', 'date_switch', 'True')
+        config.setdefault('General', 'use_yadisk', 'False')
         config.adddefaultsection('MSSQL')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
@@ -135,8 +137,8 @@ class BarsicReport2(App):
         config.setdefault('PATH', 'path_aquapark', 'report')
         config.setdefault('PATH', 'path_beach', 'report')
         config.setdefault('PATH', 'CREDENTIALS_FILE', 'data/1720aecc5640.json')
+        config.setdefault('PATH', 'list_google_docs', 'data/list_google_docs.csv')
         config.adddefaultsection('Yadisk')
-        config.setdefault('Yadisk', 'use_yadisk', 'False')
         config.setdefault('Yadisk', 'yadisk_token', 'token')
         config.adddefaultsection('Telegram')
         config.setdefault('Telegram', 'telegram_token', '111111111:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
@@ -155,6 +157,7 @@ class BarsicReport2(App):
         # self.split_by_days = functions.to_bool(self.config.get('General', 'split_by_days'))
         self.split_by_days = False
         self.date_switch = functions.to_bool(self.config.get('General', 'date_switch'))
+        self.use_yadisk = functions.to_bool(self.config.get('General', 'use_yadisk'))
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
         self.user = self.config.get('MSSQL', 'user')
@@ -168,7 +171,7 @@ class BarsicReport2(App):
         self.path_aquapark = self.config.get('PATH', 'path_aquapark')
         self.path_beach = self.config.get('PATH', 'path_beach')
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
-        self.use_yadisk = functions.to_bool(self.config.get('Yadisk', 'use_yadisk'))
+        self.list_google_docs = self.config.get('PATH', 'list_google_docs')
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
@@ -1045,9 +1048,10 @@ class BarsicReport2(App):
         """
         logging.info(f'{str(datetime.now()):25}:    Формирование финансового отчета')
         self.finreport_dict = {}
+        is_aquazona = None
         for key in self.orgs_dict:
             if key != 'Не учитывать':
-                self.finreport_dict[key] = [0.00, 0.00]
+                self.finreport_dict[key] = [0, 0.00]
                 for serv in self.orgs_dict[key]:
                     try:
                         if key == 'Нулевые':
@@ -1061,12 +1065,17 @@ class BarsicReport2(App):
                         elif serv == 'Аквазона':
                             self.finreport_dict['Кол-во проходов'] = [self.itog_report_org1[serv][0], 0]
                             self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
+                            is_aquazona = True
                         else:
                             self.finreport_dict[key][0] += self.itog_report_org1[serv][0]
                             self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
                     except KeyError:
                         pass
-                self.finreport_dict['Online Продажи'] = list(self.report_bitrix)
+                    except TypeError:
+                        pass
+        if not is_aquazona:
+            self.finreport_dict['Кол-во проходов'] = [0, 0.00]
+        self.finreport_dict['Online Продажи'] = list(self.report_bitrix)
         # self.finreport_dict['ИТОГО'][1] -= self.finreport_dict['Депозит'][1]
 
     def agent_report(self):
@@ -1092,6 +1101,8 @@ class BarsicReport2(App):
                             self.agentreport_dict[key][0] += self.itog_report_org1[serv][0]
                             self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
                     except KeyError:
+                        pass
+                    except TypeError:
                         pass
 
     def export_fin_report(self):
@@ -1427,19 +1438,15 @@ class BarsicReport2(App):
             logging.info(f'{str(datetime.now()):25}:    Экспорт отчета в Google Sheet за несколько дней невозможен!')
             self.show_dialog('Ошибка экспорта в Google.Sheet', 'Экспорт отчета в Google Sheet за несколько дней невозможен!')
         else:
-            with open("data/links_of_reports.txt", 'r', encoding='utf-8') as f:
-                links = f.read()
-                links = links.split("\n")
-
-                in_links = False
+            with open(self.list_google_docs, 'r', encoding='utf-8') as f:
+                links = csv.reader(f, delimiter=';')
+                self.google_links = {}
                 for line in links:
-                    if line[:7] == datetime.strftime(self.finreport_dict['Дата'][0], '%m.%Y'):
-                        in_links = True
-
-            if in_links:
-                pass
-
+                    self.google_links[line[0]] = line[1]
+            if self.date_from.strftime('%Y-%m') in self.google_links:
+                self.google_doc = (self.date_from.strftime('%Y-%m'), self.google_links[self.date_from.strftime('%Y-%m')])
             else:
+                self.google_doc = None
                 # Создание документа
                 self.spreadsheet = self.googleservice.spreadsheets().create(body={
                     'properties': {'title': doc_name, 'locale': 'ru_RU'},
@@ -1586,14 +1593,19 @@ class BarsicReport2(App):
 
                 ss.runPrepared()
 
-                links.append(f"{datetime.strftime(self.finreport_dict['Дата'][0], '%m.%Y')} {self.spreadsheet['spreadsheetId']}")
-
-                with open("data/links_of_reports.txt", 'w', encoding='utf-8') as f:
-                    f.write("\n".join(links))
+                self.google_doc = (self.date_from.strftime('%Y-%m'), self.spreadsheet['spreadsheetId'])
+                self.google_links[self.google_doc[0]] = self.google_doc[1]
+                links = []
+                for docid in self.google_links:
+                    links.append([docid, self.google_links[docid]])
+                with open(self.list_google_docs, 'w', newline='', encoding='utf-8') as f:
+                    file = csv.writer(f, delimiter=';')
+                    for link in links:
+                        file.writerow(link)
                 logging.info(
                     f'{str(datetime.now()):25}:    Создана новая таблица с Id: {self.spreadsheet["spreadsheetId"]}')
 
-            self.spreadsheet = self.googleservice.spreadsheets().get(spreadsheetId=links[-1][8:], ranges=[],
+            self.spreadsheet = self.googleservice.spreadsheets().get(spreadsheetId=self.google_doc[1], ranges=[],
                                                      includeGridData=True).execute()
 
             # -------------------------------- ЗАПОЛНЕНИЕ ДАННЫМИ ------------------------------------------------
@@ -1620,7 +1632,8 @@ class BarsicReport2(App):
                         if self.root.ids.report.ids.split_by_days.active:
                             self.rewrite_google_sheet()
                         else:
-                            self.show_dialog_variant(f'Перезаписать эту строку? Строка за '
+                            self.show_dialog_variant(f'Перезаписать эту строку?',
+                                                     f'Строка за '
                                                      f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} '
                                                      f'уже существует в таблице!',
                                                      self.rewrite_google_sheet,

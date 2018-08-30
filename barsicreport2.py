@@ -439,6 +439,8 @@ class BarsicReport2(App):
             self.root.ids.report.ids.split_by_days.disabled = True
             self.root.ids.report.ids.split_by_days_text.theme_text_color = 'Secondary'
             self.change_checkbox('split_by_days', False)
+            self.root.ids.report.ids.finreport_google_text.disabled = False
+            self.root.ids.report.ids.finreport_google.disabled = False
         else:
             self.date_switch = False
             self.root.ids.report.ids.label_date.text = 'Период:'
@@ -1930,7 +1932,14 @@ class BarsicReport2(App):
         setattr(self, name, checkbox)
         self.config.write()
         logging.info(f'{str(datetime.now()):25}:    Параметр {name} изменен на значение {checkbox}')
-
+        if name == 'split_by_days' and not checkbox and not self.root.ids.report.ids.date_switch.active:
+            self.root.ids.report.ids.finreport_google.active = False
+            self.change_checkbox('finreport_google', False)
+            self.root.ids.report.ids.finreport_google.disabled = True
+            self.root.ids.report.ids.finreport_google_text.disabled = True
+        elif name == 'split_by_days' and checkbox:
+            self.root.ids.report.ids.finreport_google_text.disabled = False
+            self.root.ids.report.ids.finreport_google.disabled = False
 
     def save_reports(self):
         """

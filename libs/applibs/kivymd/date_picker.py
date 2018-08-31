@@ -245,7 +245,10 @@ class MDDatePicker(FloatLayout, ThemableBehavior, RectangularElevationBehavior,
         self.dismiss()
 
     def fmt_lbl_date(self, year, month, day, orientation):
-        d = datetime.date(int(year), int(month), int(day))
+        try:
+            d = datetime.date(int(year), int(month), int(day))
+        except ValueError:
+            d = datetime.date(int(year), int(month), int(1))
         separator = '\n' if orientation == 'landscape' else ' '
         return d.strftime('%a,').capitalize() + separator + d.strftime(
             '%b').capitalize() + ' ' + str(day).lstrip('0')

@@ -145,6 +145,10 @@ class BarsicReport2(App):
         config.setdefault('Telegram', 'telegram_chanel_id', '111111111111')
         config.setdefault('Telegram', 'telegram_proxy', 'http://10.10.10.10:80')
         config.setdefault('Telegram', 'telegram_basic_auth', '("login", "password")')
+        config.adddefaultsection('GoogleShets')
+        config.setdefault('GoogleShets', 'google_all_read', 'False')
+        config.setdefault('GoogleShets', 'google_reader_list', '')
+        config.setdefault('GoogleShets', 'google_writer_list', '')
 
     def set_value_from_config(self):
         '''Устанавливает значения переменных из файла настроек barsicreport2.ini.'''
@@ -177,6 +181,9 @@ class BarsicReport2(App):
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
         self.telegram_proxy = self.config.get('Telegram', 'telegram_proxy')
         self.telegram_basic_auth = self.config.get('Telegram', 'telegram_basic_auth')
+        self.google_all_read = functions.to_bool(self.config.get('GoogleShets', 'google_all_read'))
+        self.google_reader_list = self.config.get('GoogleShets', 'google_reader_list')
+        self.google_writer_list = self.config.get('GoogleShets', 'google_writer_list')
 
     def build(self):
         self.set_value_from_config()
@@ -1483,59 +1490,30 @@ class BarsicReport2(App):
                 }).execute()
 
                 # Доступы к документу
+                self.google_reader_list = self.google_reader_list.split(',')
+                self.google_writer_list = self.google_writer_list.split(',')
                 driveService = apiclient.discovery.build('drive', 'v3', http=httpAuth)
-                shareRes = driveService.permissions().create(
-                    fileId=self.spreadsheet['spreadsheetId'],
-                    body={'type': 'anyone', 'role': 'reader'},  # доступ на чтение кому угодно
-                    fields='id'
-                ).execute()
+                if self.google_all_read:
+                    shareRes = driveService.permissions().create(
+                        fileId=self.spreadsheet['spreadsheetId'],
+                        body={'type': 'anyone', 'role': 'reader'},  # доступ на чтение кому угодно
+                        fields='id'
+                    ).execute()
                 # Возможные значения writer, commenter, reader
+                # доступ на Чтение определенным пользователоям
+                for adress in self.google_reader_list:
+                    shareRes = driveService.permissions().create(
+                        fileId=self.spreadsheet['spreadsheetId'],
+                        body={'type': 'user', 'role': 'reader', 'emailAddress': adress},
+                        fields='id'
+                    ).execute()
                 # доступ на Запись определенным пользователоям
-                shareRes = driveService.permissions().create(
-                    fileId=self.spreadsheet['spreadsheetId'],
-                    body={'type': 'user', 'role': 'writer', 'emailAddress': 'bazhenov.in@gmail.com'},
-                    fields='id'
-                ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'writer', 'emailAddress': 'it@imperial-hotel.org'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'writer', 'emailAddress': 'nilova@imperial-hotel.org'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'aquaulet73@yandex.ru'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'popov@imperial-hotel.org'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'ulkdmsport@gmail.com'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'mkt123@list.ru'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'reader', 'emailAddress': '1306ya@mail.ru'},
-                #     fields='id'
-                # ).execute()
-                # shareRes = driveService.permissions().create(
-                #     fileId=self.spreadsheet['spreadsheetId'],
-                #     body={'type': 'user', 'role': 'reader', 'emailAddress': 'alexei_region73@mail.ru'},
-                #     fields='id'
-                # ).execute()
+                for adress in self.google_reader_list:
+                    shareRes = driveService.permissions().create(
+                        fileId=self.spreadsheet['spreadsheetId'],
+                        body={'type': 'user', 'role': 'writer', 'emailAddress': adress},
+                        fields='id'
+                    ).execute()
 
                 sheetId = 0
 

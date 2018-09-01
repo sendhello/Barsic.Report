@@ -1508,7 +1508,7 @@ class BarsicReport2(App):
                         fields='id'
                     ).execute()
                 # доступ на Запись определенным пользователоям
-                for adress in self.google_reader_list:
+                for adress in self.google_writer_list:
                     shareRes = driveService.permissions().create(
                         fileId=self.spreadsheet['spreadsheetId'],
                         body={'type': 'user', 'role': 'writer', 'emailAddress': adress},

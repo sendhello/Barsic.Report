@@ -913,7 +913,7 @@ class BarsicReport2(App):
         Добавляет услугу в список услуг и вызывает функцию распределения для других услуг
         """
         logging.info(f'{str(datetime.now()):25}:    Добавление услуги {service} в группу {org}')
-        self.orgs_dict[org] = service
+        self.orgs_dict[org].append(service)
         #Запись новой услуги в XML
         with open(self.reportXML, encoding='utf-8') as f:
             xml = f.read()
@@ -988,7 +988,7 @@ class BarsicReport2(App):
         """
         Добавляет услугу в список услуг и вызывает функцию распределения для других услуг
         """
-        self.agent_dict[org] = service
+        self.agent_dict[org].append(service)
         #Запись новой услуги в XML
         with open(self.agentXML, encoding='utf-8') as f:
             xml = f.read()

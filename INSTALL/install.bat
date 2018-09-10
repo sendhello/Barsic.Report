@@ -11,3 +11,4 @@ pip install oauth2client
 pip install pyodbc
 pip install yadisk
 pip install telepot
+pip install openpyxl

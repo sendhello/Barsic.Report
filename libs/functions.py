@@ -14,7 +14,7 @@ def convert_to_dict(func):
         report = func(*args, **kwargs)
         result = {}
         for row in report:
-            result[row[4]] = (row[1], row[0])
+            result[row[4]] = (row[1], row[0], row[6], row[7])
         return result
     return itog_report_convert_to_dict
 
@@ -34,7 +34,7 @@ def add_sum(func):
                 if line != 'Депозит':
                     sum_service += report[line][0]
                 sum_many += report[line][1]
-        report['Итого по отчету'] = (sum_service, sum_many)
+        report['Итого по отчету'] = (sum_service, sum_many, '', 'Итого по отчету')
         return report
     return add_sum_wrapper
 
@@ -47,6 +47,7 @@ def add_date(func):
             user,
             pwd,
             org,
+            org_name,
             date_from,
             date_to,
             hide_zeroes='0',
@@ -65,12 +66,13 @@ def add_date(func):
             user,
             pwd,
             org,
+            org_name,
             date_from,
             date_to,
             hide_zeroes='0',
             hide_internal='1',
         )
-        report['Дата'] = (date_from, date_to)
+        report['Дата'] = (date_from, date_to, '', '')
         return report
     return add_sum_wrapper
 
@@ -84,9 +86,9 @@ def to_googleshet(func):
         new_dict = {}
         for key in dict:
             if type(dict[key][0]) is Decimal:
-                new_dict[key] = (int(dict[key][0]), float(dict[key][1]))
+                new_dict[key] = (int(dict[key][0]), float(dict[key][1]), dict[key][2], dict[key][3])
             else:
-                new_dict[key] = (dict[key][0], dict[key][1])
+                new_dict[key] = (dict[key][0], dict[key][1], dict[key][2], dict[key][3])
         return new_dict
     return decimal_to_googlesheet
 

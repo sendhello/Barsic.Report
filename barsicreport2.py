@@ -19,6 +19,9 @@ import pyodbc
 from decimal import Decimal
 from lxml import etree, objectify
 import csv
+import openpyxl
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font, Side
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -542,6 +545,7 @@ class BarsicReport2(App):
                     user=self.user,
                     pwd=self.pwd,
                     org=self.org1[0],
+                    org_name=self.org1[1],
                     date_from=datetime.now(),
                     date_to=datetime.now()+timedelta(1),
                     hide_zeroes='0',
@@ -693,6 +697,7 @@ class BarsicReport2(App):
             user,
             pwd,
             org,
+            org_name,
             date_from,
             date_to,
             hide_zeroes='0',
@@ -725,6 +730,7 @@ class BarsicReport2(App):
                 report.append(row)
             else:
                 break
+        report.append((0, 0, 0, 0, org_name, 0, 'Организация', 'Организация'))
         if len(report) > 1:
             logging.info(f'{str(datetime.now())[:-7]}: Отчет сформирован ID организации = {org}, '
                          f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'
@@ -1094,6 +1100,8 @@ class BarsicReport2(App):
                             self.finreport_dict['Кол-во проходов'] = [self.itog_report_org1[serv][0], 0]
                             self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
                             is_aquazona = True
+                        elif serv == 'Организация':
+                            pass
                         else:
                             self.finreport_dict[key][0] += self.itog_report_org1[serv][0]
                             self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
@@ -1125,6 +1133,8 @@ class BarsicReport2(App):
                             self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
                         elif serv == 'Аквазона':
                             self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
+                        elif serv == 'Организация':
+                            pass
                         else:
                             self.agentreport_dict[key][0] += self.itog_report_org1[serv][0]
                             self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
@@ -1907,6 +1917,377 @@ class BarsicReport2(App):
         bot = telepot.Bot(self.telegram_token)
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
 
+    def save_organisation_total(self, itog_report):
+        organisation_total = {}
+        for key in itog_report:
+            organisation_total[itog_report[key][3]] = {}
+        for key in itog_report:
+            organisation_total[itog_report[key][3]][itog_report[key][2]] = []
+        for key in itog_report:
+            organisation_total[itog_report[key][3]][itog_report[key][2]].append((key, itog_report[key][0], itog_report[key][1]))
+
+        # определяем стили
+        h1 = Font(name='Times New Roman',
+                  size=18,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        h2 = Font(name='Times New Roman',
+                  size=14,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        h3 = Font(name='Times New Roman',
+                  size=11,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        font = Font(name='Times New Roman',
+                    size=9,
+                    bold=False,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_bold = Font(name='Times New Roman',
+                    size=9,
+                    bold=True,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+
+        fill = PatternFill(fill_type='solid',
+                           start_color='c1c1c1',
+                           end_color='c2c2c2')
+        align_top = Alignment(horizontal='general',
+                              vertical='top',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+        align_bottom = Alignment(horizontal='general',
+                              vertical='bottom',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+
+        border = Border(left=Side(border_style='thin',
+                                  color='FF000000'),
+                        right=Side(border_style='thin',
+                                   color='FF000000'),
+                        top=Side(border_style='thin',
+                                 color='FF000000'),
+                        bottom=Side(border_style='thin',
+                                    color='FF000000'),
+                        diagonal=Side(border_style='thin',
+                                      color='FF000000'),
+                        diagonal_direction=0,
+                        outline=Side(border_style='thin',
+                                     color='FF000000'),
+                        vertical=Side(border_style='thin',
+                                      color='FF000000'),
+                        horizontal=Side(border_style='thin',
+                                        color='FF000000')
+                        )
+        border_top_bottom = Border(bottom=Side(border_style='thin', color='FF000000'),
+                                   top=Side(border_style='thin', color='FF000000'),
+                                   )
+        border_right = Border(right=Side(border_style='thin', color='FF000000'))
+        border_left = Border(left=Side(border_style='thin', color='FF000000'))
+        border_top = Border(top=Side(border_style='thin', color='FF000000'))
+        border_left_top = Border(top=Side(border_style='thin', color='FF000000'),
+                                 left=Side(border_style='thin', color='FF000000'),
+                                 )
+        border_right_top = Border(top=Side(border_style='thin', color='FF000000'),
+                                  right=Side(border_style='thin', color='FF000000'),
+                                  )
+        align_center = Alignment(horizontal='center',
+                                 vertical='bottom',
+                                 text_rotation=0,
+                                 wrap_text=False,
+                                 shrink_to_fit=False,
+                                 indent=0)
+        align_left = Alignment(horizontal='left',
+                               vertical='bottom',
+                               text_rotation=0,
+                               wrap_text=False,
+                               shrink_to_fit=False,
+                               indent=0)
+        number_format = 'General'
+        protection = Protection(locked=True,
+                                hidden=False)
+
+        column = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']
+
+        self.row = '0'
+        def next_row():
+            self.row = str(int(self.row) + 1)
+            return self.row
+
+        # объект
+        wb = Workbook()
+
+        # активный лист
+        ws = wb.active
+
+        # название страницы
+        # ws = wb.create_sheet('первая страница', 0)
+        ws.title = 'Итоговый'
+        # шрифты
+        ws['C1'].font = h1
+        # выравнивание
+        ws['C1'].alignment = align_left
+
+        # Ширина стролбцов
+        ws.column_dimensions['A'].width = 1 / 7 * 8
+        ws.column_dimensions['B'].width = 1 / 7 * 8
+        ws.column_dimensions['C'].width = 1 / 7 * 80
+        ws.column_dimensions['D'].width = 1 / 7 * 8
+        ws.column_dimensions['E'].width = 1 / 7 * 88
+        ws.column_dimensions['F'].width = 1 / 7 * 8
+        ws.column_dimensions['G'].width = 1 / 7 * 24
+        ws.column_dimensions['H'].width = 1 / 7 * 8
+        ws.column_dimensions['I'].width = 1 / 7 * 80
+        ws.column_dimensions['J'].width = 1 / 7 * 8
+        ws.column_dimensions['K'].width = 1 / 7 * 144
+        ws.column_dimensions['L'].width = 1 / 7 * 144
+        ws.column_dimensions['M'].width = 1 / 7 * 8
+
+        # значение ячейки
+        # ws['A1'] = "Hello!"
+
+        ws[column[3] + next_row()] = 'Итоговый отчет'
+        ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=12)
+        ws[column[1] + next_row()] = ''
+        ws[column[3] + next_row()] = organisation_total['Организация']['Организация'][0][0]
+        ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=12)
+        ws[column[3] + self.row].font = font
+        ws[column[3] + self.row].alignment = align_top
+        ws[column[1] + next_row()] = ''
+
+        ws[column[3] + next_row()] = 'За период с:'
+        ws[column[3] + self.row].font = font
+        ws[column[3] + self.row].alignment = align_top
+        ws[column[5] + self.row] = itog_report['Дата'][0].strftime("%d.%m.%Y")
+        ws[column[5] + self.row].font = font_bold
+        ws[column[5] + self.row].alignment = align_top
+        ws[column[7] + self.row] = 'По:'
+        ws[column[7] + self.row].font = font
+        ws[column[7] + self.row].alignment = align_top
+        ws[column[9] + self.row] = itog_report['Дата'][1].strftime("%d.%m.%Y")
+        ws[column[9] + self.row].font = font_bold
+        ws[column[9] + self.row].alignment = align_top
+
+        # ТАБЛИЦА
+        def merge_table():
+            ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=9)
+            ws.merge_cells(start_row=self.row, start_column=10, end_row=self.row, end_column=11)
+            ws.merge_cells(start_row=self.row, start_column=12, end_row=self.row, end_column=13)
+            ws[column[2] + self.row].font = font
+            ws[column[10] + self.row].font = font
+            ws[column[12] + self.row].font = font
+            ws[column[2] + self.row].alignment = align_top
+            ws[column[10] + self.row].alignment = align_top
+            ws[column[12] + self.row].alignment = align_top
+            b = 2
+            while b <= 13:
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        def merge_table_h3():
+            ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=9)
+            ws.merge_cells(start_row=self.row, start_column=10, end_row=self.row, end_column=11)
+            ws.merge_cells(start_row=self.row, start_column=12, end_row=self.row, end_column=13)
+            ws[column[2] + self.row].font = h3
+            ws[column[10] + self.row].font = h3
+            ws[column[12] + self.row].font = h3
+            ws[column[2] + self.row].alignment = align_top
+            ws[column[10] + self.row].alignment = align_top
+            ws[column[12] + self.row].alignment = align_top
+            ws[column[2] + self.row].border = border_left
+            ws[column[13] + self.row].border = border_right
+
+        def merge_table_h2():
+            ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=9)
+            ws.merge_cells(start_row=self.row, start_column=10, end_row=self.row, end_column=11)
+            ws.merge_cells(start_row=self.row, start_column=12, end_row=self.row, end_column=13)
+            ws[column[2] + self.row].font = h2
+            ws[column[10] + self.row].font = h2
+            ws[column[12] + self.row].font = h2
+            ws[column[2] + self.row].alignment = align_top
+            ws[column[10] + self.row].alignment = align_top
+            ws[column[12] + self.row].alignment = align_top
+            ws[column[2] + self.row].border = border_left
+            ws[column[13] + self.row].border = border_right
+
+        def merge_width_h2():
+            ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=13)
+            ws[column[2] + self.row].font = h2
+            ws[column[2] + self.row].alignment = align_top
+            b = 2
+            while b <= 13:
+                if b == 2:
+                    ws[column[b] + self.row].border = border_left_top
+                elif b == 13:
+                    ws[column[b] + self.row].border = border_right_top
+                else:
+                    ws[column[b] + self.row].border = border_top
+                b += 1
+
+        def merge_width_h3():
+            ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=13)
+            ws[column[2] + self.row].font = h3
+            ws[column[2] + self.row].alignment = align_top
+            b = 2
+            while b <= 13:
+                if b == 2:
+                    ws[column[b] + self.row].border = border_left
+                elif b == 13:
+                    ws[column[b] + self.row].border = border_right
+                b += 1
+
+        ws[column[2] + next_row()] = 'Название'
+        ws[column[10] + self.row] = 'Количество'
+        ws[column[12] + self.row] = 'Сумма'
+        merge_table()
+        ws[column[2] + self.row].font = h3
+        ws[column[10] + self.row].font = h3
+        ws[column[12] + self.row].font = h3
+        ws[column[2] + self.row].alignment = align_top
+        ws[column[10] + self.row].alignment = align_top
+        ws[column[12] + self.row].alignment = align_top
+
+        groups = [
+            'Депозит',
+            'Карты',
+            'Услуги',
+            'Товары',
+            'Платные зоны',
+        ]
+        all_count = 0
+        all_sum = 0
+        try:
+            for gr in groups:
+                ws[column[2] + next_row()] = gr
+                merge_width_h2()
+                group_count = 0
+                group_sum = 0
+                for group in organisation_total[gr]:
+                    ws[column[2] + next_row()] = group
+                    merge_width_h3()
+                    service_count = 0
+                    service_sum = 0
+                    for service in organisation_total[gr][group]:
+                        try:
+                            service_count += service[1]
+                            service_sum += service[2]
+                        except TypeError:
+                            pass
+                        ws[column[2] + next_row()] = service[0]
+                        ws[column[10] + self.row] = service[1]
+                        ws[column[12] + self.row] = service[2]
+                        ws[column[12] + self.row].number_format = '#,##0.00 ₽'
+                        merge_table()
+                    ws[column[10] + next_row()] = service_count
+                    ws[column[12] + self.row] = service_sum
+                    ws[column[12] + self.row].number_format = '#,##0.00 ₽'
+                    merge_table_h3()
+                    group_count += service_count
+                    group_sum += service_sum
+                ws[column[10] + next_row()] = group_count
+                ws[column[12] + self.row] = group_sum
+                ws[column[12] + self.row].number_format = '#,##0.00 ₽'
+                merge_table_h2()
+                all_count += group_count
+                all_sum += group_sum
+                group_count = 0
+                group_sum = 0
+        except KeyError:
+            pass
+
+        if all_sum == organisation_total["Итого по отчету"][""][0][2]:
+            ws[column[2] + next_row()] = organisation_total['Итого по отчету'][''][0][0]
+            ws[column[10] + self.row] = organisation_total['Итого по отчету'][''][0][1]
+            ws[column[12] + self.row] = organisation_total["Итого по отчету"][""][0][2]
+            self.total_report_sum = all_sum
+        else:
+            logging.error(f'{str(datetime.now()):25}:    Ошибка: Итоговые суммы не совпадают. "Итого по отчету" '
+                          f'из Барса не совпадает с итоговой суммой по формируемым строкам.')
+            self.show_dialog(f'Ошибка: Итоговые суммы не совпадают',
+                             '"Итого по отчету" из Барса не совпадает с итоговой суммой по формируемым строкам.'
+                             )
+            return None
+        ws[column[12] + self.row].number_format = '#,##0.00 ₽'
+        merge_table_h2()
+        ws[column[2] + self.row].alignment = align_bottom
+        ws[column[10] + self.row].alignment = align_bottom
+        ws[column[12] + self.row].alignment = align_bottom
+        b = 2
+        while b <= 13:
+            ws[column[b] + self.row].border = border_top_bottom
+            b += 1
+        end_line = int(self.row)
+
+        # раскрвшивание фона для заголовков
+        i = 2
+        while i <= 13:
+            ws[column[i] + '6'].fill = fill
+            i += 1
+
+        # обводка
+        # ws['A3'].border = border
+
+        # вручную устанавливаем высоту первой строки
+        rd = ws.row_dimensions[1]
+        rd.height = 21.75
+
+        # увеличиваем все строки по высоте
+        max_row = ws.max_row
+        i = 2
+        while i <= max_row:
+            rd = ws.row_dimensions[i]
+            rd.height = 18
+            i += 1
+
+        # Высота строк
+        ws.row_dimensions[2].height = 5.25
+        ws.row_dimensions[4].height = 6.75
+        ws.row_dimensions[end_line].height = 30.75
+
+        # выравнивание столбца
+        for cellObj in ws['A2:A5']:
+            for cell in cellObj:
+                ws[cell.coordinate].alignment = align_left
+
+        # перетягивание ячеек
+        # https://stackoverflow.com/questions/13197574/openpyxl-adjust-column-width-size
+        # dims = {}
+        # for row in ws.rows:
+        #     for cell in row:
+        #         if cell.value:
+        #             dims[cell.column] = max((dims.get(cell.column, 0), len(cell.value)))
+        # for col, value in dims.items():
+        #     # value * коэфициент
+        #     ws.column_dimensions[col].width = value * 1.5
+
+        # сохранение файла в текущую директорию
+        self.save_file('sample.xlsx', wb)
+
     def load_checkbox(self):
         """
         Установка чекбоксов в соответствии с настройками INI-файла
@@ -1957,6 +2338,7 @@ class BarsicReport2(App):
             self.open_googlesheet()
         if self.finreport_telegram:
             self.send_message_to_telegram()
+        self.save_organisation_total(self.itog_report_org1)
 
     def load_report(self):
         """
@@ -1976,6 +2358,7 @@ class BarsicReport2(App):
                 user=self.user,
                 pwd=self.pwd,
                 org=self.org1[0],
+                org_name=self.org1[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
                 hide_zeroes='0',
@@ -1989,6 +2372,7 @@ class BarsicReport2(App):
                 user=self.user,
                 pwd=self.pwd,
                 org=self.org2[0],
+                org_name=self.org2[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
                 hide_zeroes='0',

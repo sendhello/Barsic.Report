@@ -5,7 +5,6 @@
       <Service Name="Пустая обязательная категория"/>
     </Services>
   </UrFace>
-  </UrFace>
   <UrFace Name="ИТОГО">
     <Services>
       <Service Name="Пустая обязательная категория"/>

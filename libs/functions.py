@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from decimal import Decimal
+from datetime import datetime, timedelta
 
 
 def convert_to_dict(func):
@@ -72,7 +73,7 @@ def add_date(func):
             hide_zeroes='0',
             hide_internal='1',
         )
-        report['Дата'] = (date_from, date_to, '', '')
+        report['Дата'] = (date_from, date_to - timedelta(1), '', '')
         return report
     return add_sum_wrapper
 

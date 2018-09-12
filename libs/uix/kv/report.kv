@@ -27,7 +27,7 @@
             BoxLayout:
                 orientation: 'vertical'
                 size_hint: 0.8, 1
-                pos_hint: {'center_x': 0.5, 'center_y': 0.65}
+                pos_hint: {'center_x': 0.5, 'center_y': 0.5}
 
                 BoxLayout:
                     orientation: 'vertical'
@@ -141,6 +141,42 @@
                         size: 0, dp(48)
                         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
                         text: 'Разбивать период по дням'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: check_cashreport_xls
+                        name: "check_cashreport_xls"
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        on_release: app.change_checkbox(check_cashreport_xls.name, check_cashreport_xls.active)
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Суммовой отчет (Excel)'
+
+                BoxLayout:
+                    size_hint: 0.8, None
+                    size: 0, dp(48)
+                    MDCheckbox:
+                        id: check_itogreport_xls
+                        name: "check_itogreport_xls"
+                        size_hint: None, None
+                        size: dp(48), dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.47}
+                        on_release: app.change_checkbox(check_itogreport_xls.name, check_itogreport_xls.active)
+                    MDLabel:
+                        font_style: 'Headline'
+                        theme_text_color: 'Primary'
+                        size_hint: 1, None
+                        size: 0, dp(48)
+                        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+                        text: 'Итоговый отчет (Excel)'
 
                 BoxLayout:
                     size_hint: 0.8, None

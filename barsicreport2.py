@@ -125,6 +125,8 @@ class BarsicReport2(App):
         config.setdefault('General', 'split_by_days', 'False')
         config.setdefault('General', 'date_switch', 'True')
         config.setdefault('General', 'use_yadisk', 'False')
+        config.setdefault('General', 'check_cashreport_xls', 'False')
+        config.setdefault('General', 'check_itogreport_xls', 'False')
         config.adddefaultsection('MSSQL')
         config.setdefault('MSSQL', 'driver', '{SQL Server}')
         config.setdefault('MSSQL', 'server', '127.0.0.1\\SQLEXPRESS')
@@ -165,6 +167,8 @@ class BarsicReport2(App):
         self.split_by_days = False
         self.date_switch = functions.to_bool(self.config.get('General', 'date_switch'))
         self.use_yadisk = functions.to_bool(self.config.get('General', 'use_yadisk'))
+        self.check_cashreport_xls = functions.to_bool(self.config.get('General', 'check_cashreport_xls'))
+        self.check_itogreport_xls = functions.to_bool(self.config.get('General', 'check_itogreport_xls'))
         self.driver = self.config.get('MSSQL', 'driver')
         self.server = self.config.get('MSSQL', 'server')
         self.user = self.config.get('MSSQL', 'user')
@@ -737,6 +741,138 @@ class BarsicReport2(App):
                          f'Скрывать внутренние точки обслуживания: {hide_internal})')
         return report
 
+    def cash_report_request(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+            date_from,
+            date_to,
+    ):
+        """
+        Делает запрос в базу Барс и возвращает суммовой отчет за запрашиваемый период
+        :param server: str - Путь до MS-SQL сервера, например 'SQLEXPRESS\BASE'
+        :param database: str - Имя базы данных Барса, например 'SkiBars2'
+        :param uid: str - Имя пользователя базы данных, например 'sa'
+        :param pwd: str - Пароль пользователя базы данных, например 'pass'
+        :param sa: str - Id организации в Барсе
+        :param date_from: str - Начало отчетного периода в формате: 'YYYYMMDD 00:00:00'
+        :param date_to:  str - Конец отчетного периода в формате: 'YYYYMMDD 00:00:00'
+        :return: Суммовой отчет
+        """
+        cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={user};PWD={pwd}')
+        date_from = date_from.strftime('%Y%m%d 00:00:00')
+        date_to = date_to.strftime('%Y%m%d 00:00:00')
+        cursor = cnxn.cursor()
+        cursor.execute(
+            f"exec sp_reportCashDeskMoney @from='{date_from}', @to='{date_to}'")
+        report = []
+        while True:
+            row = cursor.fetchone()
+            if row:
+                report.append(row)
+            else:
+                break
+        if len(report) > 1:
+            logging.info(f'{str(datetime.now())[:-7]}: Суммовой отчет сформирован, '
+                         f'Период: {date_from[:8]}-{date_to[:8]}')
+        return report
+
+    def service_point_request(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+    ):
+        """
+            Делает запрос в базу Барс и возвращает список рабочих мест
+            :param server: str - Путь до MS-SQL сервера, например 'SQLEXPRESS\BASE'
+            :param database: str - Имя базы данных Барса, например 'SkiBars2'
+            :param uid: str - Имя пользователя базы данных, например 'sa'
+            :param pwd: str - Пароль пользователя базы данных, например 'pass'
+            :param sa: str - Id организации в Барсе
+            :return: Суммовой отчет
+        """
+        cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={user};PWD={pwd}')
+        cursor = cnxn.cursor()
+        cursor.execute(
+            f"""
+            SELECT
+                ServicePointId, Name, SuperAccountId, Type, Code, IsInternal
+            FROM 
+                ServicePoint
+            """
+        )
+        report = []
+        while True:
+            row = cursor.fetchone()
+            if row:
+                report.append(row)
+            else:
+                break
+        if len(report) > 1:
+            logging.info(f'{str(datetime.now())[:-7]}: Список рабочих мест сформирован.')
+        return report
+
+    def cashdesk_report(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+            date_from,
+            date_to,
+    ):
+        """
+        Преобразует запросы из базы в суммовой отчет
+        :return: dict
+        """
+        cash_report = self.cash_report_request(
+            server=server,
+            database=database,
+            driver=driver,
+            user=user,
+            pwd=pwd,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        service_point = self.service_point_request(
+            server=server,
+            database=database,
+            driver=driver,
+            user=user,
+            pwd=pwd,
+        )
+        service_point_dict = {}
+        for point in service_point:
+            service_point_dict[point[0]] = (point[1], point[2], point[3], point[4], point[5])
+        report = {}
+        for line in cash_report:
+            report[line[7]] = []
+        for line in cash_report:
+            report[line[7]].append([service_point_dict[line[0]][0], line[1], line[2], line[3], line[4], line[5], line[6]])
+        all_sum = ['Итого по отчету', Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0)]
+        for typpe in report:
+            type_sum = ['Итого', Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0)]
+            for line in report[typpe]:
+                i = 0
+                while True:
+                    i += 1
+                    try:
+                        type_sum[i] += line[i]
+                        all_sum[i] += line[i]
+                    except IndexError:
+                        break
+            report[typpe].append(type_sum)
+        report['Итого'] = [all_sum]
+        report['Дата'] = [[date_from, date_to - timedelta(1)]]
+        return report
+
     def read_bitrix_base(self,
                          server,
                          database,
@@ -1195,11 +1331,11 @@ class BarsicReport2(App):
         ws.write(0, 13, 'Online Продажи Сумма', style0)
         ws.write(0, 14, 'Online Продажи Средний чек', style0)
         ws.write(0, 15, 'Сумма безнал', style0)
-        if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
+        if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1]:
             date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
+                    f'{datetime.strftime(self.finreport_dict["Дата"][1], "%Y-%m-%d")}'
         ws.write(1, 0, date_, style1)
         ws.write(1, 1, self.finreport_dict['Кол-во проходов'][0], style1)
         ws.write(1, 2, self.finreport_dict['ИТОГО'][1], style2)
@@ -1281,16 +1417,16 @@ class BarsicReport2(App):
         default_book_style = wb.default_style
         default_book_style.font.height = 20 * 44  # 36pt
 
-        if self.agentreport_dict['Дата'][0] + timedelta(1) == self.agentreport_dict["Дата"][1]:
+        if self.agentreport_dict['Дата'][0] == self.agentreport_dict["Дата"][1]:
             date_ = datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")
             head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
                    f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")}г.'
         else:
-            date_ = f'{datetime.strftime(agentreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(agentreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
+            date_ = f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(self.agentreport_dict["Дата"][1], "%Y-%m-%d")}'
             head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
-                   f'{datetime.strftime(agentreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
-                   f'{datetime.strftime(agentreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}г.'
+                   f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
+                   f'{datetime.strftime(self.agentreport_dict["Дата"][1], "%d.%m.%Y")}г.'
         ws.write(0, 0, head, style0)
         # ws.write(0, 1, date_, style1)
         ws.write(2, 0, 'Наименование поставщика услуг', style3)
@@ -1885,10 +2021,10 @@ class BarsicReport2(App):
         """
         logging.info(f'{str(datetime.now()):25}:    Составление SMS-отчета...')
         resporse = 'Отчет по аквапарку за '
-        if self.finreport_dict['Дата'][0] + timedelta(1) == self.finreport_dict['Дата'][1]:
+        if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1]:
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
         else:
-            resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(aqua_report["Дата"][1], "%d.%m.%Y")}:\n'
+            resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(self.finreport_dict["Дата"][1], "%d.%m.%Y")}:\n'
         if self.finreport_dict['ИТОГО'][1]:
             resporse += f'Люди - {self.finreport_dict["Кол-во проходов"][0]};\n'
             resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1]:.2f} ₽;\n'
@@ -1918,6 +2054,9 @@ class BarsicReport2(App):
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
 
     def save_organisation_total(self, itog_report):
+        """
+        Сохраняет Итоговый отчет в Excel
+        """
         organisation_total = {}
         for key in itog_report:
             organisation_total[itog_report[key][3]] = {}
@@ -2047,7 +2186,7 @@ class BarsicReport2(App):
 
         # название страницы
         # ws = wb.create_sheet('первая страница', 0)
-        ws.title = 'Итоговый'
+        ws.title = 'Итоговый отчет'
         # шрифты
         ws['C1'].font = h1
         # выравнивание
@@ -2286,7 +2425,344 @@ class BarsicReport2(App):
         #     ws.column_dimensions[col].width = value * 1.5
 
         # сохранение файла в текущую директорию
-        self.save_file('sample.xlsx', wb)
+        if itog_report['Дата'][0] == itog_report["Дата"][1]:
+            date_ = datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")
+        else:
+            date_ = f'{datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(itog_report["Дата"][1], "%Y-%m-%d")}'
+        path = self.local_folder + self.path_aquapark + date_ + '_Итоговый_отчет' + ".xlsx"
+        logging.info(f'{str(datetime.now()):25}:    Сохранение Итогового отчета в {path}')
+        path = self.create_path(path)
+        self.save_file(path, wb)
+        return path
+
+    def save_cashdesk_report(self, cashdesk_report):
+        """
+        Сохраняет Суммовой отчет в Excel
+        """
+        # определяем стили
+        h1 = Font(name='Times New Roman',
+                  size=18,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        h2 = Font(name='Times New Roman',
+                  size=14,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        h3 = Font(name='Times New Roman',
+                  size=10,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        font = Font(name='Times New Roman',
+                    size=9,
+                    bold=False,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_bold = Font(name='Times New Roman',
+                    size=9,
+                    bold=True,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_red = Font(name='Times New Roman',
+                         size=9,
+                         bold=True,
+                         italic=False,
+                         vertAlign=None,
+                         underline='none',
+                         strike=False,
+                         color='FFFF0000')
+
+        fill = PatternFill(fill_type='solid',
+                           start_color='c1c1c1',
+                           end_color='c2c2c2')
+        align_top = Alignment(horizontal='general',
+                              vertical='top',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+        align_bottom = Alignment(horizontal='general',
+                              vertical='bottom',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+
+        border = Border(left=Side(border_style='thin',
+                                  color='FF000000'),
+                        right=Side(border_style='thin',
+                                   color='FF000000'),
+                        top=Side(border_style='thin',
+                                 color='FF000000'),
+                        bottom=Side(border_style='thin',
+                                    color='FF000000'),
+                        diagonal=Side(border_style='thin',
+                                      color='FF000000'),
+                        diagonal_direction=0,
+                        outline=Side(border_style='thin',
+                                     color='FF000000'),
+                        vertical=Side(border_style='thin',
+                                      color='FF000000'),
+                        horizontal=Side(border_style='thin',
+                                        color='FF000000')
+                        )
+        border_top_bottom = Border(bottom=Side(border_style='thin', color='FF000000'),
+                                   top=Side(border_style='thin', color='FF000000'),
+                                   )
+        border_right = Border(right=Side(border_style='thin', color='FF000000'))
+        border_left = Border(left=Side(border_style='thin', color='FF000000'))
+        border_top = Border(top=Side(border_style='thin', color='FF000000'))
+        border_left_top = Border(top=Side(border_style='thin', color='FF000000'),
+                                 left=Side(border_style='thin', color='FF000000'),
+                                 )
+        border_right_top = Border(top=Side(border_style='thin', color='FF000000'),
+                                  right=Side(border_style='thin', color='FF000000'),
+                                  )
+        align_center = Alignment(horizontal='center',
+                                 vertical='bottom',
+                                 text_rotation=0,
+                                 wrap_text=False,
+                                 shrink_to_fit=False,
+                                 indent=0)
+        align_left = Alignment(horizontal='left',
+                               vertical='bottom',
+                               text_rotation=0,
+                               wrap_text=False,
+                               shrink_to_fit=False,
+                               indent=0)
+        number_format = 'General'
+        protection = Protection(locked=True,
+                                hidden=False)
+
+        column = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']
+
+        self.row = '0'
+        def next_row():
+            self.row = str(int(self.row) + 1)
+            return self.row
+
+        # объект
+        wb = Workbook()
+
+        # активный лист
+        ws = wb.active
+
+        # название страницы
+        # ws = wb.create_sheet('первая страница', 0)
+        ws.title = 'Суммовой отчет по чековой ленте'
+        # шрифты
+        ws['A1'].font = h1
+        # выравнивание
+        ws['A1'].alignment = align_left
+
+        # Ширина стролбцов
+        ws.column_dimensions['A'].width = 1 / 7 * 124
+        ws.column_dimensions['B'].width = 1 / 7 * 88
+        ws.column_dimensions['C'].width = 1 / 7 * 28
+        ws.column_dimensions['D'].width = 1 / 7 * 24
+        ws.column_dimensions['E'].width = 1 / 7 * 32
+        ws.column_dimensions['F'].width = 1 / 7 * 1
+        ws.column_dimensions['G'].width = 1 / 7 * 79
+        ws.column_dimensions['H'].width = 1 / 7 * 3
+        ws.column_dimensions['I'].width = 1 / 7 * 5
+        ws.column_dimensions['J'].width = 1 / 7 * 96
+        ws.column_dimensions['K'].width = 1 / 7 * 88
+        ws.column_dimensions['L'].width = 1 / 7 * 8
+        ws.column_dimensions['M'].width = 1 / 7 * 80
+
+        # значение ячейки
+        # ws['A1'] = "Hello!"
+
+        ws[column[1] + next_row()] = 'Суммовой отчет по чековой ленте'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column)-1)
+        # шрифты
+        ws[column[1] + self.row].font = h1
+        # выравнивание
+        ws[column[1] + self.row].alignment = align_left
+        # Высота строк
+        ws.row_dimensions[1].height = 24
+
+        ws[column[1] + next_row()] = 'За период с:'
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
+        ws[column[2] + self.row] = cashdesk_report['Дата'][0][0].strftime("%d.%m.%Y")
+        ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=3)
+        ws[column[2] + self.row].font = font_bold
+        ws[column[2] + self.row].alignment = align_top
+        ws[column[4] + self.row] = 'по'
+        ws[column[4] + self.row].font = font
+        ws[column[4] + self.row].alignment = align_top
+        ws[column[5] + self.row] = cashdesk_report['Дата'][0][1].strftime("%d.%m.%Y")
+        ws.merge_cells(start_row=self.row, start_column=5, end_row=self.row, end_column=7)
+        ws[column[5] + self.row].font = font_bold
+        ws[column[5] + self.row].alignment = align_top
+
+        # ТАБЛИЦА
+        def merge_table():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=2)
+            ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=6)
+            ws.merge_cells(start_row=self.row, start_column=7, end_row=self.row, end_column=9)
+            ws.merge_cells(start_row=self.row, start_column=11, end_row=self.row, end_column=12)
+            ws[column[1] + self.row].font = font
+            ws[column[3] + self.row].font = font
+            ws[column[7] + self.row].font = font
+            ws[column[10] + self.row].font = font
+            ws[column[11] + self.row].font = font
+            ws[column[13] + self.row].font = font
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[3] + self.row].alignment = align_top
+            ws[column[7] + self.row].alignment = align_top
+            ws[column[10] + self.row].alignment = align_top
+            ws[column[11] + self.row].alignment = align_top
+            ws[column[13] + self.row].alignment = align_top
+            ws[column[3] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[7] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[10] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[11] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[13] + self.row].number_format = '#,##0.00 ₽'
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        def merge_table_h3():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=2)
+            ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=6)
+            ws.merge_cells(start_row=self.row, start_column=7, end_row=self.row, end_column=9)
+            ws.merge_cells(start_row=self.row, start_column=11, end_row=self.row, end_column=12)
+            ws[column[1] + self.row].font = h3
+            ws[column[3] + self.row].font = h3
+            ws[column[7] + self.row].font = h3
+            ws[column[10] + self.row].font = h3
+            ws[column[11] + self.row].font = h3
+            ws[column[13] + self.row].font = h3
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[3] + self.row].alignment = align_top
+            ws[column[7] + self.row].alignment = align_top
+            ws[column[10] + self.row].alignment = align_top
+            ws[column[11] + self.row].alignment = align_top
+            ws[column[13] + self.row].alignment = align_top
+            ws[column[3] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[7] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[10] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[11] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[13] + self.row].number_format = '#,##0.00 ₽'
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        def merge_table_red():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=2)
+            ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=6)
+            ws.merge_cells(start_row=self.row, start_column=7, end_row=self.row, end_column=9)
+            ws.merge_cells(start_row=self.row, start_column=11, end_row=self.row, end_column=12)
+            ws[column[1] + self.row].font = font_red
+            ws[column[3] + self.row].font = font_red
+            ws[column[7] + self.row].font = font_red
+            ws[column[10] + self.row].font = font_red
+            ws[column[11] + self.row].font = font_red
+            ws[column[13] + self.row].font = font_red
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[3] + self.row].alignment = align_top
+            ws[column[7] + self.row].alignment = align_top
+            ws[column[10] + self.row].alignment = align_top
+            ws[column[11] + self.row].alignment = align_top
+            ws[column[13] + self.row].alignment = align_top
+            ws[column[3] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[7] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[10] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[11] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[13] + self.row].number_format = '#,##0.00 ₽'
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        def merge_width_red():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column) - 1)
+            ws[column[1] + self.row].font = font_red
+            ws[column[1] + self.row].alignment = align_top
+            b = 1
+            while b < len(column):
+                if b == 1:
+                    ws[column[b] + self.row].border = border_left
+                elif b == len(column) - 1:
+                    ws[column[b] + self.row].border = border_right
+                else:
+                    ws[column[b] + self.row].border = border
+                b += 1
+
+        ws[column[1] + next_row()] = 'Касса №'
+        ws[column[3] + self.row] = 'Сумма'
+        ws[column[7] + self.row] = 'Наличными'
+        ws[column[10] + self.row] = 'Безналичными'
+        ws[column[11] + self.row] = 'Со счета'
+        ws[column[13] + self.row] = 'Бонусами'
+        merge_table_h3()
+        # раскрвшивание фона для заголовков
+        b = 1
+        while b < len(column):
+            ws[column[b] + self.row].fill = fill
+            b += 1
+
+        for typpe in cashdesk_report:
+            if typpe != 'Дата':
+                if typpe != 'Итого':
+                    ws[column[1] + next_row()] = typpe
+                    merge_width_red()
+                for line in cashdesk_report[typpe]:
+                    ws[column[1] + next_row()] = line[0]
+                    ws[column[3] + self.row] = line[1]
+                    ws[column[7] + self.row] = line[2]
+                    ws[column[10] + self.row] = line[3]
+                    ws[column[11] + self.row] = line[4]
+                    ws[column[13] + self.row] = line[5]
+                    if line[0] == 'Итого':
+                        merge_table_red()
+                    elif line[0] == 'Итого по отчету':
+                        merge_table_h3()
+                    else:
+                        merge_table()
+
+        # увеличиваем все строки по высоте
+        max_row = ws.max_row
+        i = 2
+        while i <= max_row:
+            rd = ws.row_dimensions[i]
+            rd.height = 18
+            i += 1
+
+        if cashdesk_report['Дата'][0][0] == cashdesk_report["Дата"][0][1]:
+            date_ = datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")
+        else:
+            date_ = f'{datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(cashdesk_report["Дата"][0][1], "%Y-%m-%d")}'
+        path = self.local_folder + self.path_aquapark + date_ + '_Суммовой_отчет_по_чековой_ленте' + ".xlsx"
+        logging.info(f'{str(datetime.now()):25}:    Сохранение Суммового отчета в {path}')
+        path = self.create_path(path)
+        self.save_file(path, wb)
+        return path
 
     def load_checkbox(self):
         """
@@ -2295,6 +2771,8 @@ class BarsicReport2(App):
         logging.info(f'{str(datetime.now()):25}:    Загрузка настроек...')
         self.root.ids.report.ids.split_by_days.active = self.split_by_days
         self.root.ids.report.ids.finreport_xls.active = self.finreport_xls
+        self.root.ids.report.ids.check_cashreport_xls.active = self.check_cashreport_xls
+        self.root.ids.report.ids.check_itogreport_xls.active = self.check_itogreport_xls
         self.root.ids.report.ids.agentreport_xls.active = self.agentreport_xls
         self.root.ids.report.ids.use_yadisk.active = self.use_yadisk
         self.root.ids.report.ids.finreport_google.active = self.finreport_google
@@ -2338,7 +2816,14 @@ class BarsicReport2(App):
             self.open_googlesheet()
         if self.finreport_telegram:
             self.send_message_to_telegram()
-        self.save_organisation_total(self.itog_report_org1)
+        if self.check_itogreport_xls:
+            organisation_total_path = self.save_organisation_total(self.itog_report_org1)
+            if self.use_yadisk:
+                self.sync_to_yadisk(organisation_total_path, self.yadisk_token)
+        if self.check_cashreport_xls:
+            cashdesk_report_path = self.save_cashdesk_report(self.cashdesk_report_org1)
+            if self.use_yadisk:
+                self.sync_to_yadisk(cashdesk_report_path, self.yadisk_token)
 
     def load_report(self):
         """
@@ -2364,6 +2849,15 @@ class BarsicReport2(App):
                 hide_zeroes='0',
                 hide_internal='1',
             )
+            self.cashdesk_report_org1 = self.cashdesk_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                date_from=self.date_from,
+                date_to=self.date_to,
+            )
         if self.org2:
             self.itog_report_org2 = self.itog_report(
                 server=self.server,
@@ -2377,6 +2871,15 @@ class BarsicReport2(App):
                 date_to=self.date_to,
                 hide_zeroes='0',
                 hide_internal='1',
+            )
+            self.cashdesk_report_org2 = self.cashdesk_report(
+                server=self.server,
+                database=self.database2,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                date_from=self.date_from,
+                date_to=self.date_to,
             )
 
         self.report_bitrix = self.read_bitrix_base(

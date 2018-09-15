@@ -52,7 +52,7 @@ except Exception:
     sys.exit(1)
 
 
-__version__ = 'v2.2-alpha.4'
+__version__ = 'v2.2-alpha.5'
 
 
 def main():

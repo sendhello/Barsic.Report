@@ -1488,52 +1488,56 @@ class BarsicReport2(App):
                              f'Файл "{path}" занят другим процессом.\nДля повтора попытки закройте это сообщение',
                              func=self.save_file, path=path, file=file)
 
-    def sync_to_yadisk(self, local_path, token):
+    def sync_to_yadisk(self, path_list, token):
         """
         Копирует локальные файлы в Яндекс Диск
         """
-        logging.info(f'{str(datetime.now()):25}:    Копирование отчета {local_path} в Яндекс.Диск...')
-        if self.use_yadisk:
-            logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
-            self.yadisk = yadisk.YaDisk(token=token)
-            if self.yadisk.check_token():
-                path = '' + self.path_aquapark
-                remote_folder = self.create_path_yadisk(path)
-                remote_path = remote_folder + local_path.split('/')[-1]
-                logging.info(f'{str(datetime.now()):25}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
-                files_list_yandex = list(self.yadisk.listdir(remote_folder))
-                files_list = []
-                for key in files_list_yandex:
-                    if key['file']:
-                        files_list.append(remote_folder + key['name'])
-                if remote_path not in files_list:
-                    self.yadisk.upload(local_path, remote_path)
-                    logging.info(
-                        f'{str(datetime.now()):25}:    '
-                        f'Файл "{local_path.split("/")[-1]}" отправлен в "{remote_folder}" YaDisk...')
+        logging.info(f'{str(datetime.now()):25}:    Копирование отчетов в Яндекс.Диск...')
+        if path_list:
+            if self.use_yadisk:
+                logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
+                self.yadisk = yadisk.YaDisk(token=token)
+                if self.yadisk.check_token():
+                    path = '' + self.path_aquapark
+                    remote_folder = self.create_path_yadisk(path)
+                    for local_path in path_list:
+                        remote_path = remote_folder + local_path.split('/')[-1]
+                        logging.info(f'{str(datetime.now()):25}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
+                        files_list_yandex = list(self.yadisk.listdir(remote_folder))
+                        files_list = []
+                        for key in files_list_yandex:
+                            if key['file']:
+                                files_list.append(remote_folder + key['name'])
+                        if remote_path not in files_list:
+                            self.yadisk.upload(local_path, remote_path)
+                            logging.info(
+                                f'{str(datetime.now()):25}:    '
+                                f'Файл "{local_path.split("/")[-1]}" отправлен в "{remote_folder}" YaDisk...')
+                        else:
+                            logging.warning(
+                                f'{str(datetime.now()):25}:    '
+                                f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"')
+                            def rewrite_file():
+                                self.yadisk.remove(remote_path, permanently=True)
+                                self.yadisk.upload(local_path, remote_path)
+                                logging.warning(
+                                    f'{str(datetime.now()):25}:    '
+                                    f'Файл "{local_path.split("/")[-1]}" успешно обновлен')
+                            if self.root.ids.report.ids.split_by_days.active:
+                                rewrite_file()
+                            else:
+                                self.show_dialog_variant('Файл уже существует',
+                                                     f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"'
+                                                     f'\nЗаменить?',
+                                                     rewrite_file
+                                                     )
                 else:
-                    logging.warning(
-                        f'{str(datetime.now()):25}:    '
-                        f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"')
-                    def rewrite_file():
-                        self.yadisk.remove(remote_path, permanently=True)
-                        self.yadisk.upload(local_path, remote_path)
-                        logging.warning(
-                            f'{str(datetime.now()):25}:    '
-                            f'Файл "{local_path.split("/")[-1]}" успешно обновлен')
-                    if self.root.ids.report.ids.split_by_days.active:
-                        rewrite_file()
-                    else:
-                        self.show_dialog_variant('Файл уже существует',
-                                             f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"'
-                                             f'\nЗаменить?',
-                                             rewrite_file
-                                             )
-            else:
-                logging.error(f'{str(datetime.now()):25}:    Ошибка YaDisk: token не валиден')
-                self.show_dialog('Ошибка соединения с Yandex.Disc',
-                                 f'\nОтчеты сохранены в папке {self.local_folder} '
-                                 f'и не будут отправлены на Yandex.Disc.')
+                    logging.error(f'{str(datetime.now()):25}:    Ошибка YaDisk: token не валиден')
+                    self.show_dialog('Ошибка соединения с Yandex.Disc',
+                                     f'\nОтчеты сохранены в папке {self.local_folder} '
+                                     f'и не будут отправлены на Yandex.Disc.')
+        else:
+            logging.info(f'{str(datetime.now()):25}:    Нет ни одного отчета для отправки в Yandex.Disk')
 
     def create_path_yadisk(self, path):
         """
@@ -2801,29 +2805,24 @@ class BarsicReport2(App):
         """
         Функция управления
         """
+        self.path_list = []
         self.fin_report()
         self.agent_report()
         if self.finreport_xls:
-            fin_report_path = self.export_fin_report()
-            if self.use_yadisk:
-                self.sync_to_yadisk(fin_report_path, self.yadisk_token)
+            self.path_list.append(self.export_fin_report())
         if self.agentreport_xls:
-            agent_report_path = self.export_agent_report()
-            if self.use_yadisk:
-                self.sync_to_yadisk(agent_report_path, self.yadisk_token)
+            self.path_list.append(self.export_agent_report())
         if self.finreport_google:
             self.export_to_google_sheet()
             self.open_googlesheet()
         if self.finreport_telegram:
             self.send_message_to_telegram()
         if self.check_itogreport_xls:
-            organisation_total_path = self.save_organisation_total(self.itog_report_org1)
-            if self.use_yadisk:
-                self.sync_to_yadisk(organisation_total_path, self.yadisk_token)
+            self.path_list.append(self.save_organisation_total(self.itog_report_org1))
         if self.check_cashreport_xls:
-            cashdesk_report_path = self.save_cashdesk_report(self.cashdesk_report_org1)
-            if self.use_yadisk:
-                self.sync_to_yadisk(cashdesk_report_path, self.yadisk_token)
+            self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org1))
+        if self.use_yadisk:
+            self.sync_to_yadisk(self.path_list, self.yadisk_token)
 
     def load_report(self):
         """

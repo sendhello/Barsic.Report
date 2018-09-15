@@ -870,7 +870,7 @@ class BarsicReport2(App):
                         break
             report[typpe].append(type_sum)
         report['Итого'] = [all_sum]
-        report['Дата'] = [[date_from, date_to - timedelta(1)]]
+        report['Дата'] = [[date_from, date_to]]
         return report
 
     def read_bitrix_base(self,
@@ -1331,11 +1331,11 @@ class BarsicReport2(App):
         ws.write(0, 13, 'Online Продажи Сумма', style0)
         ws.write(0, 14, 'Online Продажи Средний чек', style0)
         ws.write(0, 15, 'Сумма безнал', style0)
-        if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1]:
+        if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1] - timedelta(1):
             date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(self.finreport_dict["Дата"][1], "%Y-%m-%d")}'
+                    f'{datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
         ws.write(1, 0, date_, style1)
         ws.write(1, 1, self.finreport_dict['Кол-во проходов'][0], style1)
         ws.write(1, 2, self.finreport_dict['ИТОГО'][1], style2)
@@ -1417,16 +1417,16 @@ class BarsicReport2(App):
         default_book_style = wb.default_style
         default_book_style.font.height = 20 * 44  # 36pt
 
-        if self.agentreport_dict['Дата'][0] == self.agentreport_dict["Дата"][1]:
+        if self.agentreport_dict['Дата'][0] == self.agentreport_dict["Дата"][1] - timedelta(1):
             date_ = datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")
             head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
                    f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")}г.'
         else:
             date_ = f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(self.agentreport_dict["Дата"][1], "%Y-%m-%d")}'
+                    f'{datetime.strftime(self.agentreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
             head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
                    f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
-                   f'{datetime.strftime(self.agentreport_dict["Дата"][1], "%d.%m.%Y")}г.'
+                   f'{datetime.strftime(self.agentreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}г.'
         ws.write(0, 0, head, style0)
         # ws.write(0, 1, date_, style1)
         ws.write(2, 0, 'Наименование поставщика услуг', style3)
@@ -2003,7 +2003,7 @@ class BarsicReport2(App):
 
     def open_googlesheet(self):
         """
-        Открывает брацзев с текущей гугл-таблицей
+        Открывает браузер с текущей гугл-таблицей
         """
         if not self.open_browser:
             logging.info(f'{str(datetime.now()):25}:    Открытие файла-отчета в браузере...')
@@ -2021,10 +2021,10 @@ class BarsicReport2(App):
         """
         logging.info(f'{str(datetime.now()):25}:    Составление SMS-отчета...')
         resporse = 'Отчет по аквапарку за '
-        if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1]:
+        if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1] - timedelta(1):
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
         else:
-            resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(self.finreport_dict["Дата"][1], "%d.%m.%Y")}:\n'
+            resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}:\n'
         if self.finreport_dict['ИТОГО'][1]:
             resporse += f'Люди - {self.finreport_dict["Кол-во проходов"][0]};\n'
             resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1]:.2f} ₽;\n'
@@ -2228,7 +2228,7 @@ class BarsicReport2(App):
         ws[column[7] + self.row] = 'По:'
         ws[column[7] + self.row].font = font
         ws[column[7] + self.row].alignment = align_top
-        ws[column[9] + self.row] = itog_report['Дата'][1].strftime("%d.%m.%Y")
+        ws[column[9] + self.row] = (itog_report['Дата'][1] - timedelta(1)).strftime("%d.%m.%Y")
         ws[column[9] + self.row].font = font_bold
         ws[column[9] + self.row].alignment = align_top
 
@@ -2425,11 +2425,11 @@ class BarsicReport2(App):
         #     ws.column_dimensions[col].width = value * 1.5
 
         # сохранение файла в текущую директорию
-        if itog_report['Дата'][0] == itog_report["Дата"][1]:
+        if itog_report['Дата'][0] == itog_report["Дата"][1] - timedelta(1):
             date_ = datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(itog_report["Дата"][1], "%Y-%m-%d")}'
+                    f'{datetime.strftime(itog_report["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
         path = self.local_folder + self.path_aquapark + date_ + '_Итоговый_отчет' + ".xlsx"
         logging.info(f'{str(datetime.now()):25}:    Сохранение Итогового отчета в {path}')
         path = self.create_path(path)
@@ -2612,7 +2612,7 @@ class BarsicReport2(App):
         ws[column[4] + self.row] = 'по'
         ws[column[4] + self.row].font = font
         ws[column[4] + self.row].alignment = align_top
-        ws[column[5] + self.row] = cashdesk_report['Дата'][0][1].strftime("%d.%m.%Y")
+        ws[column[5] + self.row] = (cashdesk_report['Дата'][0][1] - timedelta(1)).strftime("%d.%m.%Y")
         ws.merge_cells(start_row=self.row, start_column=5, end_row=self.row, end_column=7)
         ws[column[5] + self.row].font = font_bold
         ws[column[5] + self.row].alignment = align_top
@@ -2753,11 +2753,11 @@ class BarsicReport2(App):
             rd.height = 18
             i += 1
 
-        if cashdesk_report['Дата'][0][0] == cashdesk_report["Дата"][0][1]:
+        if cashdesk_report['Дата'][0][0] == cashdesk_report["Дата"][0][1] + timedelta(1):
             date_ = datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(cashdesk_report["Дата"][0][1], "%Y-%m-%d")}'
+                    f'{datetime.strftime(cashdesk_report["Дата"][0][1] - timedelta(1), "%Y-%m-%d")}'
         path = self.local_folder + self.path_aquapark + date_ + '_Суммовой_отчет_по_чековой_ленте' + ".xlsx"
         logging.info(f'{str(datetime.now()):25}:    Сохранение Суммового отчета в {path}')
         path = self.create_path(path)

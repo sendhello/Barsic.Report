@@ -73,7 +73,7 @@ def add_date(func):
             hide_zeroes='0',
             hide_internal='1',
         )
-        report['Дата'] = (date_from, date_to - timedelta(1), '', '')
+        report['Дата'] = (date_from, date_to, '', '')
         return report
     return add_sum_wrapper
 

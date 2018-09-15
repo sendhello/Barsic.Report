@@ -61,6 +61,7 @@ import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
 import telepot
 
+logging.basicConfig(filename="barsic_reports.log", level=logging.INFO)
 
 class BarsicReport2(App):
     """
@@ -139,8 +140,7 @@ class BarsicReport2(App):
         config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
         config.setdefault('PATH', 'agentXML', 'data/org_plat_agent.xml')
         config.setdefault('PATH', 'local_folder', 'report')
-        config.setdefault('PATH', 'path_aquapark', 'report')
-        config.setdefault('PATH', 'path_beach', 'report')
+        config.setdefault('PATH', 'path', 'report')
         config.setdefault('PATH', 'CREDENTIALS_FILE', 'data/1720aecc5640.json')
         config.setdefault('PATH', 'list_google_docs', 'data/list_google_docs.csv')
         config.adddefaultsection('Yadisk')
@@ -179,8 +179,7 @@ class BarsicReport2(App):
         self.reportXML = self.config.get('PATH', 'reportXML')
         self.agentXML = self.config.get('PATH', 'agentXML')
         self.local_folder = self.config.get('PATH', 'local_folder')
-        self.path_aquapark = self.config.get('PATH', 'path_aquapark')
-        self.path_beach = self.config.get('PATH', 'path_beach')
+        self.path = self.config.get('PATH', 'path')
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
         self.list_google_docs = self.config.get('PATH', 'list_google_docs')
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
@@ -412,9 +411,9 @@ class BarsicReport2(App):
         self.previous_date_from = date_obj
         self.date_from = datetime.strptime(str(date_obj), '%Y-%m-%d')
         self.root.ids.report.ids.date_from.text = str(date_obj)
-        if self.date_to <= self.date_from or self.root.ids.report.ids.date_switch.active:
-            self.set_date_to(date_obj + timedelta(1))
-        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
+        if self.date_to < self.date_from or self.root.ids.report.ids.date_switch.active:
+            self.set_date_to(date_obj)
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 
     def show_date_from(self):
         pd = self.previous_date_from
@@ -426,11 +425,11 @@ class BarsicReport2(App):
 
     def set_date_to(self, date_obj):
         self.previous_date_to = date_obj
-        self.date_to = datetime.strptime(str(date_obj), '%Y-%m-%d')
+        self.date_to = datetime.strptime(str(date_obj), '%Y-%m-%d') + timedelta(1)
         self.root.ids.report.ids.date_to.text = str(date_obj)
-        if self.date_to <= self.date_from:
-            self.set_date_from(date_obj - timedelta(1))
-        logging.info(f'{str(datetime.now()):25}:    Установка периода отчета на {self.date_from} - {self.date_to}')
+        if self.date_to < self.date_from:
+            self.set_date_from(date_obj)
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Установка периода отчета на {self.date_from} - {self.date_to}')
 
     def show_date_to(self):
         if self.root.ids.report.ids.date_switch.active:
@@ -477,12 +476,12 @@ class BarsicReport2(App):
         :return: Количество человек в зоне
         """
 
-        logging.info(f'{str(datetime.now()):25}:    Выполнение функции "count_clients"')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Выполнение функции "count_clients"')
 
         result = []
 
         try:
-            logging.info(f'{str(datetime.now()):25}:    Попытка соединения с {server}')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Попытка соединения с {server}')
 
             cnxn = pyodbc.connect(
                 f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
@@ -518,16 +517,16 @@ class BarsicReport2(App):
                     result.append(row)
                 else:
                     break
-            logging.info(f'{str(datetime.now()):25}:    Результат функции "count_clients": {result}')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Результат функции "count_clients": {result}')
             if not result:
                 result.append(('Пусто', 488, '', '0003'))
 
         except pyodbc.OperationalError as e:
-            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка {repr(e)}')
             result.append(('Нет данных', 488, 'Ошибка соединения', repr(e)))
             self.show_dialog(f'Ошибка соединения с {server}: {database}', repr(e))
         except pyodbc.ProgrammingError as e:
-            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка {repr(e)}')
             result.append(('Нет данных', 488, 'Ошибка соединения', repr(e)))
             self.show_dialog(f'Невозможно открыть {database}', repr(e))
         return result
@@ -638,7 +637,7 @@ class BarsicReport2(App):
         )
         self.org1 = (org_list1[0][0], org_list1[0][2])
         self.org2 = (org_list2[0][0], org_list2[0][2])
-        logging.info(f'{str(datetime.now()):25}:    Выбраны организации {org_list1[0][2]} и {org_list2[0][2]}')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Выбраны организации {org_list1[0][2]} и {org_list2[0][2]}')
 
     def list_organisation(self,
                           server,
@@ -655,10 +654,10 @@ class BarsicReport2(App):
         :param pwd: str - Пароль пользователя базы данных, например 'pass'
         :return: list = Список организаций, каджая из которых - кортеж с параметрами организации
         """
-        logging.info(f'{str(datetime.now()):25}:    Поиск организаций...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Поиск организаций...')
         result = []
         try:
-            logging.info(f'{str(datetime.now()):25}:    Попытка соединения с {server}')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Попытка соединения с {server}')
             cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
             cursor = cnxn.cursor()
 
@@ -682,10 +681,10 @@ class BarsicReport2(App):
                 else:
                     break
         except pyodbc.OperationalError as e:
-            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка {repr(e)}')
             self.show_dialog(f'Ошибка соединения с {server}: {database}', repr(e))
         except pyodbc.ProgrammingError as e:
-            logging.error(f'{str(datetime.now()):25}:    Ошибка {repr(e)}')
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка {repr(e)}')
             self.show_dialog(f'Невозможно открыть {database}', repr(e))
         return result
 
@@ -736,7 +735,7 @@ class BarsicReport2(App):
                 break
         report.append((0, 0, 0, 0, org_name, 0, 'Организация', 'Организация'))
         if len(report) > 1:
-            logging.info(f'{str(datetime.now())[:-7]}: Отчет сформирован ID организации = {org}, '
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Отчет сформирован ID организации = {org}, '
                          f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'
                          f'Скрывать внутренние точки обслуживания: {hide_internal})')
         return report
@@ -776,7 +775,7 @@ class BarsicReport2(App):
             else:
                 break
         if len(report) > 1:
-            logging.info(f'{str(datetime.now())[:-7]}: Суммовой отчет сформирован, '
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Суммовой отчет сформирован, '
                          f'Период: {date_from[:8]}-{date_to[:8]}')
         return report
 
@@ -815,7 +814,7 @@ class BarsicReport2(App):
             else:
                 break
         if len(report) > 1:
-            logging.info(f'{str(datetime.now())[:-7]}: Список рабочих мест сформирован.')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Список рабочих мест сформирован.')
         return report
 
     def cashdesk_report(
@@ -871,6 +870,10 @@ class BarsicReport2(App):
             report[typpe].append(type_sum)
         report['Итого'] = [all_sum]
         report['Дата'] = [[date_from, date_to]]
+        if database == self.database1:
+            report['Организация'] = [[self.org1[1]]]
+        elif database == self.database2:
+            report['Организация'] = [[self.org2[1]]]
         return report
 
     def read_bitrix_base(self,
@@ -892,7 +895,7 @@ class BarsicReport2(App):
         :param date_to:  str - Конец отчетного периода в формате: 'YYYYMMDD 00:00:00'
         :return: list = Список организаций, каджая из которых - кортеж с параметрами организации
         """
-        logging.info(f'{str(datetime.now()):25}:    Чтение online-продаж...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Чтение online-продаж...')
         date_from = (date_from - timedelta(1)).strftime("%Y%m%d") + " 19:00:00"
         date_to = (date_to - timedelta(1)).strftime("%Y%m%d") + " 19:00:00"
 
@@ -1012,8 +1015,8 @@ class BarsicReport2(App):
         Добавляет новую организацию в список организаций self.orgs, словарь self.orgs_dict и XML конфигурацию.
         Возвращает изьятую ранее услугу в список новых услуг с помощью функции self.readd_org
         """
-        logging.info(f'{str(datetime.now()):25}:    Добавление новой группы - {name}')
-        logging.info(f'{str(datetime.now()):25}:    Добавление услуги {service} в группу {name}')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Добавление новой группы - {name}')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Добавление услуги {service} в группу {name}')
         self.orgs.append(name)
         self.orgs_dict[name] = []
         self.readd_org(service)
@@ -1054,7 +1057,7 @@ class BarsicReport2(App):
         """
         Добавляет услугу в список услуг и вызывает функцию распределения для других услуг
         """
-        logging.info(f'{str(datetime.now()):25}:    Добавление услуги {service} в группу {org}')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Добавление услуги {service} в группу {org}')
         self.orgs_dict[org].append(service)
         #Запись новой услуги в XML
         with open(self.reportXML, encoding='utf-8') as f:
@@ -1216,7 +1219,7 @@ class BarsicReport2(App):
         Форминует финансовый отчет в установленном формате
         :return - dict
         """
-        logging.info(f'{str(datetime.now()):25}:    Формирование финансового отчета')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета')
         self.finreport_dict = {}
         is_aquazona = None
         for key in self.orgs_dict:
@@ -1255,7 +1258,7 @@ class BarsicReport2(App):
         Форминует отчет платежного агента в установленном формате
         :return - dict
         """
-        logging.info(f'{str(datetime.now()):25}:    Формирование отчета платежного агента')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование отчета платежного агента')
         self.agentreport_dict = {}
         for key in self.agent_dict:
             if key != 'Не учитывать':
@@ -1351,8 +1354,8 @@ class BarsicReport2(App):
         ws.write(1, 12, self.finreport_dict['Online Продажи'][0], style1)
         ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
         ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
-        path = self.local_folder + self.path_aquapark + date_ + '_Финансовый_отчет' + ".xls"
-        logging.info(f'{str(datetime.now()):25}:    Сохранение финансового отчета в {path}')
+        path = self.local_folder + self.path + date_ + ' Финансовый отчет' + ".xls"
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение финансового отчета в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -1444,8 +1447,8 @@ class BarsicReport2(App):
                     ws.write(i, 1, self.agentreport_dict[key][1], style2)
                     i += 1
 
-        path = self.local_folder + self.path_aquapark + date_ + '_Отчет_платежного_агента' + ".xls"
-        logging.info(f'{str(datetime.now()):25}:    Сохранение отчета платежного агента в {path}')
+        path = self.local_folder + self.path + date_ + ' Отчет платежного агента' + ".xls"
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение отчета платежного агента в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -1454,7 +1457,7 @@ class BarsicReport2(App):
         """
         Проверяет наличие указанного пути. В случае отсутствия каких-либо папок создает их
         """
-        logging.info(f'{str(datetime.now()):25}:    Проверка локальных путей сохранения файлов...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Проверка локальных путей сохранения файлов...')
         list_path = path.split('/')
         path = ''
         end_path = ''
@@ -1466,7 +1469,7 @@ class BarsicReport2(App):
         for folder in list_path:
             if folder not in os.listdir():
                 os.mkdir(folder)
-                logging.warning(f'{str(datetime.now()):25}:    В директории "{os.getcwd()}" создана папка "{folder}"')
+                logging.warning(f'{__name__}: {str(datetime.now())[:-7]}:    В директории "{os.getcwd()}" создана папка "{folder}"')
                 os.chdir(folder)
             else:
                 os.chdir(folder)
@@ -1483,7 +1486,7 @@ class BarsicReport2(App):
         try:
             file.save(path)
         except PermissionError as e:
-            logging.error(f'{str(datetime.now()):25}:    Файл "{path}" занят другим процессом.\n{repr(e)}')
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Файл "{path}" занят другим процессом.\n{repr(e)}')
             self.show_dialog(f'Ошибка записи файла',
                              f'Файл "{path}" занят другим процессом.\nДля повтора попытки закройте это сообщение',
                              func=self.save_file, path=path, file=file)
@@ -1492,52 +1495,38 @@ class BarsicReport2(App):
         """
         Копирует локальные файлы в Яндекс Диск
         """
-        logging.info(f'{str(datetime.now()):25}:    Копирование отчетов в Яндекс.Диск...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Копирование отчетов в Яндекс.Диск...')
         if path_list:
             if self.use_yadisk:
-                logging.info(f'{str(datetime.now()):25}:    Соединение с YaDisk...')
+                logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Соединение с YaDisk...')
                 self.yadisk = yadisk.YaDisk(token=token)
                 if self.yadisk.check_token():
-                    path = '' + self.path_aquapark
+                    path = '' + self.path
                     remote_folder = self.create_path_yadisk(path)
                     for local_path in path_list:
                         remote_path = remote_folder + local_path.split('/')[-1]
-                        logging.info(f'{str(datetime.now()):25}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
+                        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Отправка файла "{local_path.split("/")[-1]}" в YaDisk...')
                         files_list_yandex = list(self.yadisk.listdir(remote_folder))
                         files_list = []
                         for key in files_list_yandex:
                             if key['file']:
                                 files_list.append(remote_folder + key['name'])
-                        if remote_path not in files_list:
-                            self.yadisk.upload(local_path, remote_path)
-                            logging.info(
-                                f'{str(datetime.now()):25}:    '
-                                f'Файл "{local_path.split("/")[-1]}" отправлен в "{remote_folder}" YaDisk...')
-                        else:
+                        if remote_path in files_list:
                             logging.warning(
-                                f'{str(datetime.now()):25}:    '
-                                f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"')
-                            def rewrite_file():
-                                self.yadisk.remove(remote_path, permanently=True)
-                                self.yadisk.upload(local_path, remote_path)
-                                logging.warning(
-                                    f'{str(datetime.now()):25}:    '
-                                    f'Файл "{local_path.split("/")[-1]}" успешно обновлен')
-                            if self.root.ids.report.ids.split_by_days.active:
-                                rewrite_file()
-                            else:
-                                self.show_dialog_variant('Файл уже существует',
-                                                     f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}"'
-                                                     f'\nЗаменить?',
-                                                     rewrite_file
-                                                     )
+                                f'{__name__}: {str(datetime.now())[:-7]}:    '
+                                f'Файл "{local_path.split("/")[-1]}" уже существует в "{remote_folder}" и будет заменен!')
+                            self.yadisk.remove(remote_path, permanently=True)
+                        self.yadisk.upload(local_path, remote_path)
+                        logging.info(
+                            f'{__name__}: {str(datetime.now())[:-7]}:    '
+                            f'Файл "{local_path.split("/")[-1]}" отправлен в "{remote_folder}" YaDisk...')
                 else:
-                    logging.error(f'{str(datetime.now()):25}:    Ошибка YaDisk: token не валиден')
+                    logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка YaDisk: token не валиден')
                     self.show_dialog('Ошибка соединения с Yandex.Disc',
                                      f'\nОтчеты сохранены в папке {self.local_folder} '
                                      f'и не будут отправлены на Yandex.Disc.')
         else:
-            logging.info(f'{str(datetime.now()):25}:    Нет ни одного отчета для отправки в Yandex.Disk')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Нет ни одного отчета для отправки в Yandex.Disk')
 
     def create_path_yadisk(self, path):
         """
@@ -1545,7 +1534,7 @@ class BarsicReport2(App):
         :param path:
         :return:
         """
-        logging.info(f'{str(datetime.now()):25}:    Проверка путей сохранения файлов на Яндекс.Диске...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Проверка путей сохранения файлов на Яндекс.Диске...')
         list_path = path.split('/')
         path = ''
         end_path = ''
@@ -1568,7 +1557,7 @@ class BarsicReport2(App):
                     folders_list.append(directory + key['name'])
             if folder not in folders_list:
                 self.yadisk.mkdir(folder)
-                logging.info(f'{str(datetime.now()):25}:    Создание новой папки в YandexDisk - "{folder}"')
+                logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Создание новой папки в YandexDisk - "{folder}"')
                 directory = folder + '/'
             else:
                 directory = folder + '/'
@@ -1579,7 +1568,7 @@ class BarsicReport2(App):
         """
         Формирование и заполнение google-таблицы
         """
-        logging.info(f'{str(datetime.now()):25}:    Сохранение Финансового отчета в Google-таблицах...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение Финансового отчета в Google-таблицах...')
 
         #self.CREDENTIALS_FILE # имя файла с закрытым ключом
 
@@ -1613,7 +1602,7 @@ class BarsicReport2(App):
         doc_name = f"Итоговый отчет по Аквапарку - {data_report} {datetime.strftime(self.finreport_dict['Дата'][0], '%Y')}"
 
         if self.finreport_dict['Дата'][0] + timedelta(1) != self.finreport_dict['Дата'][1]:
-            logging.info(f'{str(datetime.now()):25}:    Экспорт отчета в Google Sheet за несколько дней невозможен!')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Экспорт отчета в Google Sheet за несколько дней невозможен!')
             self.show_dialog('Ошибка экспорта в Google.Sheet', 'Экспорт отчета в Google Sheet за несколько дней невозможен!')
         else:
             with open(self.list_google_docs, 'r', encoding='utf-8') as f:
@@ -1752,7 +1741,7 @@ class BarsicReport2(App):
                     for link in links:
                         file.writerow(link)
                 logging.info(
-                    f'{str(datetime.now()):25}:    Создана новая таблица с Id: {self.spreadsheet["spreadsheetId"]}')
+                    f'{__name__}: {str(datetime.now())[:-7]}:    Создана новая таблица с Id: {self.spreadsheet["spreadsheetId"]}')
 
             self.spreadsheet = self.googleservice.spreadsheets().get(spreadsheetId=self.google_doc[1], ranges=[],
                                                      includeGridData=True).execute()
@@ -1804,7 +1793,7 @@ class BarsicReport2(App):
         """
         Заполнение google-таблицы в случае, если данные уже существуют
         """
-        logging.warning(f'{str(datetime.now()):25}:    Перезапись уже существующей строки...')
+        logging.warning(f'{__name__}: {str(datetime.now())[:-7]}:    Перезапись уже существующей строки...')
         self.reprint = 1
         self.write_google_sheet()
 
@@ -2010,7 +1999,7 @@ class BarsicReport2(App):
         Открывает браузер с текущей гугл-таблицей
         """
         if not self.open_browser:
-            logging.info(f'{str(datetime.now()):25}:    Открытие файла-отчета в браузере...')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Открытие файла-отчета в браузере...')
             self.show_dialog_variant(f'Открыть Google-отчет?',
                                      'Открыть Google-отчет?',
                                      webbrowser.open,
@@ -2023,7 +2012,7 @@ class BarsicReport2(App):
         Составляет текстовую версию финансового отчета
         :return: str
         """
-        logging.info(f'{str(datetime.now()):25}:    Составление SMS-отчета...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Составление SMS-отчета...')
         resporse = 'Отчет по аквапарку за '
         if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1] - timedelta(1):
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
@@ -2052,7 +2041,7 @@ class BarsicReport2(App):
         """
         Отправка отчета в telegram
         """
-        logging.info(f'{str(datetime.now()):25}:    Отправка SMS-отчета в Telegram-канал...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Отправка SMS-отчета в Telegram-канал...')
         SetProxy = telepot.api.set_proxy(self.telegram_proxy, basic_auth=self.telegram_basic_auth)
         bot = telepot.Bot(self.telegram_token)
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
@@ -2369,7 +2358,7 @@ class BarsicReport2(App):
             ws[column[12] + self.row] = organisation_total["Итого по отчету"][""][0][2]
             self.total_report_sum = all_sum
         else:
-            logging.error(f'{str(datetime.now()):25}:    Ошибка: Итоговые суммы не совпадают. "Итого по отчету" '
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка: Итоговые суммы не совпадают. "Итого по отчету" '
                           f'из Барса не совпадает с итоговой суммой по формируемым строкам.')
             self.show_dialog(f'Ошибка: Итоговые суммы не совпадают',
                              '"Итого по отчету" из Барса не совпадает с итоговой суммой по формируемым строкам.'
@@ -2434,8 +2423,10 @@ class BarsicReport2(App):
         else:
             date_ = f'{datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")} - ' \
                     f'{datetime.strftime(itog_report["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
-        path = self.local_folder + self.path_aquapark + date_ + '_Итоговый_отчет' + ".xlsx"
-        logging.info(f'{str(datetime.now()):25}:    Сохранение Итогового отчета в {path}')
+        path = self.local_folder + self.path + date_ + \
+               f' Итоговый отчет по {organisation_total["Организация"]["Организация"][0][0]}' + ".xlsx"
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение Итогового отчета '
+                     f'по {organisation_total["Организация"]["Организация"][0][0]} в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -2606,6 +2597,11 @@ class BarsicReport2(App):
         # Высота строк
         ws.row_dimensions[1].height = 24
 
+        ws[column[1] + next_row()] = f'{cashdesk_report["Организация"][0][0]}'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column) - 1)
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
+
         ws[column[1] + next_row()] = 'За период с:'
         ws[column[1] + self.row].font = font
         ws[column[1] + self.row].alignment = align_top
@@ -2731,7 +2727,7 @@ class BarsicReport2(App):
             b += 1
 
         for typpe in cashdesk_report:
-            if typpe != 'Дата':
+            if typpe != 'Дата' and typpe != 'Организация':
                 if typpe != 'Итого':
                     ws[column[1] + next_row()] = typpe
                     merge_width_red()
@@ -2756,14 +2752,14 @@ class BarsicReport2(App):
             rd = ws.row_dimensions[i]
             rd.height = 18
             i += 1
-
         if cashdesk_report['Дата'][0][0] == cashdesk_report["Дата"][0][1] - timedelta(1):
             date_ = datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")} - ' \
                     f'{datetime.strftime(cashdesk_report["Дата"][0][1] - timedelta(1), "%Y-%m-%d")}'
-        path = self.local_folder + self.path_aquapark + date_ + '_Суммовой_отчет_по_чековой_ленте' + ".xlsx"
-        logging.info(f'{str(datetime.now()):25}:    Сохранение Суммового отчета в {path}')
+        path = self.local_folder + self.path + date_ + f' Суммовой отчет по {cashdesk_report["Организация"][0][0]}' + ".xlsx"
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение Суммового отчета '
+                     f'по {cashdesk_report["Организация"][0][0]} в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -2772,7 +2768,7 @@ class BarsicReport2(App):
         """
         Установка чекбоксов в соответствии с настройками INI-файла
         """
-        logging.info(f'{str(datetime.now()):25}:    Загрузка настроек...')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Загрузка настроек...')
         self.root.ids.report.ids.split_by_days.active = self.split_by_days
         self.root.ids.report.ids.finreport_xls.active = self.finreport_xls
         self.root.ids.report.ids.check_cashreport_xls.active = self.check_cashreport_xls
@@ -2791,7 +2787,7 @@ class BarsicReport2(App):
         self.config.set('General', name, str(checkbox))
         setattr(self, name, checkbox)
         self.config.write()
-        logging.info(f'{str(datetime.now()):25}:    Параметр {name} изменен на значение {checkbox}')
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Параметр {name} изменен на значение {checkbox}')
         if name == 'split_by_days' and not checkbox and not self.root.ids.report.ids.date_switch.active:
             self.root.ids.report.ids.finreport_google.active = False
             self.change_checkbox('finreport_google', False)
@@ -2818,9 +2814,15 @@ class BarsicReport2(App):
         if self.finreport_telegram:
             self.send_message_to_telegram()
         if self.check_itogreport_xls:
-            self.path_list.append(self.save_organisation_total(self.itog_report_org1))
+            if self.itog_report_org1['Итого по отчету'][1]:
+                self.path_list.append(self.save_organisation_total(self.itog_report_org1))
+            if self.itog_report_org2['Итого по отчету'][1]:
+                self.path_list.append(self.save_organisation_total(self.itog_report_org2))
         if self.check_cashreport_xls:
-            self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org1))
+            if self.cashdesk_report_org1['Итого'][0][1]:
+                self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org1))
+            if self.cashdesk_report_org2['Итого'][0][1]:
+                self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org2))
         if self.use_yadisk:
             self.sync_to_yadisk(self.path_list, self.yadisk_token)
 

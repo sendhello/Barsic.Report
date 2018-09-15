@@ -17,6 +17,9 @@
 import os
 import sys
 import traceback
+import logging
+
+logging.basicConfig(filename="barsicreport2.log", level=logging.INFO)
 
 # Никнейм и имя репозитория на github,
 # куда будет отправлен отчёт баг репорта.
@@ -52,7 +55,7 @@ except Exception:
     sys.exit(1)
 
 
-__version__ = 'v2.2-alpha.5'
+__version__ = 'v2.2-alpha.6'
 
 
 def main():

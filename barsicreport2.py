@@ -2753,7 +2753,7 @@ class BarsicReport2(App):
             rd.height = 18
             i += 1
 
-        if cashdesk_report['Дата'][0][0] == cashdesk_report["Дата"][0][1] + timedelta(1):
+        if cashdesk_report['Дата'][0][0] == cashdesk_report["Дата"][0][1] - timedelta(1):
             date_ = datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(cashdesk_report["Дата"][0][0], "%Y-%m-%d")} - ' \

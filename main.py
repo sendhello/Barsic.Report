@@ -23,7 +23,7 @@ logging.basicConfig(filename="barsicreport2.log", level=logging.INFO)
 
 # Никнейм и имя репозитория на github,
 # куда будет отправлен отчёт баг репорта.
-NICK_NAME_AND_NAME_REPOSITORY = 'REPO_PROJECT'
+NICK_NAME_AND_NAME_REPOSITORY = 'sendhello/Barsic.Report'
 
 directory = os.path.split(os.path.abspath(sys.argv[0]))[0]
 sys.path.insert(0, os.path.join(directory, 'libs/applibs'))
@@ -55,7 +55,7 @@ except Exception:
     sys.exit(1)
 
 
-__version__ = 'v2.2-alpha.6'
+__version__ = 'v2.2-alpha.7'
 
 
 def main():

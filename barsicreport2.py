@@ -245,14 +245,14 @@ class BarsicReport2(App):
         self.nav_drawer.toggle_nav_drawer()
         self.screen.ids.about.ids.label.text = \
             self.translation._(
-                u'[size=20][b]BarsicReport2[/b][/size]\n\n'
+                u'[size=20][b]Барсик.Отчеты[/b][/size]\n\n'
                 u'[b]Version:[/b] {version}\n'
-                u'[b]License:[/b] MIT\n\n'
+                u'[b]License:[/b] Corporate\n\n'
                 u'[size=20][b]Developer[/b][/size]\n\n'
-                u'[ref=SITE_PROJECT]'
-                u'[color={link_color}]NAME_AUTHOR[/color][/ref]\n\n'
+                u'[ref=github.com/sendhello]'
+                u'[color={link_color}]SendHello[/color][/ref]\n\n'
                 u'[b]Source code:[/b] '
-                u'[ref=REPO_PROJECT]'
+                u'[ref=github.com/sendhello/Barsic.Report]'
                 u'[color={link_color}]GitHub[/color][/ref]').format(
                 version=__version__,
                 link_color=get_hex_from_color(self.theme_cls.primary_color)

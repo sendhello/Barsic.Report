@@ -126,6 +126,7 @@ class BarsicReport2(App):
         config.setdefault('General', 'split_by_days', 'False')
         config.setdefault('General', 'date_switch', 'True')
         config.setdefault('General', 'use_yadisk', 'False')
+        config.setdefault('General', 'check_client_count_total_xls', 'False')
         config.setdefault('General', 'check_cashreport_xls', 'False')
         config.setdefault('General', 'check_itogreport_xls', 'False')
         config.adddefaultsection('MSSQL')
@@ -167,6 +168,7 @@ class BarsicReport2(App):
         self.split_by_days = False
         self.date_switch = functions.to_bool(self.config.get('General', 'date_switch'))
         self.use_yadisk = functions.to_bool(self.config.get('General', 'use_yadisk'))
+        self.check_client_count_total_xls = functions.to_bool(self.config.get('General', 'check_client_count_total_xls'))
         self.check_cashreport_xls = functions.to_bool(self.config.get('General', 'check_cashreport_xls'))
         self.check_itogreport_xls = functions.to_bool(self.config.get('General', 'check_itogreport_xls'))
         self.driver = self.config.get('MSSQL', 'driver')
@@ -556,8 +558,21 @@ class BarsicReport2(App):
                 )['Аквазона'][0])
         except KeyError:
             count_clients = 0
+        try:
+            count_clients_allday = self.reportClientCountTotals(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org1[0],
+                date_from=datetime.now(),
+                date_to=datetime.now() + timedelta(1),
+            )[0][1]
+        except IndexError:
+            count_clients_allday = 0
 
-        self.screen.ids.base.ids.count_clients.text = str(count_clients)
+        self.screen.ids.base.ids.count_clients.text = str(count_clients) + ' / ' + str(count_clients_allday)
         self.screen.ids.base.ids.name_zone.text = str(in_zone[len(in_zone) - 1][2])
         self.screen.ids.base.ids.count.text = str(in_zone[len(in_zone) - 1][0])
 
@@ -735,10 +750,82 @@ class BarsicReport2(App):
                 break
         report.append((0, 0, 0, 0, org_name, 0, 'Организация', 'Организация'))
         if len(report) > 1:
-            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Отчет сформирован ID организации = {org}, '
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Итоговый отчет сформирован ID организации = {org}, '
                          f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'
                          f'Скрывать внутренние точки обслуживания: {hide_internal})')
         return report
+
+    def reportClientCountTotals(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+            org,
+            date_from,
+            date_to,
+    ):
+        cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={user};PWD={pwd}')
+        date_from = date_from.strftime('%Y%m%d 00:00:00')
+        date_to = date_to.strftime('%Y%m%d 00:00:00')
+        cursor = cnxn.cursor()
+        cursor.execute(
+            f"exec sp_reportClientCountTotals @sa={org},@from='{date_from}',@to='{date_to}',@categoryId=0")
+        report = []
+        while True:
+            row = cursor.fetchone()
+            if row:
+                report.append(row)
+            else:
+                break
+        if len(report) > 1:
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Отчет по количеству посетителей сформирован '
+                         f'ID организации = {org}, Период: {date_from[:8]}-{date_to[:8]}')
+        return report
+
+    def client_count_totals_period(
+            self,
+            server,
+            database,
+            driver,
+            user,
+            pwd,
+            org,
+            org_name,
+            date_from,
+            date_to,
+    ):
+        """
+        Если выбран 1 день возвращает словарь количества людей за текущий месяц,
+        если выбран период возвращает словарь количества людей за период
+        """
+        count = []
+
+        if date_from + timedelta(1) == date_to:
+            first_day = datetime.strptime((date_from.strftime('%Y%m') + '01'), '%Y%m%d')
+            count.append((org_name, 1))
+        else:
+            first_day = date_from
+            count.append((org_name, 0))
+
+        while first_day < date_to:
+            client_count = self.reportClientCountTotals(
+                server=server,
+                database=database,
+                driver=driver,
+                user=user,
+                pwd=pwd,
+                org=org,
+                date_from=first_day,
+                date_to=first_day + timedelta(1),
+            )
+            try:
+                count.append((client_count[0][0], client_count[0][1]))
+            except IndexError:
+                count.append((first_day, 0))
+            first_day += timedelta(1)
+        return count
 
     def cash_report_request(
             self,
@@ -2764,6 +2851,251 @@ class BarsicReport2(App):
         self.save_file(path, wb)
         return path
 
+    def save_client_count_totals(self, client_count_totals_org):
+        """
+        Сохраняет отчет по количеству клиентов за день в Excel
+        """
+        # определяем стили
+        h1 = Font(name='Times New Roman',
+                  size=18,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        h2 = Font(name='Times New Roman',
+                  size=14,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        h3 = Font(name='Times New Roman',
+                  size=10,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        font = Font(name='Times New Roman',
+                    size=9,
+                    bold=False,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_bold = Font(name='Times New Roman',
+                    size=9,
+                    bold=True,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_red = Font(name='Times New Roman',
+                         size=9,
+                         bold=True,
+                         italic=False,
+                         vertAlign=None,
+                         underline='none',
+                         strike=False,
+                         color='FFFF0000')
+
+        fill = PatternFill(fill_type='solid',
+                           start_color='c1c1c1',
+                           end_color='c2c2c2')
+        align_top = Alignment(horizontal='general',
+                              vertical='top',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+        align_bottom = Alignment(horizontal='general',
+                              vertical='bottom',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+
+        border = Border(left=Side(border_style='thin',
+                                  color='FF000000'),
+                        right=Side(border_style='thin',
+                                   color='FF000000'),
+                        top=Side(border_style='thin',
+                                 color='FF000000'),
+                        bottom=Side(border_style='thin',
+                                    color='FF000000'),
+                        diagonal=Side(border_style='thin',
+                                      color='FF000000'),
+                        diagonal_direction=0,
+                        outline=Side(border_style='thin',
+                                     color='FF000000'),
+                        vertical=Side(border_style='thin',
+                                      color='FF000000'),
+                        horizontal=Side(border_style='thin',
+                                        color='FF000000')
+                        )
+        border_top_bottom = Border(bottom=Side(border_style='thin', color='FF000000'),
+                                   top=Side(border_style='thin', color='FF000000'),
+                                   )
+        border_right = Border(right=Side(border_style='thin', color='FF000000'))
+        border_left = Border(left=Side(border_style='thin', color='FF000000'))
+        border_top = Border(top=Side(border_style='thin', color='FF000000'))
+        border_left_top = Border(top=Side(border_style='thin', color='FF000000'),
+                                 left=Side(border_style='thin', color='FF000000'),
+                                 )
+        border_right_top = Border(top=Side(border_style='thin', color='FF000000'),
+                                  right=Side(border_style='thin', color='FF000000'),
+                                  )
+        align_center = Alignment(horizontal='center',
+                                 vertical='bottom',
+                                 text_rotation=0,
+                                 wrap_text=False,
+                                 shrink_to_fit=False,
+                                 indent=0)
+        align_left = Alignment(horizontal='left',
+                               vertical='bottom',
+                               text_rotation=0,
+                               wrap_text=False,
+                               shrink_to_fit=False,
+                               indent=0)
+        number_format = 'General'
+        protection = Protection(locked=True,
+                                hidden=False)
+
+        column = ['', 'A', 'B', 'C', 'D', 'E']
+
+        self.row = '0'
+        def next_row():
+            self.row = str(int(self.row) + 1)
+            return self.row
+
+        # объект
+        wb = Workbook()
+
+        # активный лист
+        ws = wb.active
+
+        # название страницы
+        # ws = wb.create_sheet('первая страница', 0)
+        ws.title = 'Количество человек за день'
+        # шрифты
+        ws['A1'].font = h1
+        # выравнивание
+        ws['A1'].alignment = align_left
+
+        # Ширина стролбцов
+        ws.column_dimensions['A'].width = 1 / 7 * 124
+        ws.column_dimensions['B'].width = 1 / 7 * 21
+        ws.column_dimensions['C'].width = 1 / 7 * 95
+        ws.column_dimensions['D'].width = 1 / 7 * 24
+        ws.column_dimensions['E'].width = 1 / 7 * 80
+
+        # значение ячейки
+        # ws['A1'] = "Hello!"
+
+        ws[column[1] + next_row()] = 'Количество человек за день'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column)-1)
+        # шрифты
+        ws[column[1] + self.row].font = h1
+        # выравнивание
+        ws[column[1] + self.row].alignment = align_left
+        # Высота строк
+        ws.row_dimensions[1].height = 24
+
+        ws[column[1] + next_row()] = f'{client_count_totals_org[0][0]}'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column) - 1)
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
+
+        ws[column[1] + next_row()] = 'За период с:'
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
+        ws[column[2] + self.row] = client_count_totals_org[1][0].strftime("%d.%m.%Y")
+        ws.merge_cells(start_row=self.row, start_column=2, end_row=self.row, end_column=3)
+        ws[column[2] + self.row].font = font_bold
+        ws[column[2] + self.row].alignment = align_top
+        ws[column[4] + self.row] = 'по'
+        ws[column[4] + self.row].font = font
+        ws[column[4] + self.row].alignment = align_top
+        ws[column[5] + self.row] = (client_count_totals_org[-1][0]).strftime("%d.%m.%Y")
+        ws.merge_cells(start_row=self.row, start_column=5, end_row=self.row, end_column=7)
+        ws[column[5] + self.row].font = font_bold
+        ws[column[5] + self.row].alignment = align_top
+
+        # ТАБЛИЦА
+        def merge_table():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=2)
+            ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=5)
+            ws[column[1] + self.row].font = font
+            ws[column[3] + self.row].font = font
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[3] + self.row].alignment = align_top
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        def merge_table_bold():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=2)
+            ws.merge_cells(start_row=self.row, start_column=3, end_row=self.row, end_column=5)
+            ws[column[1] + self.row].font = font_bold
+            ws[column[3] + self.row].font = font_bold
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[3] + self.row].alignment = align_top
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        ws[column[1] + next_row()] = 'Дата'
+        ws[column[3] + self.row] = 'Количество клиентов'
+        merge_table_bold()
+        # раскрвшивание фона для заголовков
+        b = 1
+        while b < len(column):
+            ws[column[b] + self.row].fill = fill
+            b += 1
+
+        itog = 0
+        for line in client_count_totals_org:
+            try:
+                ws[column[1] + next_row()] = line[0].strftime('%d.%m.%Y')
+                ws[column[3] + self.row] = line[1]
+                merge_table()
+            except AttributeError:
+                pass
+            itog += line[1]
+
+        ws[column[1] + next_row()] = 'Итого'
+        ws[column[3] + self.row] = itog
+        merge_table_bold()
+
+        # увеличиваем все строки по высоте
+        max_row = ws.max_row
+        i = 2
+        while i <= max_row:
+            rd = ws.row_dimensions[i]
+            rd.height = 18
+            i += 1
+        if client_count_totals_org[0][1]:
+            date_ = datetime.strftime(client_count_totals_org[1][0], "%Y-%m")
+        else:
+            date_ = f'{datetime.strftime(client_count_totals_org[1][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(client_count_totals_org[-1][0], "%Y-%m-%d")}'
+        path = self.local_folder + self.path + date_ + f' Количество клиентов за день по {client_count_totals_org[0][0]}' + ".xlsx"
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение отчета по количеству клиентов '
+                     f'по {client_count_totals_org[0][0]} в {path}')
+        path = self.create_path(path)
+        self.save_file(path, wb)
+        return path
+
     def load_checkbox(self):
         """
         Установка чекбоксов в соответствии с настройками INI-файла
@@ -2771,6 +3103,7 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Загрузка настроек...')
         self.root.ids.report.ids.split_by_days.active = self.split_by_days
         self.root.ids.report.ids.finreport_xls.active = self.finreport_xls
+        self.root.ids.report.ids.check_client_count_total_xls.active = self.check_client_count_total_xls
         self.root.ids.report.ids.check_cashreport_xls.active = self.check_cashreport_xls
         self.root.ids.report.ids.check_itogreport_xls.active = self.check_itogreport_xls
         self.root.ids.report.ids.agentreport_xls.active = self.agentreport_xls
@@ -2823,8 +3156,12 @@ class BarsicReport2(App):
                 self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org1))
             if self.cashdesk_report_org2['Итого'][0][1]:
                 self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org2))
+        if self.check_client_count_total_xls:
+            self.path_list.append(self.save_client_count_totals(self.client_count_totals_org1))
+            self.path_list.append(self.save_client_count_totals(self.client_count_totals_org2))
         if self.use_yadisk:
             self.sync_to_yadisk(self.path_list, self.yadisk_token)
+            self.path_list = []
 
     def load_report(self):
         """
@@ -2859,6 +3196,17 @@ class BarsicReport2(App):
                 date_from=self.date_from,
                 date_to=self.date_to,
             )
+            self.client_count_totals_org1 = self.client_count_totals_period(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org1[0],
+                org_name=self.org1[1],
+                date_from=self.date_from,
+                date_to=self.date_to,
+            )
         if self.org2:
             self.itog_report_org2 = self.itog_report(
                 server=self.server,
@@ -2879,6 +3227,17 @@ class BarsicReport2(App):
                 driver=self.driver,
                 user=self.user,
                 pwd=self.pwd,
+                date_from=self.date_from,
+                date_to=self.date_to,
+            )
+            self.client_count_totals_org2 = self.client_count_totals_period(
+                server=self.server,
+                database=self.database2,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org2[0],
+                org_name=self.org2[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
             )

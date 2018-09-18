@@ -808,7 +808,7 @@ class BarsicReport2(App):
         else:
             first_day = date_from
             count.append((org_name, 0))
-
+        total = 0
         while first_day < date_to:
             client_count = self.reportClientCountTotals(
                 server=server,
@@ -822,9 +822,11 @@ class BarsicReport2(App):
             )
             try:
                 count.append((client_count[0][0], client_count[0][1]))
+                total += client_count[0][1]
             except IndexError:
                 count.append((first_day, 0))
             first_day += timedelta(1)
+        count.append(('Итого', total))
         return count
 
     def cash_report_request(
@@ -2864,22 +2866,6 @@ class BarsicReport2(App):
                   underline='none',
                   strike=False,
                   color='FF000000')
-        h2 = Font(name='Times New Roman',
-                  size=14,
-                  bold=True,
-                  italic=False,
-                  vertAlign=None,
-                  underline='none',
-                  strike=False,
-                  color='FF000000')
-        h3 = Font(name='Times New Roman',
-                  size=10,
-                  bold=True,
-                  italic=False,
-                  vertAlign=None,
-                  underline='none',
-                  strike=False,
-                  color='FF000000')
         font = Font(name='Times New Roman',
                     size=9,
                     bold=False,
@@ -2896,15 +2882,6 @@ class BarsicReport2(App):
                     underline='none',
                     strike=False,
                     color='FF000000')
-        font_red = Font(name='Times New Roman',
-                         size=9,
-                         bold=True,
-                         italic=False,
-                         vertAlign=None,
-                         underline='none',
-                         strike=False,
-                         color='FFFF0000')
-
         fill = PatternFill(fill_type='solid',
                            start_color='c1c1c1',
                            end_color='c2c2c2')
@@ -2915,14 +2892,6 @@ class BarsicReport2(App):
                               shrink_to_fit=False,
                               indent=0,
                               )
-        align_bottom = Alignment(horizontal='general',
-                              vertical='bottom',
-                              text_rotation=0,
-                              wrap_text=False,
-                              shrink_to_fit=False,
-                              indent=0,
-                              )
-
         border = Border(left=Side(border_style='thin',
                                   color='FF000000'),
                         right=Side(border_style='thin',
@@ -2941,24 +2910,6 @@ class BarsicReport2(App):
                         horizontal=Side(border_style='thin',
                                         color='FF000000')
                         )
-        border_top_bottom = Border(bottom=Side(border_style='thin', color='FF000000'),
-                                   top=Side(border_style='thin', color='FF000000'),
-                                   )
-        border_right = Border(right=Side(border_style='thin', color='FF000000'))
-        border_left = Border(left=Side(border_style='thin', color='FF000000'))
-        border_top = Border(top=Side(border_style='thin', color='FF000000'))
-        border_left_top = Border(top=Side(border_style='thin', color='FF000000'),
-                                 left=Side(border_style='thin', color='FF000000'),
-                                 )
-        border_right_top = Border(top=Side(border_style='thin', color='FF000000'),
-                                  right=Side(border_style='thin', color='FF000000'),
-                                  )
-        align_center = Alignment(horizontal='center',
-                                 vertical='bottom',
-                                 text_rotation=0,
-                                 wrap_text=False,
-                                 shrink_to_fit=False,
-                                 indent=0)
         align_left = Alignment(horizontal='left',
                                vertical='bottom',
                                text_rotation=0,
@@ -3024,7 +2975,7 @@ class BarsicReport2(App):
         ws[column[4] + self.row] = 'по'
         ws[column[4] + self.row].font = font
         ws[column[4] + self.row].alignment = align_top
-        ws[column[5] + self.row] = (client_count_totals_org[-1][0]).strftime("%d.%m.%Y")
+        ws[column[5] + self.row] = (client_count_totals_org[-2][0]).strftime("%d.%m.%Y")
         ws.merge_cells(start_row=self.row, start_column=5, end_row=self.row, end_column=7)
         ws[column[5] + self.row].font = font_bold
         ws[column[5] + self.row].alignment = align_top
@@ -3063,7 +3014,6 @@ class BarsicReport2(App):
             ws[column[b] + self.row].fill = fill
             b += 1
 
-        itog = 0
         for line in client_count_totals_org:
             try:
                 ws[column[1] + next_row()] = line[0].strftime('%d.%m.%Y')
@@ -3071,10 +3021,9 @@ class BarsicReport2(App):
                 merge_table()
             except AttributeError:
                 pass
-            itog += line[1]
 
         ws[column[1] + next_row()] = 'Итого'
-        ws[column[3] + self.row] = itog
+        ws[column[3] + self.row] = client_count_totals_org[-1][1]
         merge_table_bold()
 
         # увеличиваем все строки по высоте
@@ -3088,7 +3037,7 @@ class BarsicReport2(App):
             date_ = datetime.strftime(client_count_totals_org[1][0], "%Y-%m")
         else:
             date_ = f'{datetime.strftime(client_count_totals_org[1][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(client_count_totals_org[-1][0], "%Y-%m-%d")}'
+                    f'{datetime.strftime(client_count_totals_org[-2][0], "%Y-%m-%d")}'
         path = self.local_folder + self.path + date_ + f' Количество клиентов за день по {client_count_totals_org[0][0]}' + ".xlsx"
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение отчета по количеству клиентов '
                      f'по {client_count_totals_org[0][0]} в {path}')
@@ -3157,8 +3106,10 @@ class BarsicReport2(App):
             if self.cashdesk_report_org2['Итого'][0][1]:
                 self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org2))
         if self.check_client_count_total_xls:
-            self.path_list.append(self.save_client_count_totals(self.client_count_totals_org1))
-            self.path_list.append(self.save_client_count_totals(self.client_count_totals_org2))
+            if self.client_count_totals_org1[-1][1]:
+                self.path_list.append(self.save_client_count_totals(self.client_count_totals_org1))
+            if self.client_count_totals_org2[-1][1]:
+                self.path_list.append(self.save_client_count_totals(self.client_count_totals_org2))
         if self.use_yadisk:
             self.sync_to_yadisk(self.path_list, self.yadisk_token)
             self.path_list = []

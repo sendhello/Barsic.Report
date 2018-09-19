@@ -1597,6 +1597,7 @@ class BarsicReport2(App):
             ws[column[5] + self.row].font = font
             ws[column[1] + self.row].alignment = align_top
             ws[column[5] + self.row].alignment = align_top
+            ws[column[5] + self.row].number_format = '#,##0.00 ₽'
             b = 1
             while b < len(column):
                 ws[column[b] + self.row].border = border

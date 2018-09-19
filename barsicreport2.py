@@ -193,14 +193,13 @@ class BarsicReport2(App):
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
-        self.telegram_proxy_use = self.config.get('Telegram', 'telegram_proxy_use')
+        self.telegram_proxy_use = functions.to_bool(self.config.get('Telegram', 'telegram_proxy_use'))
         self.telegram_proxy_type = self.config.get('Telegram', 'telegram_proxy_type')
         self.telegram_proxy_ip = self.config.get('Telegram', 'telegram_proxy_ip')
         self.telegram_proxy_port = self.config.get('Telegram', 'telegram_proxy_port')
-        self.telegram_proxy_auth = self.config.get('Telegram', 'telegram_proxy_auth')
+        self.telegram_proxy_auth = functions.to_bool(self.config.get('Telegram', 'telegram_proxy_auth'))
         self.telegram_proxy_username = self.config.get('Telegram', 'telegram_proxy_username')
         self.telegram_proxy_password = self.config.get('Telegram', 'telegram_proxy_password')
-
         self.google_all_read = functions.to_bool(self.config.get('GoogleShets', 'google_all_read'))
         self.google_reader_list = self.config.get('GoogleShets', 'google_reader_list')
         self.google_writer_list = self.config.get('GoogleShets', 'google_writer_list')
@@ -2159,10 +2158,11 @@ class BarsicReport2(App):
                                       port=int(self.telegram_proxy_port),
                                       )
             socket.socket = socks.socksocket
-        logging.info(
-            f'{__name__}: {str(datetime.now())[:-7]}:    Отправка сообщения...')
         bot = telepot.Bot(self.telegram_token)
-        bot.sendMessage(self.telegram_chanel_id, self.sms_report())
+        for line in self.sms_report_list:
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                         f'Отправка сообщения {self.sms_report_list.index(line) + 1} из {len(self.sms_report_list)}')
+            bot.sendMessage(self.telegram_chanel_id, line)
 
     def save_organisation_total(self, itog_report):
         """
@@ -3112,7 +3112,6 @@ class BarsicReport2(App):
         """
         Функция управления
         """
-        self.path_list = []
         self.fin_report()
         self.agent_report()
         if self.finreport_xls:
@@ -3122,6 +3121,8 @@ class BarsicReport2(App):
         if self.finreport_google:
             self.export_to_google_sheet()
             self.open_googlesheet()
+        if self.finreport_telegram:
+            self.sms_report_list.append(self.sms_report())
         if self.check_itogreport_xls:
             if self.itog_report_org1['Итого по отчету'][1]:
                 self.path_list.append(self.save_organisation_total(self.itog_report_org1))
@@ -3137,11 +3138,6 @@ class BarsicReport2(App):
                 self.path_list.append(self.save_client_count_totals(self.client_count_totals_org1))
             if self.client_count_totals_org2[-1][1]:
                 self.path_list.append(self.save_client_count_totals(self.client_count_totals_org2))
-        if self.use_yadisk:
-            self.sync_to_yadisk(self.path_list, self.yadisk_token)
-            self.path_list = []
-        if self.finreport_telegram:
-            self.send_message_to_telegram()
 
     def load_report(self):
         """
@@ -3239,6 +3235,8 @@ class BarsicReport2(App):
 
     def run_report(self):
         self.open_browser = False
+        self.path_list = []
+        self.sms_report_list = []
 
         if self.date_switch:
             self.load_report()
@@ -3256,6 +3254,14 @@ class BarsicReport2(App):
                     self.date_from = date
                     self.date_to = date + timedelta(1)
                     self.load_report()
+                # Отправка в яндекс диск
+                if self.use_yadisk:
+                    self.sync_to_yadisk(self.path_list, self.yadisk_token)
+                    self.path_list = []
+                # Отправка в телеграмм
+                if self.finreport_telegram:
+                    self.send_message_to_telegram()
+                    self.sms_report_list = []
                 self.date_from = datetime.strptime(self.root.ids.report.ids.date_from.text, "%Y-%m-%d")
             else:
                 self.load_report()

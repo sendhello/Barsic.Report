@@ -60,6 +60,7 @@ import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
 import telepot
+import socks, socket
 
 logging.basicConfig(filename="barsic_reports.log", level=logging.INFO)
 
@@ -149,8 +150,13 @@ class BarsicReport2(App):
         config.adddefaultsection('Telegram')
         config.setdefault('Telegram', 'telegram_token', '111111111:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
         config.setdefault('Telegram', 'telegram_chanel_id', '111111111111')
-        config.setdefault('Telegram', 'telegram_proxy', 'http://10.10.10.10:80')
-        config.setdefault('Telegram', 'telegram_basic_auth', '("login", "password")')
+        config.setdefault('Telegram', 'telegram_proxy_use', 'False')
+        config.setdefault('Telegram', 'telegram_proxy_type', '#PROXY_TYPE_SOCKS4 or PROXY_TYPE_SOCKS5 or PROXY_TYPE_HTTP')
+        config.setdefault('Telegram', 'telegram_proxy_ip', '127.0.0.1')
+        config.setdefault('Telegram', 'telegram_proxy_port', '1080')
+        config.setdefault('Telegram', 'telegram_proxy_auth', 'False')
+        config.setdefault('Telegram', 'telegram_proxy_username', 'username')
+        config.setdefault('Telegram', 'telegram_proxy_password', 'password')
         config.adddefaultsection('GoogleShets')
         config.setdefault('GoogleShets', 'google_all_read', 'False')
         config.setdefault('GoogleShets', 'google_reader_list', '')
@@ -187,8 +193,14 @@ class BarsicReport2(App):
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
-        self.telegram_proxy = self.config.get('Telegram', 'telegram_proxy')
-        self.telegram_basic_auth = self.config.get('Telegram', 'telegram_basic_auth')
+        self.telegram_proxy_use = self.config.get('Telegram', 'telegram_proxy_use')
+        self.telegram_proxy_type = self.config.get('Telegram', 'telegram_proxy_type')
+        self.telegram_proxy_ip = self.config.get('Telegram', 'telegram_proxy_ip')
+        self.telegram_proxy_port = self.config.get('Telegram', 'telegram_proxy_port')
+        self.telegram_proxy_auth = self.config.get('Telegram', 'telegram_proxy_auth')
+        self.telegram_proxy_username = self.config.get('Telegram', 'telegram_proxy_username')
+        self.telegram_proxy_password = self.config.get('Telegram', 'telegram_proxy_password')
+
         self.google_all_read = functions.to_bool(self.config.get('GoogleShets', 'google_all_read'))
         self.google_reader_list = self.config.get('GoogleShets', 'google_reader_list')
         self.google_writer_list = self.config.get('GoogleShets', 'google_writer_list')
@@ -2131,7 +2143,24 @@ class BarsicReport2(App):
         Отправка отчета в telegram
         """
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Отправка SMS-отчета в Telegram-канал...')
-        SetProxy = telepot.api.set_proxy(self.telegram_proxy, basic_auth=self.telegram_basic_auth)
+        if self.telegram_proxy_use:
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Соединение с прокси-сервером {self.telegram_proxy_ip}...')
+            if self.telegram_proxy_auth:
+                socks.setdefaultproxy(proxy_type=getattr(socks, self.telegram_proxy_type),
+                                      addr=self.telegram_proxy_ip,
+                                      port=int(self.telegram_proxy_port),
+                                      rdns=True,
+                                      username=self.telegram_proxy_username,
+                                      password=self.telegram_proxy_password,
+                                      )
+            else:
+                socks.setdefaultproxy(proxy_type=getattr(socks, self.telegram_proxy_type),
+                                      addr=self.telegram_proxy_ip,
+                                      port=int(self.telegram_proxy_port),
+                                      )
+            socket.socket = socks.socksocket
+        logging.info(
+            f'{__name__}: {str(datetime.now())[:-7]}:    Отправка сообщения...')
         bot = telepot.Bot(self.telegram_token)
         bot.sendMessage(self.telegram_chanel_id, self.sms_report())
 
@@ -3093,8 +3122,6 @@ class BarsicReport2(App):
         if self.finreport_google:
             self.export_to_google_sheet()
             self.open_googlesheet()
-        if self.finreport_telegram:
-            self.send_message_to_telegram()
         if self.check_itogreport_xls:
             if self.itog_report_org1['Итого по отчету'][1]:
                 self.path_list.append(self.save_organisation_total(self.itog_report_org1))
@@ -3113,6 +3140,8 @@ class BarsicReport2(App):
         if self.use_yadisk:
             self.sync_to_yadisk(self.path_list, self.yadisk_token)
             self.path_list = []
+        if self.finreport_telegram:
+            self.send_message_to_telegram()
 
     def load_report(self):
         """

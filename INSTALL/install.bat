@@ -12,3 +12,4 @@ pip install pyodbc
 pip install yadisk
 pip install telepot
 pip install openpyxl
+pip install PySocks

@@ -1642,6 +1642,7 @@ class BarsicReport2(App):
 
         ws[column[1] + next_row()] = 'Итого'
         ws[column[5] + self.row] = agentreport_dict['ИТОГО'][1]
+        ws[column[5] + self.row].number_format = '#,##0.00 ₽'
         merge_table_bold()
 
         # увеличиваем все строки по высоте

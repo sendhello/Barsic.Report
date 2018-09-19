@@ -1556,8 +1556,8 @@ class BarsicReport2(App):
         ws.column_dimensions['A'].width = 1 / 7 * 124
         ws.column_dimensions['B'].width = 1 / 7 * 80
         ws.column_dimensions['C'].width = 1 / 7 * 24
-        ws.column_dimensions['D'].width = 1 / 7 * 210
-        ws.column_dimensions['E'].width = 1 / 7 * 210
+        ws.column_dimensions['D'].width = 1 / 7 * 175
+        ws.column_dimensions['E'].width = 1 / 7 * 200
 
         # значение ячейки
         # ws['A1'] = "Hello!"
@@ -3365,17 +3365,17 @@ class BarsicReport2(App):
                     self.date_from = date
                     self.date_to = date + timedelta(1)
                     self.load_report()
-                # Отправка в яндекс диск
-                if self.use_yadisk:
-                    self.sync_to_yadisk(self.path_list, self.yadisk_token)
-                    self.path_list = []
-                # Отправка в телеграмм
-                if self.finreport_telegram:
-                    self.send_message_to_telegram()
-                    self.sms_report_list = []
                 self.date_from = datetime.strptime(self.root.ids.report.ids.date_from.text, "%Y-%m-%d")
             else:
                 self.load_report()
+        # Отправка в яндекс диск
+        if self.use_yadisk:
+            self.sync_to_yadisk(self.path_list, self.yadisk_token)
+            self.path_list = []
+        # Отправка в телеграмм
+        if self.finreport_telegram:
+            self.send_message_to_telegram()
+            self.sms_report_list = []
 
 if __name__ == '__main__':
     pass

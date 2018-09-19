@@ -1358,9 +1358,6 @@ class BarsicReport2(App):
         Форминует отчет платежного агента в установленном формате
         :return - dict
         """
-
-        print(self.itog_report_org1)
-
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование отчета платежного агента')
         self.agentreport_dict = {}
         self.agentreport_dict['Организация'] = [self.org1[0], self.org1[1]]
@@ -1591,9 +1588,6 @@ class BarsicReport2(App):
         ws[column[4] + self.row] = (agentreport_dict["Дата"][1] - timedelta(1)).strftime("%d.%m.%Y")
         ws[column[4] + self.row].font = font_bold
         ws[column[4] + self.row].alignment = align_top
-
-        for i in agentreport_dict:
-            print(f'agentreport_dict[{i}] = {agentreport_dict[i]}')
 
         # ТАБЛИЦА
         self.color = False

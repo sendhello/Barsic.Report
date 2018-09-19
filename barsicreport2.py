@@ -1358,8 +1358,12 @@ class BarsicReport2(App):
         Форминует отчет платежного агента в установленном формате
         :return - dict
         """
+
+        print(self.itog_report_org1)
+
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование отчета платежного агента')
         self.agentreport_dict = {}
+        self.agentreport_dict['Организация'] = [self.org1[0], self.org1[1]]
         for key in self.agent_dict:
             if key != 'Не учитывать':
                 self.agentreport_dict[key] = [0, 0]
@@ -1460,95 +1464,206 @@ class BarsicReport2(App):
         self.save_file(path, wb)
         return path
 
-    def export_agent_report(self):
+    def export_agent_report(self, agentreport_dict):
         """
         Сохраняет отчет платежного агента в виде Excel-файла в локальную директорию
         """
-        font0 = xlwt.Font()
-        font0.name = 'Arial'
-        font0.colour_index = 0
-        font0.bold = True
+        # определяем стили
+        h1 = Font(name='Times New Roman',
+                  size=18,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        font = Font(name='Times New Roman',
+                    size=9,
+                    bold=False,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_bold = Font(name='Times New Roman',
+                    size=9,
+                    bold=True,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        fill = PatternFill(fill_type='solid',
+                           start_color='c1c1c1',
+                           end_color='c2c2c2')
+        table_color = PatternFill(fill_type='solid',
+                                  start_color='e2e2e2',
+                                  end_color='e9e9e9')
+        align_top = Alignment(horizontal='general',
+                              vertical='top',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+        border = Border(left=Side(border_style='thin',
+                                  color='FF000000'),
+                        right=Side(border_style='thin',
+                                   color='FF000000'),
+                        top=Side(border_style='thin',
+                                 color='FF000000'),
+                        bottom=Side(border_style='thin',
+                                    color='FF000000'),
+                        diagonal=Side(border_style='thin',
+                                      color='FF000000'),
+                        diagonal_direction=0,
+                        outline=Side(border_style='thin',
+                                     color='FF000000'),
+                        vertical=Side(border_style='thin',
+                                      color='FF000000'),
+                        horizontal=Side(border_style='thin',
+                                        color='FF000000')
+                        )
+        align_left = Alignment(horizontal='left',
+                               vertical='bottom',
+                               text_rotation=0,
+                               wrap_text=False,
+                               shrink_to_fit=False,
+                               indent=0)
+        number_format = 'General'
+        protection = Protection(locked=True,
+                                hidden=False)
 
-        style0 = xlwt.XFStyle()
-        style0.font = font0
+        column = ['', 'A', 'B', 'C', 'D', 'E']
 
-        style1 = xlwt.XFStyle()
-        style1.num_format_str = '0'
-        style1.borders.bottom = 1
-        style1.borders.left = 1
-        style1.borders.right = 1
-        style1.borders.top = 1
+        self.row = '0'
+        def next_row():
+            self.row = str(int(self.row) + 1)
+            return self.row
 
-        style2 = xlwt.XFStyle()
-        style2.num_format_str = '0.00'
-        style2.borders.bottom = 1
-        style2.borders.left = 1
-        style2.borders.right = 1
-        style2.borders.top = 1
+        # объект
+        wb = Workbook()
 
-        style3 = xlwt.XFStyle()
-        style3.font = font0
-        style3.num_format_str = '0'
-        style3.borders.bottom = 1
-        style3.borders.left = 1
-        style3.borders.right = 1
-        style3.borders.top = 1
+        # активный лист
+        ws = wb.active
 
-        style4 = xlwt.XFStyle()
-        style4.font = font0
-        style4.num_format_str = '0.00'
-        style4.borders.bottom = 1
-        style4.borders.left = 1
-        style4.borders.right = 1
-        style4.borders.top = 1
+        # название страницы
+        # ws = wb.create_sheet('первая страница', 0)
+        ws.title = 'Отчет платежного агента'
+        # шрифты
+        ws['A1'].font = h1
+        # выравнивание
+        ws['A1'].alignment = align_left
 
-        wb = xlwt.Workbook()
-        ws = wb.add_sheet('Отчет платежного агента')
-        col_width = 200 * 20
+        # Ширина стролбцов
+        ws.column_dimensions['A'].width = 1 / 7 * 124
+        ws.column_dimensions['B'].width = 1 / 7 * 80
+        ws.column_dimensions['C'].width = 1 / 7 * 24
+        ws.column_dimensions['D'].width = 1 / 7 * 210
+        ws.column_dimensions['E'].width = 1 / 7 * 210
 
-        try:
-            for i in itertools.count():
-                ws.col(i).width = col_width
-        except ValueError:
-            pass
+        # значение ячейки
+        # ws['A1'] = "Hello!"
 
-        first_col = ws.col(0)
-        first_col.width = 700 * 20
-        second_col = ws.col(1)
-        second_col.width = 300 * 20
+        ws[column[1] + next_row()] = 'Отчет платежного агента по приему денежных средств'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column)-1)
+        # шрифты
+        ws[column[1] + self.row].font = h1
+        # выравнивание
+        ws[column[1] + self.row].alignment = align_left
+        # Высота строк
+        ws.row_dimensions[1].height = 24
 
-        default_book_style = wb.default_style
-        default_book_style.font.height = 20 * 44  # 36pt
+        ws[column[1] + next_row()] = f'{agentreport_dict["Организация"][1]}'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column) - 1)
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
 
-        if self.agentreport_dict['Дата'][0] == self.agentreport_dict["Дата"][1] - timedelta(1):
-            date_ = datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")
-            head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
-                   f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")}г.'
+        ws[column[1] + next_row()] = 'За период с:'
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
+        ws[column[2] + self.row] = (agentreport_dict["Дата"][0]).strftime("%d.%m.%Y")
+        ws[column[2] + self.row].font = font_bold
+        ws[column[2] + self.row].alignment = align_top
+        ws[column[3] + self.row] = 'по'
+        ws[column[3] + self.row].font = font
+        ws[column[3] + self.row].alignment = align_top
+        ws[column[4] + self.row] = (agentreport_dict["Дата"][1] - timedelta(1)).strftime("%d.%m.%Y")
+        ws[column[4] + self.row].font = font_bold
+        ws[column[4] + self.row].alignment = align_top
+
+        for i in agentreport_dict:
+            print(f'agentreport_dict[{i}] = {agentreport_dict[i]}')
+
+        # ТАБЛИЦА
+        self.color = False
+        def merge_table():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=4)
+            ws[column[1] + self.row].font = font
+            ws[column[5] + self.row].font = font
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[5] + self.row].alignment = align_top
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+            if self.color:
+                b = 1
+                while b < len(column):
+                    ws[column[b] + self.row].fill = table_color
+                    b += 1
+                self.color = False
+            else:
+                self.color = True
+
+        def merge_table_bold():
+            ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=4)
+            ws[column[1] + self.row].font = font_bold
+            ws[column[5] + self.row].font = font_bold
+            ws[column[1] + self.row].alignment = align_top
+            ws[column[5] + self.row].alignment = align_top
+            b = 1
+            while b < len(column):
+                ws[column[b] + self.row].border = border
+                b += 1
+
+        ws[column[1] + next_row()] = 'Наименование поставщика услуг'
+        ws[column[5] + self.row] = 'Сумма'
+        merge_table_bold()
+        # раскрвшивание фона для заголовков
+        b = 1
+        while b < len(column):
+            ws[column[b] + self.row].fill = fill
+            b += 1
+
+        for line in agentreport_dict:
+            if line != 'Организация' and line != 'Дата' and line != 'ИТОГО':
+                try:
+                    ws[column[1] + next_row()] = line
+                    ws[column[5] + self.row] = agentreport_dict[line][1]
+                    merge_table()
+                except AttributeError:
+                    pass
+
+        ws[column[1] + next_row()] = 'Итого'
+        ws[column[5] + self.row] = agentreport_dict['ИТОГО'][1]
+        merge_table_bold()
+
+        # увеличиваем все строки по высоте
+        max_row = ws.max_row
+        i = 2
+        while i <= max_row:
+            rd = ws.row_dimensions[i]
+            rd.height = 18
+            i += 1
+        if agentreport_dict['Дата'][0] == agentreport_dict["Дата"][1] - timedelta(1):
+            date_ = datetime.strftime(agentreport_dict["Дата"][0], "%Y-%m-%d")
         else:
-            date_ = f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
-                    f'{datetime.strftime(self.agentreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
-            head = f'ОТЧЕТ ПЛАТЕЖНОГО АГЕНТА ПО ПРИЕМУ ДЕНЕЖНЫХ СРЕДСТВ ЗА ' \
-                   f'{datetime.strftime(self.agentreport_dict["Дата"][0], "%d.%m.%Y")} - ' \
-                   f'{datetime.strftime(self.agentreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}г.'
-        ws.write(0, 0, head, style0)
-        # ws.write(0, 1, date_, style1)
-        ws.write(2, 0, 'Наименование поставщика услуг', style3)
-        ws.write(2, 1, 'Сумма', style3)
-
-        i = 3
-        for key in self.agentreport_dict:
-            if key != 'Дата':
-                if key == 'ИТОГО':
-                    ws.write(i, 0, key, style3)
-                    ws.write(i, 1, self.agentreport_dict[key][1], style4)
-                    i += 1
-                else:
-                    ws.write(i, 0, key, style1)
-                    ws.write(i, 1, self.agentreport_dict[key][1], style2)
-                    i += 1
-
-        path = self.local_folder + self.path + date_ + ' Отчет платежного агента' + ".xls"
-        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение отчета платежного агента в {path}')
+            date_ = f'{datetime.strftime(agentreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(agentreport_dict["Дата"][1], "%Y-%m-%d")}'
+        path = self.local_folder + self.path + date_ + f' Отчет платежного агента {agentreport_dict["Организация"][1]}' + ".xlsx"
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение отчета платежного агента '
+                     f'{agentreport_dict["Организация"][1]} в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
         return path
@@ -3117,7 +3232,7 @@ class BarsicReport2(App):
         if self.finreport_xls:
             self.path_list.append(self.export_fin_report())
         if self.agentreport_xls:
-            self.path_list.append(self.export_agent_report())
+            self.path_list.append(self.export_agent_report(self.agentreport_dict))
         if self.finreport_google:
             self.export_to_google_sheet()
             self.open_googlesheet()

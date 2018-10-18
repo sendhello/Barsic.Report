@@ -1387,75 +1387,287 @@ class BarsicReport2(App):
         """
         Сохраняет Финансовый отчет в виде Excel-файла в локальную директорию
         """
-        font0 = xlwt.Font()
-        font0.name = 'Arial'
-        font0.colour_index = 0
-        font0.bold = True
+        # определяем стили
+        h1 = Font(name='Times New Roman',
+                  size=18,
+                  bold=True,
+                  italic=False,
+                  vertAlign=None,
+                  underline='none',
+                  strike=False,
+                  color='FF000000')
+        font = Font(name='Times New Roman',
+                    size=9,
+                    bold=False,
+                    italic=False,
+                    vertAlign=None,
+                    underline='none',
+                    strike=False,
+                    color='FF000000')
+        font_bold = Font(name='Times New Roman',
+                         size=9,
+                         bold=True,
+                         italic=False,
+                         vertAlign=None,
+                         underline='none',
+                         strike=False,
+                         color='FF000000')
+        fill = PatternFill(fill_type='solid',
+                           start_color='c1c1c1',
+                           end_color='c2c2c2')
+        table_color = PatternFill(fill_type='solid',
+                                  start_color='e2e2e2',
+                                  end_color='e9e9e9')
+        align_top = Alignment(horizontal='general',
+                              vertical='top',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+        align_top_center = Alignment(horizontal='center',
+                              vertical='top',
+                              text_rotation=0,
+                              wrap_text=False,
+                              shrink_to_fit=False,
+                              indent=0,
+                              )
+        border = Border(left=Side(border_style='thin',
+                                  color='FF000000'),
+                        right=Side(border_style='thin',
+                                   color='FF000000'),
+                        top=Side(border_style='thin',
+                                 color='FF000000'),
+                        bottom=Side(border_style='thin',
+                                    color='FF000000'),
+                        diagonal=Side(border_style='thin',
+                                      color='FF000000'),
+                        diagonal_direction=0,
+                        outline=Side(border_style='thin',
+                                     color='FF000000'),
+                        vertical=Side(border_style='thin',
+                                      color='FF000000'),
+                        horizontal=Side(border_style='thin',
+                                        color='FF000000')
+                        )
+        align_left = Alignment(horizontal='left',
+                               vertical='bottom',
+                               text_rotation=0,
+                               wrap_text=False,
+                               shrink_to_fit=False,
+                               indent=0)
+        number_format = 'General'
+        protection = Protection(locked=True,
+                                hidden=False)
 
-        style0 = xlwt.XFStyle()
-        style0.font = font0
+        column = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+                  'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
-        style1 = xlwt.XFStyle()
-        style1.num_format_str = '0'
+        self.row = '0'
 
-        style2 = xlwt.XFStyle()
-        style2.num_format_str = '0.00'
+        def next_row():
+            self.row = str(int(self.row) + 1)
+            return self.row
 
-        wb = xlwt.Workbook()
-        ws = wb.add_sheet('Фин отчет')
-        col_width = 200 * 20
+        # объект
+        wb = Workbook()
 
-        try:
-            for i in itertools.count():
-                ws.col(i).width = col_width
-        except ValueError:
-            pass
+        # активный лист
+        ws = wb.active
 
-        first_col = ws.col(0)
-        first_col.width = 200 * 20
-        second_col = ws.col(1)
-        second_col.width = 200 * 20
+        # название страницы
+        # ws = wb.create_sheet('первая страница', 0)
+        ws.title = 'Финансовый отчет'
+        # шрифты
+        ws['A1'].font = h1
+        # выравнивание
+        ws['A1'].alignment = align_left
 
-        default_book_style = wb.default_style
-        default_book_style.font.height = 20 * 36  # 36pt
+        # Ширина стролбцов
+        ws.column_dimensions['A'].width = 1 / 7 * 67
+        ws.column_dimensions['B'].width = 1 / 7 * 95
+        ws.column_dimensions['C'].width = 1 / 7 * 87
+        ws.column_dimensions['D'].width = 1 / 7 * 87
+        ws.column_dimensions['E'].width = 1 / 7 * 47
+        ws.column_dimensions['F'].width = 1 / 7 * 87
+        ws.column_dimensions['G'].width = 1 / 7 * 87
+        ws.column_dimensions['H'].width = 1 / 7 * 47
+        ws.column_dimensions['I'].width = 1 / 7 * 87
+        ws.column_dimensions['J'].width = 1 / 7 * 87
+        ws.column_dimensions['K'].width = 1 / 7 * 47
+        ws.column_dimensions['L'].width = 1 / 7 * 87
+        ws.column_dimensions['M'].width = 1 / 7 * 87
+        ws.column_dimensions['N'].width = 1 / 7 * 47
+        ws.column_dimensions['O'].width = 1 / 7 * 87
+        ws.column_dimensions['P'].width = 1 / 7 * 87
+        ws.column_dimensions['Q'].width = 1 / 7 * 47
+        ws.column_dimensions['R'].width = 1 / 7 * 87
+        ws.column_dimensions['S'].width = 1 / 7 * 87
+        ws.column_dimensions['T'].width = 1 / 7 * 47
+        ws.column_dimensions['U'].width = 1 / 7 * 87
+        ws.column_dimensions['V'].width = 1 / 7 * 47
+        ws.column_dimensions['W'].width = 1 / 7 * 87
+        ws.column_dimensions['X'].width = 1 / 7 * 87
+        ws.column_dimensions['Y'].width = 1 / 7 * 87
+        ws.column_dimensions['Z'].width = 1 / 7 * 87
 
-        ws.write(0, 0, 'Дата', style0)
-        ws.write(0, 1, 'Кол-во проходов', style0)
-        ws.write(0, 2, 'Общая сумма', style0)
-        ws.write(0, 3, 'Сумма KPI', style0)
-        ws.write(0, 4, 'Билеты Кол-во', style0)
-        ws.write(0, 5, 'Билеты Сумма', style0)
-        ws.write(0, 6, 'Билеты Средний чек', style0)
-        ws.write(0, 7, 'Общепит Кол-во', style0)
-        ws.write(0, 8, 'Общепит Сумма', style0)
-        ws.write(0, 9, 'Общепит Средний чек', style0)
-        ws.write(0, 10, 'Прочее Кол-во', style0)
-        ws.write(0, 11, 'Прочее Сумма', style0)
-        ws.write(0, 12, 'Online Продажи Кол-во', style0)
-        ws.write(0, 13, 'Online Продажи Сумма', style0)
-        ws.write(0, 14, 'Online Продажи Средний чек', style0)
-        ws.write(0, 15, 'Сумма безнал', style0)
+        # значение ячейки
+        # ws['A1'] = "Hello!"
+
+        ws[column[1] + next_row()] = 'Финансовый отчет'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=len(column) - 1)
+        # шрифты
+        ws[column[1] + self.row].font = h1
+        # выравнивание
+        ws[column[1] + self.row].alignment = align_left
+        # Высота строк
+        ws.row_dimensions[1].height = 24
+
+        ws[column[1] + next_row()] = 'За период с:'
+        ws[column[1] + self.row].font = font
+        ws[column[1] + self.row].alignment = align_top
+        ws[column[2] + self.row] = (self.finreport_dict["Дата"][0]).strftime("%d.%m.%Y")
+        ws[column[2] + self.row].font = font_bold
+        ws[column[2] + self.row].alignment = align_top
+        ws[column[3] + self.row] = 'по'
+        ws[column[3] + self.row].font = font
+        ws[column[3] + self.row].alignment = align_top
+        ws[column[4] + self.row] = (self.finreport_dict["Дата"][1] - timedelta(1)).strftime("%d.%m.%Y")
+        ws[column[4] + self.row].font = font_bold
+        ws[column[4] + self.row].alignment = align_top
+
+        # ТАБЛИЦА
+        self.color = False
+        def merge_table():
+            # ws.merge_cells(start_row=self.row, start_column=1, end_row=self.row, end_column=4)
+            for b in range(1, 27):
+                ws[column[b] + self.row].font = font
+                ws[column[b] + self.row].alignment = align_top
+                if b not in (1, 2, 5, 8, 11, 14, 17, 20, 22):
+                    ws[column[b] + self.row].number_format = '#,##0.00 ₽'
+                ws[column[b] + self.row].border = border
+            if self.color:
+                b = 1
+                while b < len(column):
+                    ws[column[b] + self.row].fill = table_color
+                    b += 1
+                self.color = False
+            else:
+                self.color = True
+
+        ws[column[1] + next_row()] = 'Дата'
+        ws.merge_cells(start_row=self.row, start_column=1, end_row=str(int(self.row) + 1), end_column=1)
+        ws[column[2] + self.row] = 'Кол-во проходов'
+        ws.merge_cells(start_row=self.row, start_column=2, end_row=str(int(self.row) + 1), end_column=2)
+        ws[column[3] + self.row] = 'Общая сумма'
+        ws.merge_cells(start_row=self.row, start_column=3, end_row=str(int(self.row) + 1), end_column=3)
+        ws[column[4] + self.row] = 'Сумма KPI'
+        ws.merge_cells(start_row=self.row, start_column=4, end_row=str(int(self.row) + 1), end_column=4)
+        ws[column[5] + self.row] = 'Билеты'
+        ws.merge_cells(start_row=self.row, start_column=5, end_row=self.row, end_column=7)
+        ws[column[8] + self.row] = 'Билеты КОРП'
+        ws.merge_cells(start_row=self.row, start_column=8, end_row=self.row, end_column=10)
+        ws[column[11] + self.row] = 'Термозона'
+        ws.merge_cells(start_row=self.row, start_column=11, end_row=self.row, end_column=13)
+        ws[column[14] + self.row] = 'Термозона КОРП'
+        ws.merge_cells(start_row=self.row, start_column=14, end_row=self.row, end_column=16)
+        ws[column[17] + self.row] = 'Общепит'
+        ws.merge_cells(start_row=self.row, start_column=17, end_row=self.row, end_column=19)
+        ws[column[20] + self.row] = 'Прочее'
+        ws.merge_cells(start_row=self.row, start_column=20, end_row=self.row, end_column=21)
+        ws[column[22] + self.row] = 'Online Продажи'
+        ws.merge_cells(start_row=self.row, start_column=22, end_row=self.row, end_column=24)
+        ws[column[25] + self.row] = 'Сумма безнал'
+        ws.merge_cells(start_row=self.row, start_column=25, end_row=str(int(self.row) + 1), end_column=25)
+        ws[column[26] + self.row] = 'Сумма Biglion'
+        ws.merge_cells(start_row=self.row, start_column=26, end_row=str(int(self.row) + 1), end_column=26)
+        # раскрвшивание фона для заголовков
+        b = 1
+        while b < len(column):
+            ws[column[b] + self.row].fill = fill
+            b += 1
+        for b in range(1, 27):
+            ws[column[b] + self.row].font = font
+            ws[column[b] + self.row].alignment = align_top_center
+            ws[column[b] + self.row].border = border
+
+        ws[column[5] + next_row()] = 'Кол-во'
+        ws[column[6] + self.row] = 'Сумма'
+        ws[column[7] + self.row] = 'Средний чек'
+        ws[column[8] + self.row] = 'Кол-во'
+        ws[column[9] + self.row] = 'Сумма'
+        ws[column[10] + self.row] = 'Средний чек'
+        ws[column[11] + self.row] = 'Кол-во'
+        ws[column[12] + self.row] = 'Сумма'
+        ws[column[13] + self.row] = 'Средний чек'
+        ws[column[14] + self.row] = 'Кол-во'
+        ws[column[15] + self.row] = 'Сумма'
+        ws[column[16] + self.row] = 'Средний чек'
+        ws[column[17] + self.row] = 'Кол-во'
+        ws[column[18] + self.row] = 'Сумма'
+        ws[column[19] + self.row] = 'Средний чек'
+        ws[column[20] + self.row] = 'Кол-во'
+        ws[column[21] + self.row] = 'Сумма'
+        ws[column[22] + self.row] = 'Кол-во'
+        ws[column[23] + self.row] = 'Сумма'
+        ws[column[24] + self.row] = 'Средний чек'
+        # раскрвшивание фона для заголовков
+        b = 1
+        while b < len(column):
+            ws[column[b] + self.row].fill = fill
+            b += 1
+        for b in range(1, 27):
+            ws[column[b] + self.row].font = font
+            ws[column[b] + self.row].alignment = align_top_center
+            ws[column[b] + self.row].border = border
+
         if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1] - timedelta(1):
             date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")
         else:
             date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
                     f'{datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
-        ws.write(1, 0, date_, style1)
-        ws.write(1, 1, self.finreport_dict['Кол-во проходов'][0], style1)
-        ws.write(1, 2, self.finreport_dict['ИТОГО'][1], style2)
-        ws.write(1, 3, '=C2-L2+N2+P2+Q2', style2)
-        ws.write(1, 4, self.finreport_dict['Билеты аквапарка'][0], style1)
-        ws.write(1, 5, self.finreport_dict['Билеты аквапарка'][1], style2)
-        ws.write(1, 6, '=ЕСЛИОШИБКА(F2/E2;0)', style2)
-        ws.write(1, 7, self.finreport_dict['Общепит'][0], style1)
-        ws.write(1, 8, self.finreport_dict['Общепит'][1], style2)
-        ws.write(1, 9, '=ЕСЛИОШИБКА(I2/H2;0)', style2)
-        ws.write(1, 10, self.finreport_dict['Прочее'][0], style1)
-        ws.write(1, 11, self.finreport_dict['Прочее'][1], style2)
-        ws.write(1, 12, self.finreport_dict['Online Продажи'][0], style1)
-        ws.write(1, 13, self.finreport_dict['Online Продажи'][1], style2)
-        ws.write(1, 14, '=ЕСЛИОШИБКА(N2/M2;0)', style2)
-        path = self.local_folder + self.path + date_ + ' Финансовый отчет' + ".xls"
+
+        ws[column[1] + next_row()] = date_
+        ws[column[2] + self.row] = self.finreport_dict['Кол-во проходов'][0]
+        ws[column[3] + self.row] = self.finreport_dict['ИТОГО'][1]
+        ws[column[4] + self.row] = f'=C{self.row}-U{self.row}+W{self.row}+Y{self.row}+Z{self.row}'
+        ws[column[5] + self.row] = self.finreport_dict['Билеты аквапарка'][0]
+        ws[column[6] + self.row] = self.finreport_dict['Билеты аквапарка'][1]
+        ws[column[7] + self.row] = f'=ЕСЛИОШИБКА(F{self.row}/E{self.row},0)'
+        ws[column[8] + self.row] = self.finreport_dict['Билеты аквапарка КОРП'][0]
+        ws[column[9] + self.row] = self.finreport_dict['Билеты аквапарка КОРП'][0]
+        ws[column[10] + self.row] = f'=ЕСЛИОШИБКА(I{self.row}/H{self.row},0)'
+        ws[column[11] + self.row] = self.finreport_dict['Термозона'][0]
+        ws[column[12] + self.row] = self.finreport_dict['Термозона'][1]
+        ws[column[13] + self.row] = f'=ЕСЛИОШИБКА(L{self.row}/K{self.row},0)'
+        ws[column[14] + self.row] = self.finreport_dict['Термозона КОРП'][0]
+        ws[column[15] + self.row] = self.finreport_dict['Термозона КОРП'][1]
+        ws[column[16] + self.row] = f'=ЕСЛИОШИБКА(O{self.row}/N{self.row},0)'
+        ws[column[17] + self.row] = self.finreport_dict['Общепит'][0]
+        ws[column[18] + self.row] = self.finreport_dict['Общепит'][1]
+        ws[column[19] + self.row] = f'=ЕСЛИОШИБКА(R{self.row}/Q{self.row},0)'
+        ws[column[20] + self.row] = self.finreport_dict['Прочее'][0]
+        ws[column[21] + self.row] = self.finreport_dict['Прочее'][1]
+        ws[column[22] + self.row] = self.finreport_dict['Online Продажи'][0]
+        ws[column[23] + self.row] = self.finreport_dict['Online Продажи'][1]
+        ws[column[24] + self.row] = f'=ЕСЛИОШИБКА(W{self.row}/V{self.row},0)'
+        ws[column[25] + self.row] = 0
+        ws[column[26] + self.row] = 0
+        merge_table()
+
+        # увеличиваем все строки по высоте
+        max_row = ws.max_row
+        i = 2
+        while i <= max_row:
+            rd = ws.row_dimensions[i]
+            rd.height = 18
+            i += 1
+        if self.finreport_dict['Дата'][0] == self.finreport_dict["Дата"][1] - timedelta(1):
+            date_ = datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")
+        else:
+            date_ = f'{datetime.strftime(self.finreport_dict["Дата"][0], "%Y-%m-%d")} - ' \
+                    f'{datetime.strftime(self.finreport_dict["Дата"][1], "%Y-%m-%d")}'
+        path = self.local_folder + self.path + date_ + f' Финансовый отчет' + ".xlsx"
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение финансового отчета в {path}')
         path = self.create_path(path)
         self.save_file(path, wb)
@@ -1783,7 +1995,7 @@ class BarsicReport2(App):
 
         #self.CREDENTIALS_FILE # имя файла с закрытым ключом
 
-        self.sheet_width = 17
+        self.sheet_width = 26
         height = 35
 
         credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,
@@ -1810,7 +2022,7 @@ class BarsicReport2(App):
         ]
         data_report = month[int(data_report)]
 
-        doc_name = f"Итоговый отчет по Аквапарку - {data_report} {datetime.strftime(self.finreport_dict['Дата'][0], '%Y')}"
+        doc_name = f"{datetime.strftime(self.finreport_dict['Дата'][0], '%Y-%m')} ({data_report}) - Финансовый отчет по Аквапарку"
 
         if self.finreport_dict['Дата'][0] + timedelta(1) != self.finreport_dict['Дата'][1]:
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Экспорт отчета в Google Sheet за несколько дней невозможен!')
@@ -1881,11 +2093,20 @@ class BarsicReport2(App):
                 ss.prepare_setColumnWidth(9, 100)
                 ss.prepare_setColumnWidth(10, 65)
                 ss.prepare_setColumnWidth(11, 120)
-                ss.prepare_setColumnWidth(12, 65)
-                ss.prepare_setColumnWidth(13, 120)
-                ss.prepare_setColumnWidth(14, 100)
-                ss.prepare_setColumnWidth(15, 120)
-                ss.prepare_setColumnWidth(16, 120)
+                ss.prepare_setColumnWidth(12, 100)
+                ss.prepare_setColumnWidth(13, 65)
+                ss.prepare_setColumnWidth(14, 120)
+                ss.prepare_setColumnWidth(15, 100)
+                ss.prepare_setColumnWidth(16, 65)
+                ss.prepare_setColumnWidth(17, 120)
+                ss.prepare_setColumnWidth(18, 100)
+                ss.prepare_setColumnWidth(19, 65)
+                ss.prepare_setColumnWidth(20, 120)
+                ss.prepare_setColumnWidth(21, 65)
+                ss.prepare_setColumnWidth(22, 120)
+                ss.prepare_setColumnWidth(23, 100)
+                ss.prepare_setColumnWidth(24, 120)
+                ss.prepare_setColumnWidth(25, 120)
 
                 # Объединение ячеек
                 ss.prepare_mergeCells("A1:A2")
@@ -1894,29 +2115,35 @@ class BarsicReport2(App):
                 ss.prepare_mergeCells("D1:D2")
                 ss.prepare_mergeCells("E1:G1")
                 ss.prepare_mergeCells("H1:J1")
-                ss.prepare_mergeCells("K1:L1")
-                ss.prepare_mergeCells("M1:O1")
-                ss.prepare_mergeCells("P1:P2")
-                ss.prepare_mergeCells("Q1:Q2")
+                ss.prepare_mergeCells("K1:M1")
+                ss.prepare_mergeCells("N1:P1")
+                ss.prepare_mergeCells("Q1:S1")
+                ss.prepare_mergeCells("T1:U1")
+                ss.prepare_mergeCells("V1:X1")
+                ss.prepare_mergeCells("Y1:Y2")
+                ss.prepare_mergeCells("Z1:Z2")
 
                 # Задание параметров группе ячеек
                 # Жирный, по центру
-                ss.prepare_setCellsFormat('A1:Q2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                ss.prepare_setCellsFormat('A1:Z2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
                 # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
                 #                           fields='userEnteredFormat.numberFormat')
 
                 # Заполнение таблицы
-                ss.prepare_setValues("A1:Q2", [["Дата", "Кол-во проходов", "Общая сумма", "Сумма KPI", "Билеты", "",
+                ss.prepare_setValues("A1:Z2", [["Дата", "Кол-во проходов", "Общая сумма", "Сумма KPI", "Билеты", "",
+                                                "", "Билеты КОРП", "", "", "Термозона", "", "", "Термозона КОРП", "",
                                                 "", "Общепит", "", "", "Прочее", "", "Online Продажи", "", "",
                                                 "Сумма безнал", "Сумма Biglion"],
                                                ["", "", "", "", "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма",
+                                                "Средний чек", "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма",
+                                                "Средний чек", "Кол-во", "Сумма",
                                                 "Средний чек", "Кол-во", "Сумма", "Кол-во", "Сумма", "Средний чек", "",
                                                 ""]],
                                      "ROWS")
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:Q2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:Z2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -2017,29 +2244,38 @@ class BarsicReport2(App):
                                           self.spreadsheet['sheets'][sheetId]['properties']['title'])
 
         # Заполнение строки с данными
-        ss.prepare_setValues(f"A{self.nex_line}:Q{self.nex_line}",
+        ss.prepare_setValues(f"A{self.nex_line}:Z{self.nex_line}",
                              [[datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
                                f"{self.finreport_dict['Кол-во проходов'][0]}",
                                self.finreport_dict['ИТОГО'][1],
-                               f"=C{self.nex_line}-L{self.nex_line}+N{self.nex_line}+P{self.nex_line}+Q{self.nex_line}",
+                               f"=C{self.nex_line}-U{self.nex_line}+W{self.nex_line}+Y{self.nex_line}+Z{self.nex_line}",
                                self.finreport_dict['Билеты аквапарка'][0],
                                self.finreport_dict['Билеты аквапарка'][1],
                                f"=IFERROR(F{self.nex_line}/E{self.nex_line};0)",
+                               self.finreport_dict['Билеты аквапарка КОРП'][0],
+                               self.finreport_dict['Билеты аквапарка КОРП'][1],
+                               f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
+                               self.finreport_dict['Термозона'][0],
+                               self.finreport_dict['Термозона'][1],
+                               f"=IFERROR(L{self.nex_line}/K{self.nex_line};0)",
+                               self.finreport_dict['Термозона КОРП'][0],
+                               self.finreport_dict['Термозона КОРП'][1],
+                               f"=IFERROR(O{self.nex_line}/N{self.nex_line};0)",
                                self.finreport_dict['Общепит'][0],
                                self.finreport_dict['Общепит'][1],
-                               f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
+                               f"=IFERROR(R{self.nex_line}/Q{self.nex_line};0)",
                                self.finreport_dict['Прочее'][0],
                                self.finreport_dict['Прочее'][1],
                                self.finreport_dict['Online Продажи'][0],
                                self.finreport_dict['Online Продажи'][1],
-                               f"=IFERROR(N{self.nex_line}/M{self.nex_line};0)",
+                               f"=IFERROR(W{self.nex_line}/V{self.nex_line};0)",
                                0,
                                0,
                                ]],
                              "ROWS")
 
         # Задание форматы вывода строки
-        ss.prepare_setCellsFormats(f"A{self.nex_line}:Q{self.nex_line}", [[{'numberFormat': {'type': 'DATE',
+        ss.prepare_setCellsFormats(f"A{self.nex_line}:Z{self.nex_line}", [[{'numberFormat': {'type': 'DATE',
                                                                                    'pattern': 'dd.mm.yyyy'}},
                                                                  {'numberFormat': {}},
                                                                  {'numberFormat': {'type': 'CURRENCY',
@@ -2051,6 +2287,21 @@ class BarsicReport2(App):
                                                                                    'pattern': '#,##0.00[$ ₽]'}},
                                                                  {'numberFormat': {'type': 'CURRENCY',
                                                                                    'pattern': '#,##0.00[$ ₽]'}},
+                                                                           {'numberFormat': {}},
+                                                                           {'numberFormat': {'type': 'CURRENCY',
+                                                                                             'pattern': '#,##0.00[$ ₽]'}},
+                                                                           {'numberFormat': {'type': 'CURRENCY',
+                                                                                             'pattern': '#,##0.00[$ ₽]'}},
+                                                                           {'numberFormat': {}},
+                                                                           {'numberFormat': {'type': 'CURRENCY',
+                                                                                             'pattern': '#,##0.00[$ ₽]'}},
+                                                                           {'numberFormat': {'type': 'CURRENCY',
+                                                                                             'pattern': '#,##0.00[$ ₽]'}},
+                                                                           {'numberFormat': {}},
+                                                                           {'numberFormat': {'type': 'CURRENCY',
+                                                                                             'pattern': '#,##0.00[$ ₽]'}},
+                                                                           {'numberFormat': {'type': 'CURRENCY',
+                                                                                             'pattern': '#,##0.00[$ ₽]'}},
                                                                  {'numberFormat': {}},
                                                                  {'numberFormat': {'type': 'CURRENCY',
                                                                                    'pattern': '#,##0.00[$ ₽]'}},
@@ -2071,7 +2322,7 @@ class BarsicReport2(App):
 
         # Цвет фона ячеек
         if self.nex_line % 2 != 0:
-            ss.prepare_setCellsFormat(f"A{self.nex_line}:Q{self.nex_line}",
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:Z{self.nex_line}",
                                       {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
                                       fields="userEnteredFormat.backgroundColor")
 
@@ -2118,7 +2369,7 @@ class BarsicReport2(App):
                 pass
 
         #
-        ss.prepare_setValues(f"A{height_table}:Q{height_table}",
+        ss.prepare_setValues(f"A{height_table}:Z{height_table}",
                              [[f'ИТОГО',
                                f"=SUM(B3:B{height_table - 1})",
                                f"=SUM(C3:C{height_table - 1})",
@@ -2127,20 +2378,44 @@ class BarsicReport2(App):
                                f"=SUM(F3:F{height_table - 1})",
                                f"=IFERROR(F{height_table}/E{height_table};0)",
                                f"=SUM(H3:H{height_table - 1})",
-                               f"=SUM(I3:i{height_table - 1})",
+                               f"=SUM(I3:I{height_table - 1})",
                                f"=IFERROR(I{height_table}/H{height_table};0)",
                                f"=SUM(K3:K{height_table - 1})",
                                f"=SUM(L3:L{height_table - 1})",
-                               f"=SUM(M3:M{height_table - 1})",
+                               f"=IFERROR(L{height_table}/K{height_table};0)",
                                f"=SUM(N3:N{height_table - 1})",
-                               f"=IFERROR(N{height_table}/M{height_table};0)",
-                               f"=SUM(P3:P{height_table - 1})",
+                               f"=SUM(O3:O{height_table - 1})",
+                               f"=IFERROR(O{height_table}/N{height_table};0)",
                                f"=SUM(Q3:Q{height_table - 1})",
+                               f"=SUM(R3:R{height_table - 1})",
+                               f"=IFERROR(R{height_table}/Q{height_table};0)",
+                               f"=SUM(T3:T{height_table - 1})",
+                               f"=SUM(U3:U{height_table - 1})",
+                               f"=SUM(V3:V{height_table - 1})",
+                               f"=SUM(W3:W{height_table - 1})",
+                               f"=IFERROR(W{height_table}/V{height_table};0)",
+                               f"=SUM(Y3:Y{height_table - 1})",
+                               f"=SUM(Z3:Z{height_table - 1})",
                                ]],
                              "ROWS")
 
         # Задание форматы вывода строки
-        ss.prepare_setCellsFormats(f"A{height_table}:Q{height_table}", [[{'numberFormat': {}},
+        ss.prepare_setCellsFormats(f"A{height_table}:Z{height_table}", [[{'numberFormat': {}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
+                                                                         {'numberFormat': {'type': 'CURRENCY',
+                                                                                           'pattern': '#,##0.00[$ ₽]'}},
                                                                          {'numberFormat': {}},
                                                                          {'numberFormat': {'type': 'CURRENCY',
                                                                                            'pattern': '#,##0.00[$ ₽]'}},
@@ -2169,11 +2444,11 @@ class BarsicReport2(App):
                                                                          {'numberFormat': {'type': 'CURRENCY',
                                                                                            'pattern': '#,##0.00[$ ₽]'}}]])
 
-        ss.prepare_setCellsFormat(f"A{height_table}:Q{height_table}",
+        ss.prepare_setCellsFormat(f"A{height_table}:Z{height_table}",
                                   {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}})
 
         # Цвет фона ячеек
-        ss.prepare_setCellsFormat(f"A{height_table}:Q{height_table}",
+        ss.prepare_setCellsFormat(f"A{height_table}:Z{height_table}",
                                   {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                   fields="userEnteredFormat.backgroundColor")
 

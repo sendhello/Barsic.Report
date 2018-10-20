@@ -1843,9 +1843,11 @@ class BarsicReport2(App):
             ws[column[b] + self.row].fill = fill
             b += 1
 
+        itog_sum = 0
         for line in agentreport_dict:
             if line != 'Организация' and line != 'Дата' and line != 'ИТОГО':
                 try:
+                    itog_sum += agentreport_dict[line][1]
                     ws[column[1] + next_row()] = line
                     ws[column[5] + self.row] = agentreport_dict[line][1]
                     merge_table()
@@ -1853,7 +1855,14 @@ class BarsicReport2(App):
                     pass
 
         ws[column[1] + next_row()] = 'Итого'
-        ws[column[5] + self.row] = agentreport_dict['ИТОГО'][1]
+        if itog_sum != agentreport_dict['ИТОГО'][1]:
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка. Отчет платежного агента: сумма строк '
+                                                                 f'({itog_sum}) не равна строке ИТОГО '
+                                                                 f'({agentreport_dict["ИТОГО"][1]})')
+            self.show_dialog(f'Ошибка. Отчет платежного агента', f'Ошибка. Отчет платежного агента: сумма строк '
+                                                                 f'({itog_sum}) не равна строке ИТОГО '
+                                                                 f'({agentreport_dict["ИТОГО"][1]})')
+        ws[column[5] + self.row] = itog_sum
         ws[column[5] + self.row].number_format = '#,##0.00 ₽'
         merge_table_bold()
 
@@ -2506,9 +2515,9 @@ class BarsicReport2(App):
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}:\n'
         if self.finreport_dict['ИТОГО'][1]:
             resporse += f'Люди - {self.finreport_dict["Кол-во проходов"][0]};\n'
-            resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1]:.2f} ₽;\n'
+            resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1] + self.finreport_dict["Билеты аквапарка КОРП"][1]:.2f} ₽;\n'
             resporse += f'По общепиту - {self.finreport_dict["Общепит"][1]:.2f} ₽;\n'
-            resporse += f'Термозона - {self.finreport_dict["Термозона"][1]:.2f} ₽;\n'
+            resporse += f'Термозона - {self.finreport_dict["Термозона"][1] + self.finreport_dict["Термозона КОРП"][1]:.2f} ₽;\n'
             resporse += f'Прочее - {self.finreport_dict["Прочее"][1]:.2f} ₽;\n'
             resporse += f'Общая по БАРСу - {self.finreport_dict["ИТОГО"][1]:.2f} ₽;\n'
             resporse += f'ONLINE продажи - {self.finreport_dict["Online Продажи"][1]:.2f} ₽;\n'

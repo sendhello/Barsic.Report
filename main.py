@@ -55,7 +55,7 @@ except Exception:
     sys.exit(1)
 
 
-__version__ = 'v2.2-beta.12'
+__version__ = 'v2.2-beta.13'
 
 
 def main():

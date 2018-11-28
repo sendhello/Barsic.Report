@@ -952,12 +952,12 @@ class BarsicReport2(App):
             service_point_dict[point[0]] = (point[1], point[2], point[3], point[4], point[5])
         report = {}
         for line in cash_report:
-            report[line[7]] = []
+            report[line[8]] = []
         for line in cash_report:
-            report[line[7]].append([service_point_dict[line[0]][0], line[1], line[2], line[3], line[4], line[5], line[6]])
-        all_sum = ['Итого по отчету', Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0)]
+            report[line[8]].append([service_point_dict[line[0]][0], line[1], line[2], line[3], line[4], line[5], line[6], line[7]])
+        all_sum = ['Итого по отчету', Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0)]
         for typpe in report:
-            type_sum = ['Итого', Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0)]
+            type_sum = ['Итого', Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0), Decimal(0.0)]
             for line in report[typpe]:
                 i = 0
                 while True:
@@ -3065,7 +3065,7 @@ class BarsicReport2(App):
         protection = Protection(locked=True,
                                 hidden=False)
 
-        column = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']
+        column = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
 
         self.row = '0'
         def next_row():
@@ -3100,6 +3100,7 @@ class BarsicReport2(App):
         ws.column_dimensions['K'].width = 1 / 7 * 88
         ws.column_dimensions['L'].width = 1 / 7 * 8
         ws.column_dimensions['M'].width = 1 / 7 * 80
+        ws.column_dimensions['N'].width = 1 / 7 * 96
 
         # значение ячейки
         # ws['A1'] = "Hello!"
@@ -3145,17 +3146,20 @@ class BarsicReport2(App):
             ws[column[10] + self.row].font = font
             ws[column[11] + self.row].font = font
             ws[column[13] + self.row].font = font
+            ws[column[14] + self.row].font = font
             ws[column[1] + self.row].alignment = align_top
             ws[column[3] + self.row].alignment = align_top
             ws[column[7] + self.row].alignment = align_top
             ws[column[10] + self.row].alignment = align_top
             ws[column[11] + self.row].alignment = align_top
             ws[column[13] + self.row].alignment = align_top
+            ws[column[14] + self.row].alignment = align_top
             ws[column[3] + self.row].number_format = '#,##0.00 ₽'
             ws[column[7] + self.row].number_format = '#,##0.00 ₽'
             ws[column[10] + self.row].number_format = '#,##0.00 ₽'
             ws[column[11] + self.row].number_format = '#,##0.00 ₽'
             ws[column[13] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[14] + self.row].number_format = '#,##0.00 ₽'
             b = 1
             while b < len(column):
                 ws[column[b] + self.row].border = border
@@ -3172,17 +3176,20 @@ class BarsicReport2(App):
             ws[column[10] + self.row].font = h3
             ws[column[11] + self.row].font = h3
             ws[column[13] + self.row].font = h3
+            ws[column[14] + self.row].font = h3
             ws[column[1] + self.row].alignment = align_top
             ws[column[3] + self.row].alignment = align_top
             ws[column[7] + self.row].alignment = align_top
             ws[column[10] + self.row].alignment = align_top
             ws[column[11] + self.row].alignment = align_top
             ws[column[13] + self.row].alignment = align_top
+            ws[column[14] + self.row].alignment = align_top
             ws[column[3] + self.row].number_format = '#,##0.00 ₽'
             ws[column[7] + self.row].number_format = '#,##0.00 ₽'
             ws[column[10] + self.row].number_format = '#,##0.00 ₽'
             ws[column[11] + self.row].number_format = '#,##0.00 ₽'
             ws[column[13] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[14] + self.row].number_format = '#,##0.00 ₽'
             b = 1
             while b < len(column):
                 ws[column[b] + self.row].border = border
@@ -3199,17 +3206,20 @@ class BarsicReport2(App):
             ws[column[10] + self.row].font = font_red
             ws[column[11] + self.row].font = font_red
             ws[column[13] + self.row].font = font_red
+            ws[column[14] + self.row].font = font_red
             ws[column[1] + self.row].alignment = align_top
             ws[column[3] + self.row].alignment = align_top
             ws[column[7] + self.row].alignment = align_top
             ws[column[10] + self.row].alignment = align_top
             ws[column[11] + self.row].alignment = align_top
             ws[column[13] + self.row].alignment = align_top
+            ws[column[14] + self.row].alignment = align_top
             ws[column[3] + self.row].number_format = '#,##0.00 ₽'
             ws[column[7] + self.row].number_format = '#,##0.00 ₽'
             ws[column[10] + self.row].number_format = '#,##0.00 ₽'
             ws[column[11] + self.row].number_format = '#,##0.00 ₽'
             ws[column[13] + self.row].number_format = '#,##0.00 ₽'
+            ws[column[14] + self.row].number_format = '#,##0.00 ₽'
             b = 1
             while b < len(column):
                 ws[column[b] + self.row].border = border
@@ -3235,6 +3245,7 @@ class BarsicReport2(App):
         ws[column[10] + self.row] = 'Безналичными'
         ws[column[11] + self.row] = 'Со счета'
         ws[column[13] + self.row] = 'Бонусами'
+        ws[column[14] + self.row] = 'LSI'
         merge_table_h3()
         # раскрвшивание фона для заголовков
         b = 1
@@ -3254,6 +3265,7 @@ class BarsicReport2(App):
                     ws[column[10] + self.row] = line[3]
                     ws[column[11] + self.row] = line[4]
                     ws[column[13] + self.row] = line[5]
+                    ws[column[14] + self.row] = line[6]-line[3]
                     if line[0] == 'Итого':
                         merge_table_red()
                     elif line[0] == 'Итого по отчету':

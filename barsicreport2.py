@@ -2011,13 +2011,16 @@ class BarsicReport2(App):
                                                                        ['https://www.googleapis.com/auth/spreadsheets',
                                                                         'https://www.googleapis.com/auth/drive'])
         httpAuth = credentials.authorize(httplib2.Http())
-        self.googleservice = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+        try:
+            self.googleservice = apiclient.discovery.build('sheets', 'v4', http=httpAuth)
+        except IndexError as e:
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка {repr(e)}')
 
         data_report = datetime.strftime(self.finreport_dict['Дата'][0], '%m')
         month = [
             '',
             'Январь',
-            'Ферраль',
+            'Февраль',
             'Март',
             'Апрель',
             'Май',

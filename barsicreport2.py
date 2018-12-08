@@ -996,12 +996,11 @@ class BarsicReport2(App):
         :return: list = Список организаций, каджая из которых - кортеж с параметрами организации
         """
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Чтение online-продаж...')
-        date_from = (date_from - timedelta(1)).strftime("%Y%m%d") + " 19:00:00"
-        date_to = (date_to - timedelta(1)).strftime("%Y%m%d") + " 19:00:00"
+        date_from = date_from.strftime("%Y%m%d") + " 00:00:00"
+        date_to = date_to.strftime("%Y%m%d") + " 00:00:00"
 
         cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={user};PWD={pwd}')
         cursor = cnxn.cursor()
-
         cursor.execute(
             f"""
             SELECT 
@@ -1009,7 +1008,7 @@ class BarsicReport2(App):
             FROM 
                 Transactions
             WHERE
-                (OrderDate >= '{date_from}')and(OrderDate < '{date_to}')
+                (PayDate >= '{date_from}')and(PayDate < '{date_to}')
             """)
         orders = []
         while True:
@@ -1018,7 +1017,6 @@ class BarsicReport2(App):
                 orders.append(row)
             else:
                 break
-
         summ = 0
         for order in orders:
             summ += float(order[6])

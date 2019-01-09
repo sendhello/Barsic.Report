@@ -150,6 +150,11 @@ class BarsicReport2(App):
         config.setdefault('PATH', 'path', 'report')
         config.setdefault('PATH', 'CREDENTIALS_FILE', 'data/1720aecc5640.json')
         config.setdefault('PATH', 'list_google_docs', 'data/list_google_docs.csv')
+        config.adddefaultsection('Bitrix')
+        config.setdefault('Bitrix', 'bitrix_exchange_url', 'example.site')
+        config.setdefault('Bitrix', 'bitrix_exchange_path', '/bitrix/admin/1c_exchange.php')
+        config.setdefault('Bitrix', 'bitrix_login', 'login')
+        config.setdefault('Bitrix', 'bitrix_password', 'password')
         config.adddefaultsection('Yadisk')
         config.setdefault('Yadisk', 'yadisk_token', 'token')
         config.adddefaultsection('Telegram')
@@ -196,6 +201,10 @@ class BarsicReport2(App):
         self.CREDENTIALS_FILE = self.config.get('PATH', 'CREDENTIALS_FILE')
         self.list_google_docs = self.config.get('PATH', 'list_google_docs')
         self.yadisk_token = self.config.get('Yadisk', 'yadisk_token')
+        self.bitrix_exchange_url = self.config.get('Bitrix', 'bitrix_exchange_url')
+        self.bitrix_exchange_path = self.config.get('Bitrix', 'bitrix_exchange_path')
+        self.bitrix_login = self.config.get('Bitrix', 'bitrix_login')
+        self.bitrix_password = self.config.get('Bitrix', 'bitrix_password')
         self.telegram_token = self.config.get('Telegram', 'telegram_token')
         self.telegram_chanel_id = self.config.get('Telegram', 'telegram_chanel_id') # '215624388'
         self.telegram_proxy_use = functions.to_bool(self.config.get('Telegram', 'telegram_proxy_use'))
@@ -3506,7 +3515,6 @@ class BarsicReport2(App):
         :param password: пароль
         :return: XML-файл с выгрузкой новых заказов
         """
-
         with requests.Session() as session:
 
             params = urllib.parse.urlencode({'type': 'sale', 'mode': 'checkauth'})
@@ -3694,10 +3702,10 @@ class BarsicReport2(App):
             f'----------------------------------------------------------\n'
             f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Запрос...')
 
-        XML = self.import_xml_from_bitrix(exchange_url='aquaulet.ru',
-                                          exchange_path='/bitrix/admin/1c_exchange.php',
-                                          login='barsic_export',
-                                          password='barsic_export@010203',
+        XML = self.import_xml_from_bitrix(exchange_url=self.bitrix_exchange_url,
+                                          exchange_path=self.bitrix_exchange_path,
+                                          login=self.bitrix_login,
+                                          password=self.bitrix_password,
                                      )
 
         ordersList = self.parseXML(XML)

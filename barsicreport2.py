@@ -22,6 +22,7 @@ import csv
 import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font, Side
+import time
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -1070,7 +1071,7 @@ class BarsicReport2(App):
 
     def distibution_service(self):
         """
-        Извлекает услугу из списка нвых услуг и вызывает список групп до тех пор пока есть новые услуги,
+        Извлекает услугу из списка новых услуг и вызывает список групп до тех пор пока есть новые услуги,
         затем передает управление следующей функции
         """
         if self.new_service:
@@ -2563,6 +2564,11 @@ class BarsicReport2(App):
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                          f'Отправка сообщения {self.sms_report_list.index(line) + 1} из {len(self.sms_report_list)}')
             bot.sendMessage(self.telegram_chanel_id, line)
+        # if self.telegram_proxy_use:
+        #     logging.info(
+        #         f'{__name__}: {str(datetime.now())[:-7]}:    Разъединение с прокси-сервером {self.telegram_proxy_ip}...')
+        #     socks.setdefaultproxy()
+        #     socket.socket = socks.socksocket
 
     def save_organisation_total(self, itog_report):
         """
@@ -3777,7 +3783,6 @@ class BarsicReport2(App):
         if self.agentreport_xls:
             self.path_list.append(self.export_agent_report(self.agentreport_dict))
         if self.finreport_google:
-            self.request_bitrix()
             self.export_to_google_sheet()
             self.open_googlesheet()
         if self.finreport_telegram:
@@ -3877,6 +3882,7 @@ class BarsicReport2(App):
                 date_to=self.date_to,
             )
 
+        self.request_bitrix()
         self.report_bitrix = self.read_bitrix_base(
             server=self.server,
             database=self.database_bitrix,

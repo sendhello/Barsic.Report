@@ -13,3 +13,5 @@ pip install yadisk
 pip install telepot
 pip install openpyxl
 pip install PySocks
+pip install ntplib
+python KivyMD/setup.py install

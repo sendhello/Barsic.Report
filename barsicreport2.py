@@ -55,6 +55,10 @@ import yadisk
 import xlwt
 import itertools
 
+import urllib
+import re
+import ntplib
+import requests
 import webbrowser
 import httplib2
 import apiclient.discovery
@@ -3482,6 +3486,252 @@ class BarsicReport2(App):
         self.save_file(path, wb)
         return path
 
+    def import_xml_from_bitrix(self,
+                               exchange_url,
+                               exchange_path,
+                               login,
+                               password,
+                               ):
+        """
+        Выгрузка новых заказов с сайта Битрикс
+        :param exchange_url: адрес сайта
+        :param exchange_path: путь к модулювыгрузки
+        :param login: логин пользователя
+        :param password: пароль
+        :return: XML-файл с выгрузкой новых заказов
+        """
+
+        with requests.Session() as session:
+
+            params = urllib.parse.urlencode({'type': 'sale', 'mode': 'checkauth'})
+            url = 'http://' + exchange_url + exchange_path + '?' + params
+            auth = (login, password)
+            r = session.get(url, auth=auth)
+            temp = r.text.split('\n')
+            logging.info(str(temp))
+
+            params = urllib.parse.urlencode({'type': 'sale', 'mode': 'init'})
+            url = 'https://' + exchange_url + exchange_path + '?' + params
+            result = session.get(url).text
+            logging.info(result + '\n')
+
+            params = urllib.parse.urlencode({'type': 'sale', 'mode': 'query'})
+            url = 'http://' + exchange_url + exchange_path + '?' + params
+            r = session.post(url)
+            result = r.text
+            logging.info(f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
+                  f'Запрос в битрикс выполнен.')
+            if result[0] == '<':
+                logging.info(
+                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
+                    f'Данные выгружены, Отправка подтверждения в битрикс')
+                params = urllib.parse.urlencode({'type': 'sale', 'mode': 'success'})
+                url = 'http://' + exchange_url + exchange_path + '?' + params
+                r = session.post(url)
+            else:
+                logging.error(f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Файл не содержит XML')
+
+            return result
+
+    def parseXML(self, xmlString):
+        """
+        ЧТЕНИЕ XML С ДАННЫМИ
+        :param xmlString: строка XML из интернет-магазина Битрикс
+        :return: список словарей с данными
+        """
+
+        x = re.search(r' encoding="windows-1251"', xmlString)
+        xml = xmlString[:x.start()] + xmlString[x.end():]
+
+        result = []
+        products_in_bay = -1
+        last_elem = ''
+
+        root = objectify.fromstring(xml)
+
+        for doc in root.getchildren():
+            paydate = ''
+            pay = False
+            status = ''
+            for req in doc.ЗначенияРеквизитов.getchildren():
+                if req.Наименование == 'Дата оплаты':
+                    paydate = datetime.strftime(datetime.strptime(str(req.Значение), '%d.%m.%Y %H:%M:%S'),
+                                                '%Y-%d-%m %H:%M:%S')
+                if req.Наименование == 'Заказ оплачен':
+                    pay = bool(req.Значение)
+                if req.Наименование == 'Статус заказа':
+                    status = str(req.Значение)
+            for product in doc.Товары.getchildren():
+                count = int(product.Количество)
+                while count > 0:
+                    count -= 1
+                    result.append(dict())
+                    if last_elem != doc.Ид:
+                        products_in_bay = -1
+                    last_elem = doc.Ид
+                    products_in_bay += 1
+                    result[len(result) - 1]['Id_P'] = int(str(doc.Ид) + str(products_in_bay))
+                    result[len(result) - 1]['OrderNumber'] = int(doc.Ид)
+                    result[len(result) - 1]['ProductId'] = str(product.Ид)
+                    result[len(result) - 1]['ProductName'] = str(product.Наименование)
+                    result[len(result) - 1]['OrderDate'] = datetime.strptime(str(doc.Дата + ' ' + doc.Время),
+                                                                             '%Y-%m-%d %H:%M:%S').strftime(
+                        '%Y-%d-%m %H:%M:%S')
+                    result[len(result) - 1]['PayDate'] = paydate
+                    result[len(result) - 1]['Sum_P'] = Decimal(float(product.ЦенаЗаЕдиницу))
+                    result[len(result) - 1]['Pay_P'] = pay
+                    result[len(result) - 1]['Status_P'] = status
+                    result[len(result) - 1]['Client_P'] = str(doc.Контрагенты.Контрагент.Ид)
+        if result:
+            logging.info(
+                f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
+                f'Новый файл. Количество строк - {len(result)}')
+        else:
+            logging.info(f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Нет новых покупок.')
+        return result
+
+    def uploadToBase(self,
+                     server,
+                     database,
+                     uid,
+                     pwd,
+                     Id_P,
+                     OrderNumber_P,
+                     ProductId_P,
+                     ProductName_P,
+                     OrderDate_P,
+                     PayDate_P,
+                     Sum_P,
+                     Pay_P,
+                     Status_P,
+                     Client_P,
+                     ):
+        """
+        Отправка данных в sql-базу
+        """
+
+        driver = '{SQL Server}'
+        cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
+        cursor = cnxn.cursor()
+
+        cursor.execute(f"""
+                        INSERT INTO [Transactions](
+                            [Id],
+                            [OrderNumber],
+                            [ProductId],
+                            [ProductName],
+                            [OrderDate],
+                            [PayDate],
+                            [Sum],
+                            [Pay],
+                            [Status],
+                            [Client]
+                        )
+                        VALUES(
+                            {Id_P},
+                            {OrderNumber_P},
+                            '{ProductId_P}',
+                            '{ProductName_P}',
+                            '{OrderDate_P}',
+                            '{PayDate_P}',
+                            {Sum_P},
+                            {Pay_P},
+                            '{Status_P}',
+                            '{Client_P}'
+                        )
+                       """)
+        cnxn.commit()
+        return 'Upload To SQL-Base: Ready'
+
+    def if_in_base(self,
+                   server,
+                   database,
+                   uid,
+                   pwd,
+                   Id_P,
+                   ):
+        driver = '{SQL Server}'
+        cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
+        cursor = cnxn.cursor()
+
+        cursor.execute(f"""
+                            SELECT
+                                [Id],
+                                [OrderNumber],
+                                [ProductId],
+                                [ProductName],
+                                [OrderDate],
+                                [PayDate],
+                                [Sum],
+                                [Pay],
+                                [Status],
+                                [Client]
+                            FROM [Transactions]
+                            WHERE
+                                [Id] = {Id_P}
+                           """)
+        result = []
+        while True:
+            row = cursor.fetchone()
+            if row:
+                result.append(row)
+            else:
+                break
+        if len(result) > 0:
+            return False
+        else:
+            return True
+
+    def request_bitrix(self):
+        logging.info(
+            f'\n--------------------------------------------------------------------------------------------------'
+            f'----------------------------------------------------------\n'
+            f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Запрос...')
+
+        XML = self.import_xml_from_bitrix(exchange_url='aquaulet.ru',
+                                          exchange_path='/bitrix/admin/1c_exchange.php',
+                                          login='barsic_export',
+                                          password='barsic_export@010203',
+                                     )
+
+        ordersList = self.parseXML(XML)
+
+        for order in ordersList:
+
+            if self.if_in_base(
+                    server=self.server,
+                    database=self.database_bitrix,
+                    uid=self.user,
+                    pwd=self.pwd,
+                    Id_P=order['Id_P'],
+            ):
+                self.uploadToBase(
+                    server=self.server,
+                    database=self.database_bitrix,
+                    uid=self.user,
+                    pwd=self.pwd,
+                    Id_P=order['Id_P'],
+                    OrderNumber_P=order['OrderNumber'],
+                    ProductId_P=order['ProductId'],
+                    ProductName_P=order['ProductName'],
+                    OrderDate_P=order['OrderDate'],
+                    PayDate_P=order['PayDate'],
+                    Sum_P=order['Sum_P'],
+                    Pay_P=int(order['Pay_P']),
+                    Status_P=order['Status_P'],
+                    Client_P=order['Client_P'],
+                )
+
+                logging.info(
+                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
+                    f'{order["ProductName"]:50} | {order["OrderNumber"]:10} | '
+                    f'{order["Sum_P"]: 10} | {order["OrderDate"]:25} | ВЫГРУЖЕН')
+            else:
+                logging.info(
+                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
+                    f'{order["ProductName"]:50} | {order["OrderNumber"]:10} | '
+                    f'{order["Sum_P"]: 10} | {order["OrderDate"]:25} | ОТМЕНА (Попытка повторной записи)')
+
     def load_checkbox(self):
         """
         Установка чекбоксов в соответствии с настройками INI-файла
@@ -3527,6 +3777,7 @@ class BarsicReport2(App):
         if self.agentreport_xls:
             self.path_list.append(self.export_agent_report(self.agentreport_dict))
         if self.finreport_google:
+            self.request_bitrix()
             self.export_to_google_sheet()
             self.open_googlesheet()
         if self.finreport_telegram:

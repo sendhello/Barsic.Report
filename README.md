@@ -1,5 +1,8 @@
 # Barsic.Report
 Установка:
+pip install -r req.txt
+
+Установка old:
 1. Установить Python 3.6
 2. Установить BuildTools_Full.exe (для Python 3.5, 3.6) или
 	Установить BuildTools_Full.exe для Python 3.7 со следующими компонентами (возможно все и не нужны):

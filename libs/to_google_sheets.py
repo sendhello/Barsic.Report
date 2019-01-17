@@ -24,7 +24,17 @@ class Spreadsheet:
         self.sheetId = sheetId
         self.service = service
         self.sheetTitle = sheetTitle
+        self.create_columnDict()
 
+    def create_columnDict(self):
+        self.columnDict = {}
+        for ch1 in range(ord('A') - 1, ord('C') + 1):
+            for ch2 in range(ord('A'), ord('Z') + 1):
+                if ch1 == ord('A') - 1:
+                    self.columnDict[chr(ch2)] = ch2 - ord('A')
+                else:
+                    self.columnDict[f'{chr(ch1)}{chr(ch2)}'] = 26 * (ch1 - ord('A') + 1) + ch2 - ord('A')
+        print(self.columnDict)
 
     def prepare_setDimensionPixelSize(self, dimension, startIndex, endIndex, pixelSize):
         self.requests.append({"updateDimensionProperties": {
@@ -70,19 +80,39 @@ class Spreadsheet:
             raise SheetNotSetError()
         if isinstance(cellsRange, str):
             startCell, endCell = cellsRange.split(":")[0:2]
+            print(f'startCell = {startCell}, endCell = {endCell}')
             cellsRange = {}
-            rangeAZ = range(ord('A'), ord('Z') + 1)
-            if ord(startCell[0]) in rangeAZ:
-                cellsRange["startColumnIndex"] = ord(startCell[0]) - ord('A')
-                startCell = startCell[1:]
-            if ord(endCell[0]) in rangeAZ:
-                cellsRange["endColumnIndex"] = ord(endCell[0]) - ord('A') + 1
-                endCell = endCell[1:]
-            if len(startCell) > 0:
-                cellsRange["startRowIndex"] = int(startCell) - 1
-            if len(endCell) > 0:
-                cellsRange["endRowIndex"] = int(endCell)
+            i = 0
+            for s in startCell:
+                if s.isdigit():
+                    startCellColumn = startCell[:i]
+                    startCellRow = int(startCell[i:])
+                    break
+                i += 1
+            i = 0
+            for s in endCell:
+                if s.isdigit():
+                    endCellColumn = endCell[:i]
+                    endCellRow = int(endCell[i:])
+                    break
+                i += 1
+            try:
+                print(f'endCellColumn = {endCellColumn}')
+                print(f'endCellRow = {endCellRow}')
+                print(f'self.columnDict[startCellColumn] = {self.columnDict[startCellColumn]}')
+                print(f'self.columnDict[endCellColumn] + 1 = {self.columnDict[endCellColumn] + 1}')
+                cellsRange["startColumnIndex"] = int(self.columnDict[startCellColumn])
+                cellsRange["endColumnIndex"] = int(self.columnDict[endCellColumn]) + 1
+            except KeyError:
+                raise (KeyError, 'Possible, Key Columns out range. Please added it in method "create_columnDict".')
+            if startCellRow > 0:
+                cellsRange["startRowIndex"] = startCellRow - 1
+                print(f'startCellRow - 1 = {startCellRow - 1}')
+            if endCellRow > 0:
+                cellsRange["endRowIndex"] = endCellRow
+                print(f'endCellRow = {endCellRow}')
         cellsRange["sheetId"] = self.sheetId
+        print(f'cellsRange = {cellsRange}')
         return cellsRange
 
     def prepare_mergeCells(self, cellsRange, mergeType = "MERGE_ALL"):

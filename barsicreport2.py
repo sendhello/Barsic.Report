@@ -14,15 +14,14 @@ import os
 import sys
 from ast import literal_eval
 import logging
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 import pyodbc
 from decimal import Decimal
 from lxml import etree, objectify
 import csv
-import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font, Side
-import time
+from dateutil.relativedelta import relativedelta
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -1365,6 +1364,44 @@ class BarsicReport2(App):
         self.finreport_dict['Online Продажи'] = list(self.report_bitrix)
         # self.finreport_dict['ИТОГО'][1] -= self.finreport_dict['Депозит'][1]
 
+    def fin_report_lastyear(self):
+        """
+        Форминует финансовый отчет за предыдущий год в установленном формате
+        :return - dict
+        """
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета')
+        self.finreport_dict_lastyear = {}
+        is_aquazona = None
+        for key in self.orgs_dict:
+            if key != 'Не учитывать':
+                self.finreport_dict_lastyear[key] = [0, 0.00]
+                for serv in self.orgs_dict[key]:
+                    try:
+                        if key == 'Нулевые':
+                            self.finreport_dict_lastyear[key][0] += self.itog_report_org1_lastyear[serv][0]
+                            self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                        elif key == 'Дата':
+                            self.finreport_dict_lastyear[key][0] = self.itog_report_org1_lastyear[serv][0]
+                            self.finreport_dict_lastyear[key][1] = self.itog_report_org1_lastyear[serv][1]
+                        elif serv == 'Депозит':
+                            self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                        elif serv == 'Аквазона':
+                            self.finreport_dict_lastyear['Кол-во проходов'] = [self.itog_report_org1_lastyear[serv][0], 0]
+                            self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                            is_aquazona = True
+                        elif serv == 'Организация':
+                            pass
+                        else:
+                            self.finreport_dict_lastyear[key][0] += self.itog_report_org1_lastyear[serv][0]
+                            self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                    except KeyError:
+                        pass
+                    except TypeError:
+                        pass
+        if not is_aquazona:
+            self.finreport_dict_lastyear['Кол-во проходов'] = [0, 0.00]
+        self.finreport_dict_lastyear['Online Продажи'] = list(self.report_bitrix_lastyear)
+
     def agent_report(self):
         """
         Форминует отчет платежного агента в установленном формате
@@ -2016,8 +2053,8 @@ class BarsicReport2(App):
 
         #self.CREDENTIALS_FILE # имя файла с закрытым ключом
 
-        self.sheet_width = 26
-        height = 35
+        self.sheet_width = 36
+        height = 34
 
         credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,
                                                                        ['https://www.googleapis.com/auth/spreadsheets',
@@ -2046,11 +2083,14 @@ class BarsicReport2(App):
         ]
         data_report = month[int(data_report)]
 
-        doc_name = f"{datetime.strftime(self.finreport_dict['Дата'][0], '%Y-%m')} ({data_report}) - Финансовый отчет по Аквапарку"
+        doc_name = f"{datetime.strftime(self.finreport_dict['Дата'][0], '%Y-%m')} " \
+            f"({data_report}) - Финансовый отчет по Аквапарку"
 
         if self.finreport_dict['Дата'][0] + timedelta(1) != self.finreport_dict['Дата'][1]:
-            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Экспорт отчета в Google Sheet за несколько дней невозможен!')
-            self.show_dialog('Ошибка экспорта в Google.Sheet', 'Экспорт отчета в Google Sheet за несколько дней невозможен!')
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                         f'Экспорт отчета в Google Sheet за несколько дней невозможен!')
+            self.show_dialog('Ошибка экспорта в Google.Sheet',
+                             'Экспорт отчета в Google Sheet за несколько дней невозможен!')
         else:
             with open(self.list_google_docs, 'r', encoding='utf-8') as f:
                 links = csv.reader(f, delimiter=';')
@@ -2058,7 +2098,8 @@ class BarsicReport2(App):
                 for line in links:
                     self.google_links[line[0]] = line[1]
             if self.date_from.strftime('%Y-%m') in self.google_links:
-                self.google_doc = (self.date_from.strftime('%Y-%m'), self.google_links[self.date_from.strftime('%Y-%m')])
+                self.google_doc = (self.date_from.strftime('%Y-%m'),
+                                   self.google_links[self.date_from.strftime('%Y-%m')])
             else:
                 self.google_doc = None
                 # Создание документа
@@ -2102,72 +2143,96 @@ class BarsicReport2(App):
                     ).execute()
 
                 sheetId = 0
-
                 # Ширина столбцов
-                ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
+                ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId,
+                                                  self.googleservice,
                                                   self.spreadsheet['sheets'][sheetId]['properties']['title'])
-                ss.prepare_setColumnWidth(0, 100)
-                ss.prepare_setColumnWidth(1, 120)
-                ss.prepare_setColumnsWidth(2, 3, 120)
-                ss.prepare_setColumnWidth(4, 65)
-                ss.prepare_setColumnWidth(5, 120)
-                ss.prepare_setColumnWidth(6, 100)
-                ss.prepare_setColumnWidth(7, 65)
-                ss.prepare_setColumnWidth(8, 120)
-                ss.prepare_setColumnWidth(9, 100)
-                ss.prepare_setColumnWidth(10, 65)
-                ss.prepare_setColumnWidth(11, 120)
-                ss.prepare_setColumnWidth(12, 100)
-                ss.prepare_setColumnWidth(13, 65)
-                ss.prepare_setColumnWidth(14, 120)
-                ss.prepare_setColumnWidth(15, 100)
-                ss.prepare_setColumnWidth(16, 65)
-                ss.prepare_setColumnWidth(17, 120)
-                ss.prepare_setColumnWidth(18, 100)
-                ss.prepare_setColumnWidth(19, 65)
-                ss.prepare_setColumnWidth(20, 120)
-                ss.prepare_setColumnWidth(21, 65)
-                ss.prepare_setColumnWidth(22, 120)
-                ss.prepare_setColumnWidth(23, 100)
+                ss.prepare_setColumnsWidth(0, 1, 100)
+                ss.prepare_setColumnsWidth(2, 7, 120)
+                ss.prepare_setColumnWidth(8, 65)
+                ss.prepare_setColumnWidth(9, 120)
+                ss.prepare_setColumnWidth(10, 100)
+                ss.prepare_setColumnWidth(11, 65)
+                ss.prepare_setColumnWidth(12, 120)
+                ss.prepare_setColumnWidth(13, 100)
+                ss.prepare_setColumnWidth(14, 65)
+                ss.prepare_setColumnWidth(15, 120)
+                ss.prepare_setColumnWidth(16, 100)
+                ss.prepare_setColumnWidth(17, 65)
+                ss.prepare_setColumnWidth(18, 120)
+                ss.prepare_setColumnWidth(19, 100)
+                ss.prepare_setColumnWidth(20, 65)
+                ss.prepare_setColumnWidth(21, 120)
+                ss.prepare_setColumnWidth(22, 100)
+                ss.prepare_setColumnWidth(23, 65)
                 ss.prepare_setColumnWidth(24, 120)
-                ss.prepare_setColumnWidth(25, 120)
+                ss.prepare_setColumnWidth(25, 100)
+                ss.prepare_setColumnWidth(26, 65)
+                ss.prepare_setColumnWidth(27, 120)
+                ss.prepare_setColumnWidth(28, 100)
+                ss.prepare_setColumnWidth(29, 65)
+                ss.prepare_setColumnWidth(30, 120)
+                ss.prepare_setColumnWidth(31, 65)
+                ss.prepare_setColumnWidth(32, 120)
+                ss.prepare_setColumnWidth(33, 100)
+                ss.prepare_setColumnWidth(34, 120)
+                ss.prepare_setColumnWidth(35, 120)
 
                 # Объединение ячеек
                 ss.prepare_mergeCells("A1:A2")
                 ss.prepare_mergeCells("B1:B2")
                 ss.prepare_mergeCells("C1:C2")
                 ss.prepare_mergeCells("D1:D2")
-                ss.prepare_mergeCells("E1:G1")
-                ss.prepare_mergeCells("H1:J1")
-                ss.prepare_mergeCells("K1:M1")
-                ss.prepare_mergeCells("N1:P1")
-                ss.prepare_mergeCells("Q1:S1")
-                ss.prepare_mergeCells("T1:U1")
-                ss.prepare_mergeCells("V1:X1")
-                ss.prepare_mergeCells("Y1:Y2")
-                ss.prepare_mergeCells("Z1:Z2")
+                ss.prepare_mergeCells("E1:E2")
+                ss.prepare_mergeCells("F1:F2")
+                ss.prepare_mergeCells("G1:G2")
+                ss.prepare_mergeCells("H1:H2")
+                ss.prepare_mergeCells("I1:K1")
+                ss.prepare_mergeCells("L1:N1")
+                ss.prepare_mergeCells("O1:Q1")
+                ss.prepare_mergeCells("R1:T1")
+                ss.prepare_mergeCells("U1:W1")
+                ss.prepare_mergeCells("X1:Z1")
+                ss.prepare_mergeCells("AA1:AC1")
+                ss.prepare_mergeCells("AD1:AE1")
+                ss.prepare_mergeCells("AF1:AH1")
+                ss.prepare_mergeCells("AI1:AI2")
+                ss.prepare_mergeCells("AJ1:AJ2")
 
                 # Задание параметров группе ячеек
                 # Жирный, по центру
-                ss.prepare_setCellsFormat('A1:Z2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                ss.prepare_setCellsFormat('A1:AJ2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
                 # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
                 #                           fields='userEnteredFormat.numberFormat')
 
                 # Заполнение таблицы
-                ss.prepare_setValues("A1:Z2", [["Дата", "Кол-во проходов", "Общая сумма", "Сумма KPI", "Билеты", "",
-                                                "", "Билеты КОРП", "", "", "Термозона", "", "", "Термозона КОРП", "",
-                                                "", "Общепит", "", "", "Прочее", "", "Online Продажи", "", "",
-                                                "Сумма безнал", "Сумма Biglion"],
-                                               ["", "", "", "", "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма",
-                                                "Средний чек", "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма",
-                                                "Средний чек", "Кол-во", "Сумма",
-                                                "Средний чек", "Кол-во", "Сумма", "Кол-во", "Сумма", "Средний чек", "",
-                                                ""]],
+                ss.prepare_setValues("A1:AJ2", [
+                    [
+                        "Дата", "День недели", "Кол-во проходов \nФАКТ", "Кол-во проходов \nПЛАН",
+                    f"Кол-во проходов \n{data_report} "
+                    f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}",
+                    "Общая сумма \nФАКТ", "Общая сумма \nПЛАН",
+                    f"Общая сумма \n{data_report} "
+                    f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}",
+                    "Билеты", "", "", "Термозона", "", "", "Общепит", "", "", "Общепит ПЛАН",  "", "",
+                    f"Общепит {data_report} "
+                    f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}", "", "",
+                    "Билеты КОРП", "", "", "Термозона КОРП", "", "", "Прочее", "", "Online Продажи", "", "",
+                    "Сумма безнал", "Сумма Biglion"
+                    ],
+                    [
+                        "", "", "", "", "", "", "", "", "Кол-во", "Сумма", "Средний чек",
+                        "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
+                        "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
+                        "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
+                        "Кол-во", "Сумма", "Кол-во", "Сумма", "Средний чек", "", ""
+                    ]
+                ],
                                      "ROWS")
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:Z2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:AJ2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -2218,7 +2283,6 @@ class BarsicReport2(App):
             #             s += cell['formattedValue'] + " | "
             #         except KeyError:
             #             pass
-            #     print(s)
             #     s = ''
 
             # Проверка нет ли текущей даты в таблице
@@ -2268,85 +2332,122 @@ class BarsicReport2(App):
                                           self.spreadsheet['sheets'][sheetId]['properties']['title'])
 
         # Заполнение строки с данными
-        ss.prepare_setValues(f"A{self.nex_line}:Z{self.nex_line}",
-                             [[datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
-                               f"{self.finreport_dict['Кол-во проходов'][0]}",
-                               self.finreport_dict['ИТОГО'][1],
-                               f"=C{self.nex_line}-U{self.nex_line}+W{self.nex_line}+Y{self.nex_line}+Z{self.nex_line}",
-                               self.finreport_dict['Билеты аквапарка'][0],
-                               self.finreport_dict['Билеты аквапарка'][1],
-                               f"=IFERROR(F{self.nex_line}/E{self.nex_line};0)",
-                               self.finreport_dict['Билеты аквапарка КОРП'][0],
-                               self.finreport_dict['Билеты аквапарка КОРП'][1],
-                               f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
-                               self.finreport_dict['Термозона'][0],
-                               self.finreport_dict['Термозона'][1],
-                               f"=IFERROR(L{self.nex_line}/K{self.nex_line};0)",
-                               self.finreport_dict['Термозона КОРП'][0],
-                               self.finreport_dict['Термозона КОРП'][1],
-                               f"=IFERROR(O{self.nex_line}/N{self.nex_line};0)",
-                               self.finreport_dict['Общепит'][0],
-                               self.finreport_dict['Общепит'][1],
-                               f"=IFERROR(R{self.nex_line}/Q{self.nex_line};0)",
-                               self.finreport_dict['Прочее'][0],
-                               self.finreport_dict['Прочее'][1],
-                               self.finreport_dict['Online Продажи'][0],
-                               self.finreport_dict['Online Продажи'][1],
-                               f"=IFERROR(W{self.nex_line}/V{self.nex_line};0)",
-                               0,
-                               0,
-                               ]],
-                             "ROWS")
+        weekday_rus = [
+            "Понедельник",
+            "Вторник",
+            "Среда",
+            "Четверг",
+            "Пятница",
+            "Суббота",
+            "Воскресенье",
+        ]
+
+        if self.finreport_dict['ИТОГО'][1] == (self.finreport_dict['Билеты аквапарка'][1] +
+            self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] +
+            self.finreport_dict['Билеты аквапарка КОРП'][1] + self.finreport_dict['Прочее'][1] +
+            self.finreport_dict['Термозона КОРП'][1] + self.finreport_dict['Депозит'][1]):
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                         f'Несоответствие данных: Сумма услуг не равна итоговой сумме')
+            self.show_dialog('Несоответствие данных',
+                             f"Сумма услуг по группам + депозит ({self.finreport_dict['Билеты аквапарка'][1] + self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] + self.finreport_dict['Билеты аквапарка КОРП'][1] + self.finreport_dict['Прочее'][1] + self.finreport_dict['Термозона КОРП'][1] +  + self.finreport_dict['Депозит'][1]}) "
+                             f"не равна итоговой сумме ({self.finreport_dict['ИТОГО'][1]}). \n"
+                             f"Нулевые позиции имеют стоимость {self.finreport_dict['Нулевые'][1]}. \n"
+                             f"Рекомендуется проверить правильно ли разделены услуги по группам.")
+
+        ss.prepare_setValues(
+            f"A{self.nex_line}:AJ{self.nex_line}",
+            [
+                [
+                    datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
+                    weekday_rus[self.finreport_dict['Дата'][0].weekday()],
+                    f"{self.finreport_dict['Кол-во проходов'][0]}",
+                    "",
+                    f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
+                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AG{self.nex_line}+"
+                        f"AI{self.nex_line}+AJ{self.nex_line}",
+                    "",
+                    f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
+                        f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
+                    self.finreport_dict['Билеты аквапарка'][0],
+                    self.finreport_dict['Билеты аквапарка'][1],
+                    f"=IFERROR(J{self.nex_line}/I{self.nex_line};0)",
+                    self.finreport_dict['Термозона'][0],
+                    self.finreport_dict['Термозона'][1],
+                    f"=IFERROR(M{self.nex_line}/L{self.nex_line};0)",
+                    self.finreport_dict['Общепит'][0],
+                    self.finreport_dict['Общепит'][1],
+                    f"=IFERROR(P{self.nex_line}/O{self.nex_line};0)",
+                    "",
+                    "",
+                    f"=IFERROR(S{self.nex_line}/R{self.nex_line};0)",
+                    self.finreport_dict_lastyear['Общепит'][0],
+                    self.finreport_dict_lastyear['Общепит'][1],
+                    f"=IFERROR(V{self.nex_line}/U{self.nex_line};0)",
+                    self.finreport_dict['Билеты аквапарка КОРП'][0],
+                    self.finreport_dict['Билеты аквапарка КОРП'][1],
+                    f"=IFERROR(Y{self.nex_line}/X{self.nex_line};0)",
+                    self.finreport_dict['Термозона КОРП'][0],
+                    self.finreport_dict['Термозона КОРП'][1],
+                    f"=IFERROR(AB{self.nex_line}/AA{self.nex_line};0)",
+                    self.finreport_dict['Прочее'][0],
+                    self.finreport_dict['Прочее'][1],
+                    self.finreport_dict['Online Продажи'][0],
+                    self.finreport_dict['Online Продажи'][1],
+                    f"=IFERROR(AG{self.nex_line}/AF{self.nex_line};0)",
+                    0,
+                    0,
+                ]
+            ],
+            "ROWS"
+        )
 
         # Задание форматы вывода строки
-        ss.prepare_setCellsFormats(f"A{self.nex_line}:Z{self.nex_line}", [[{'numberFormat': {'type': 'DATE',
-                                                                                   'pattern': 'dd.mm.yyyy'}},
-                                                                 {'numberFormat': {}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                           {'numberFormat': {}},
-                                                                           {'numberFormat': {'type': 'CURRENCY',
-                                                                                             'pattern': '#,##0.00[$ ₽]'}},
-                                                                           {'numberFormat': {'type': 'CURRENCY',
-                                                                                             'pattern': '#,##0.00[$ ₽]'}},
-                                                                           {'numberFormat': {}},
-                                                                           {'numberFormat': {'type': 'CURRENCY',
-                                                                                             'pattern': '#,##0.00[$ ₽]'}},
-                                                                           {'numberFormat': {'type': 'CURRENCY',
-                                                                                             'pattern': '#,##0.00[$ ₽]'}},
-                                                                           {'numberFormat': {}},
-                                                                           {'numberFormat': {'type': 'CURRENCY',
-                                                                                             'pattern': '#,##0.00[$ ₽]'}},
-                                                                           {'numberFormat': {'type': 'CURRENCY',
-                                                                                             'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}},
-                                                                 {'numberFormat': {'type': 'CURRENCY',
-                                                                                   'pattern': '#,##0.00[$ ₽]'}}]])
-
+        ss.prepare_setCellsFormats(
+            f"A{self.nex_line}:AJ{self.nex_line}",
+            [
+                [
+                    {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                ]
+            ]
+        )
         # Цвет фона ячеек
         if self.nex_line % 2 != 0:
-            ss.prepare_setCellsFormat(f"A{self.nex_line}:Z{self.nex_line}",
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:AJ{self.nex_line}",
                                       {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
                                       fields="userEnteredFormat.backgroundColor")
 
@@ -2375,11 +2476,9 @@ class BarsicReport2(App):
                           "endColumnIndex": j + 1},
                 "bottom": {"style": "SOLID", "width": 1,
                            "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
-
         ss.runPrepared()
 
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
-
         # Вычисление последней строки в таблице
         for i, line_table in enumerate(self.spreadsheet['sheets'][0]['data'][0]['rowData']):
             try:
@@ -2392,87 +2491,94 @@ class BarsicReport2(App):
             except KeyError:
                 pass
 
-        #
-        ss.prepare_setValues(f"A{height_table}:Z{height_table}",
+        ss.prepare_setValues(f"A{height_table}:AJ{height_table}",
                              [[f'ИТОГО',
-                               f"=SUM(B3:B{height_table - 1})",
+                               "",
                                f"=SUM(C3:C{height_table - 1})",
                                f"=SUM(D3:D{height_table - 1})",
                                f"=SUM(E3:E{height_table - 1})",
                                f"=SUM(F3:F{height_table - 1})",
-                               f"=IFERROR(F{height_table}/E{height_table};0)",
+                               f"=SUM(G3:G{height_table - 1})",
                                f"=SUM(H3:H{height_table - 1})",
                                f"=SUM(I3:I{height_table - 1})",
-                               f"=IFERROR(I{height_table}/H{height_table};0)",
-                               f"=SUM(K3:K{height_table - 1})",
+                               f"=SUM(J3:J{height_table - 1})",
+                               f"=IFERROR(J{height_table}/I{height_table};0)",
                                f"=SUM(L3:L{height_table - 1})",
-                               f"=IFERROR(L{height_table}/K{height_table};0)",
-                               f"=SUM(N3:N{height_table - 1})",
+                               f"=SUM(M3:M{height_table - 1})",
+                               f"=IFERROR(M{height_table}/L{height_table};0)",
                                f"=SUM(O3:O{height_table - 1})",
-                               f"=IFERROR(O{height_table}/N{height_table};0)",
-                               f"=SUM(Q3:Q{height_table - 1})",
+                               f"=SUM(P3:P{height_table - 1})",
+                               f"=IFERROR(P{height_table}/O{height_table};0)",
                                f"=SUM(R3:R{height_table - 1})",
-                               f"=IFERROR(R{height_table}/Q{height_table};0)",
-                               f"=SUM(T3:T{height_table - 1})",
+                               f"=SUM(S3:S{height_table - 1})",
+                               f"=IFERROR(S{height_table}/R{height_table};0)",
                                f"=SUM(U3:U{height_table - 1})",
                                f"=SUM(V3:V{height_table - 1})",
-                               f"=SUM(W3:W{height_table - 1})",
-                               f"=IFERROR(W{height_table}/V{height_table};0)",
+                               f"=IFERROR(V{height_table}/U{height_table};0)",
+                               f"=SUM(X3:X{height_table - 1})",
                                f"=SUM(Y3:Y{height_table - 1})",
-                               f"=SUM(Z3:Z{height_table - 1})",
+                               f"=IFERROR(Y{height_table}/X{height_table};0)",
+                               f"=SUM(AA3:AA{height_table - 1})",
+                               f"=SUM(AB3:AB{height_table - 1})",
+                               f"=IFERROR(AB{height_table}/AA{height_table};0)",
+                               f"=SUM(AD3:AD{height_table - 1})",
+                               f"=SUM(AE3:AE{height_table - 1})",
+                               f"=SUM(AF3:AF{height_table - 1})",
+                               f"=SUM(AG3:AG{height_table - 1})",
+                               f"=IFERROR(AG{height_table}/AF{height_table};0)",
+                               f"=SUM(AI3:AI{height_table - 1})",
+                               f"=SUM(AJ3:AJ{height_table - 1})",
                                ]],
                              "ROWS")
-
         # Задание форматы вывода строки
-        ss.prepare_setCellsFormats(f"A{height_table}:Z{height_table}", [[{'numberFormat': {}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}},
-                                                                         {'numberFormat': {'type': 'CURRENCY',
-                                                                                           'pattern': '#,##0.00[$ ₽]'}}]])
-
-        ss.prepare_setCellsFormat(f"A{height_table}:Z{height_table}",
+        ss.prepare_setCellsFormats(
+            f"A{height_table}:AJ{height_table}",
+            [
+                [
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                ]
+            ]
+        )
+        ss.prepare_setCellsFormat(f"A{height_table}:AJ{height_table}",
                                   {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}})
 
         # Цвет фона ячеек
-        ss.prepare_setCellsFormat(f"A{height_table}:Z{height_table}",
+        ss.prepare_setCellsFormat(f"A{height_table}:AJ{height_table}",
                                   {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                   fields="userEnteredFormat.backgroundColor")
 
@@ -3791,6 +3897,8 @@ class BarsicReport2(App):
         if self.agentreport_xls:
             self.path_list.append(self.export_agent_report(self.agentreport_dict))
         if self.finreport_google:
+            self.request_bitrix()
+            self.fin_report_lastyear()
             self.export_to_google_sheet()
             self.open_googlesheet()
         if self.finreport_telegram:
@@ -3832,6 +3940,19 @@ class BarsicReport2(App):
                 org_name=self.org1[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
+                hide_zeroes='0',
+                hide_internal='1',
+            )
+            self.itog_report_org1_lastyear = self.itog_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org1[0],
+                org_name=self.org1[1],
+                date_from=self.date_from - relativedelta(years=1),
+                date_to=self.date_to - relativedelta(years=1),
                 hide_zeroes='0',
                 hide_internal='1',
             )
@@ -3889,8 +4010,6 @@ class BarsicReport2(App):
                 date_from=self.date_from,
                 date_to=self.date_to,
             )
-
-        self.request_bitrix()
         self.report_bitrix = self.read_bitrix_base(
             server=self.server,
             database=self.database_bitrix,
@@ -3899,6 +4018,15 @@ class BarsicReport2(App):
             driver=self.driver,
             date_from=self.date_from,
             date_to=self.date_to,
+        )
+        self.report_bitrix_lastyear = self.read_bitrix_base(
+            server=self.server,
+            database=self.database_bitrix,
+            user=self.user,
+            pwd=self.pwd,
+            driver=self.driver,
+            date_from=self.date_from - relativedelta(years=1),
+            date_to=self.date_to - relativedelta(years=1),
         )
         # Чтение XML с привязкой групп услуг к услугам
         self.orgs_dict = self.read_reportgroup(self.reportXML)

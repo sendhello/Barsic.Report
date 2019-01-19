@@ -2053,7 +2053,7 @@ class BarsicReport2(App):
 
         #self.CREDENTIALS_FILE # имя файла с закрытым ключом
 
-        self.sheet_width = 36
+        self.sheet_width = 37
         height = 34
 
         credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,

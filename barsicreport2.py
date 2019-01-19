@@ -2344,7 +2344,7 @@ class BarsicReport2(App):
             "Воскресенье",
         ]
 
-        if self.finreport_dict['ИТОГО'][1] == (self.finreport_dict['Билеты аквапарка'][1] +
+        if self.finreport_dict['ИТОГО'][1] != (self.finreport_dict['Билеты аквапарка'][1] +
             self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] +
             self.finreport_dict['Билеты аквапарка КОРП'][1] + self.finreport_dict['Прочее'][1] +
             self.finreport_dict['Термозона КОРП'][1] + self.finreport_dict['Депозит'][1]):

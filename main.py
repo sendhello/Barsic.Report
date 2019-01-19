@@ -55,7 +55,7 @@ except Exception:
     sys.exit(1)
 
 
-__version__ = 'v2.3.3'
+__version__ = 'v2.3.4'
 
 
 def main():

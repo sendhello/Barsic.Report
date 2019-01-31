@@ -2055,7 +2055,7 @@ class BarsicReport2(App):
 
         self.sheet_width = 37
         self.sheet2_width = 11
-        self.height = 34
+        self.height = 40
 
         credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,
                                                                        ['https://www.googleapis.com/auth/spreadsheets',
@@ -2212,13 +2212,13 @@ class BarsicReport2(App):
                 # Заполнение таблицы
                 ss.prepare_setValues("A1:AK2", [
                     [
-                        "Дата", "День недели", "Кол-во проходов \nФАКТ", "Кол-во проходов \nПЛАН",
+                        "Дата", "День недели", "Кол-во проходов \nПЛАН", "Кол-во проходов \nФАКТ",
                     f"Кол-во проходов \n{data_report} "
                     f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}",
-                    "Общая сумма \nФАКТ", "Общая сумма \nПЛАН",
+                    "Общая сумма \nПЛАН", "Общая сумма \nФАКТ",
                     f"Общая сумма \n{data_report} "
                     f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}",
-                    "Билеты", "", "", "Депозит", "Термозона", "", "", "Общепит", "", "", "Общепит ПЛАН",  "", "",
+                    "Билеты", "", "", "Депозит", "Термозона", "", "", "Общепит ПЛАН", "", "", "Общепит ФАКТ",  "", "",
                     f"Общепит {data_report} "
                     f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}", "", "",
                     "Билеты КОРП", "", "", "Термозона КОРП", "", "", "Прочее", "", "Online Продажи", "", "",
@@ -2614,12 +2614,12 @@ class BarsicReport2(App):
                 [
                     datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
                     weekday_rus[self.finreport_dict['Дата'][0].weekday()],
-                    f"{self.finreport_dict['Кол-во проходов'][0]}",
                     f'=\'План\'!C{self.nex_line}',
+                    f"{self.finreport_dict['Кол-во проходов'][0]}",
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
+                    f'=\'План\'!E{self.nex_line}',
                     f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AG{self.nex_line}+"
                         f"AI{self.nex_line}+AJ{self.nex_line}",
-                    f'=\'План\'!E{self.nex_line}',
                     f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
                         f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
                     self.finreport_dict['Билеты аквапарка'][0],
@@ -2629,11 +2629,11 @@ class BarsicReport2(App):
                     self.finreport_dict['Термозона'][0],
                     self.finreport_dict['Термозона'][1],
                     f"=IFERROR(N{self.nex_line}/M{self.nex_line};0)",
-                    self.finreport_dict['Общепит'][0],
-                    self.finreport_dict['Общепит'][1],
-                    f"=IFERROR(Q{self.nex_line}/P{self.nex_line};0)",
                     f'=\'План\'!I{self.nex_line}',
                     f'=\'План\'!J{self.nex_line}',
+                    f"=IFERROR(Q{self.nex_line}/P{self.nex_line};0)",
+                    self.finreport_dict['Общепит'][0],
+                    self.finreport_dict['Общепит'][1],
                     f"=IFERROR(T{self.nex_line}/S{self.nex_line};0)",
                     self.finreport_dict_lastyear['Общепит'][0],
                     self.finreport_dict_lastyear['Общепит'][1],
@@ -2788,6 +2788,18 @@ class BarsicReport2(App):
                                f"=SUM(AK3:AK{height_table - 1})",
                                ]],
                              "ROWS")
+        ss.prepare_setValues(f"A{height_table + 1}:C{height_table + 1}",
+                             [["",
+                               f'Выполнение плана (трафик)',
+                               f"=IFERROR(ROUND(D{height_table}/C{height_table}*100;2);0)",
+                               ]],
+                             "ROWS")
+        ss.prepare_setValues(f"A{height_table + 2}:C{height_table + 2}",
+                             [["",
+                               f'Выполнение плана (доход)',
+                               f"=IFERROR(ROUND(G{height_table}/F{height_table}*100;2);0)",
+                               ]],
+                             "ROWS")
         # Задание форматы вывода строки
         ss.prepare_setCellsFormats(
             f"A{height_table}:AK{height_table}",
@@ -2833,11 +2845,42 @@ class BarsicReport2(App):
                 ]
             ]
         )
+        ss.prepare_setCellsFormats(
+            f"A{height_table+1}:C{height_table+1}",
+            [
+                [
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ %]'}},
+                ]
+            ]
+        )
+        ss.prepare_setCellsFormats(
+            f"A{height_table+2}:C{height_table+2}",
+            [
+                [
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ %]'}},
+                ]
+            ]
+        )
+
         ss.prepare_setCellsFormat(f"A{height_table}:AK{height_table}",
+                                  {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}})
+        ss.prepare_setCellsFormat(f"A{height_table+1}:C{height_table+1}",
+                                  {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}})
+        ss.prepare_setCellsFormat(f"A{height_table+2}:C{height_table+2}",
                                   {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}})
 
         # Цвет фона ячеек
         ss.prepare_setCellsFormat(f"A{height_table}:AK{height_table}",
+                                  {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                  fields="userEnteredFormat.backgroundColor")
+        ss.prepare_setCellsFormat(f"A{height_table+1}:C{height_table+1}",
+                                  {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                  fields="userEnteredFormat.backgroundColor")
+        ss.prepare_setCellsFormat(f"A{height_table+2}:C{height_table+2}",
                                   {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                   fields="userEnteredFormat.backgroundColor")
 
@@ -2862,6 +2905,54 @@ class BarsicReport2(App):
                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
             ss.requests.append({"updateBorders": {
                 "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+        for j in range(3):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+        for j in range(3):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
                           "startColumnIndex": j,
                           "endColumnIndex": j + 1},
                 "bottom": {"style": "SOLID", "width": 1,

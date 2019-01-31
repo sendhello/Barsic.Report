@@ -2790,13 +2790,13 @@ class BarsicReport2(App):
                              "ROWS")
         ss.prepare_setValues(f"A{height_table + 1}:C{height_table + 1}",
                              [["",
-                               f'Выполнение плана (трафик)',
+                               f'Выполнение плана (трафик), %',
                                f"=IFERROR(ROUND(D{height_table}/C{height_table}*100;2);0)",
                                ]],
                              "ROWS")
         ss.prepare_setValues(f"A{height_table + 2}:C{height_table + 2}",
                              [["",
-                               f'Выполнение плана (доход)',
+                               f'Выполнение плана (доход), %',
                                f"=IFERROR(ROUND(G{height_table}/F{height_table}*100;2);0)",
                                ]],
                              "ROWS")
@@ -2851,7 +2851,7 @@ class BarsicReport2(App):
                 [
                     {'numberFormat': {}},
                     {'numberFormat': {}},
-                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ %]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '00.0%'}},
                 ]
             ]
         )
@@ -2861,7 +2861,7 @@ class BarsicReport2(App):
                 [
                     {'numberFormat': {}},
                     {'numberFormat': {}},
-                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ %]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '0.00%'}},
                 ]
             ]
         )

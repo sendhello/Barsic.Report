@@ -2149,7 +2149,7 @@ class BarsicReport2(App):
                 ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId,
                                                   self.googleservice,
                                                   self.spreadsheet['sheets'][sheetId]['properties']['title'])
-                ss.prepare_setColumnsWidth(0, 1, 100)
+                ss.prepare_setColumnsWidth(0, 1, 105)
                 ss.prepare_setColumnsWidth(2, 7, 120)
                 ss.prepare_setColumnWidth(8, 65)
                 ss.prepare_setColumnWidth(9, 120)
@@ -2360,9 +2360,9 @@ class BarsicReport2(App):
                                 datetime.strftime(dateline, '%d.%m.%Y'),
                                 weekday_rus[dateline.weekday()],
                                 "",
-                                f'=IF(\'Сводный\'!A{line} = "ИТОГО";"";\'Сводный\'!C{line})',
+                                f'=IF(\'Сводный\'!A{line} = "ИТОГО";"";\'Сводный\'!D{line})',
                                 "",
-                                f'=IF(\'Сводный\'!A{line} = "ИТОГО";"";\'Сводный\'!F{line})',
+                                f'=IF(\'Сводный\'!A{line} = "ИТОГО";"";\'Сводный\'!G{line})',
                                 f"=IFERROR(E{line}/C{line};0)",
                                 f"=IFERROR(F{line}/D{line};0)",
                                 "",
@@ -2618,8 +2618,8 @@ class BarsicReport2(App):
                     f"{self.finreport_dict['Кол-во проходов'][0]}",
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
                     f'=\'План\'!E{self.nex_line}',
-                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AG{self.nex_line}+"
-                        f"AI{self.nex_line}+AJ{self.nex_line}",
+                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AH{self.nex_line}+"
+                        f"AJ{self.nex_line}+AK{self.nex_line}",
                     f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
                         f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
                     self.finreport_dict['Билеты аквапарка'][0],

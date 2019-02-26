@@ -52,12 +52,9 @@ from kivymd.date_picker import MDDatePicker
 from toast import toast
 from dialogs import card
 import yadisk
-import xlwt
-import itertools
 
 import urllib
 import re
-import ntplib
 import requests
 import webbrowser
 import httplib2
@@ -65,6 +62,7 @@ import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
 import telepot
 import socks, socket
+import time
 
 logging.basicConfig(filename="barsic_reports.log", level=logging.INFO)
 
@@ -2246,6 +2244,7 @@ class BarsicReport2(App):
             else:
                 self.google_doc = None
                 # Создание документа
+                self.google_kwote_timer = datetime.now()
                 logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                              f'Создание Google-документа...')
                 self.spreadsheet = self.googleservice.spreadsheets().create(body={
@@ -2805,6 +2804,19 @@ class BarsicReport2(App):
         Заполнение google-таблицы
         """
         # SHEET 1
+        try:
+            while True:
+                time_of = (datetime.now() - self.google_kwote_timer).seconds
+                if time_of < 100:
+                    logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                                 f'Превышено количество запросов в API GoogleSheets. \n'
+                                 f'Программа продолжит выполнение через {100-time_of} сек...')
+                    time.sleep(5)
+                else:
+                    break
+        except AttributeError:
+            pass
+
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Заполнение листа 1...')
         sheetId = 0

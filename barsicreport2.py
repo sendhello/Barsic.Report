@@ -3989,7 +3989,7 @@ class BarsicReport2(App):
             resporse += f'Люди (пляж) - {self.itog_report_org2["Летняя зона | БЕЗЛИМИТ | 1 проход"][0]};\n'
             resporse += f'Итого по пляжу - {self.itog_report_org2["Итого по отчету"][1]:.2f} ₽;\n'
         resporse += f'Без ЧП.'
-        with open(f'reports/{self.data_report.strftime("%Y.%m.%d")}_sms.txt', 'w', encoding='utf-8') as f:
+        with open(f'reports/{self.date_from.strftime("%Y.%m.%d")}_sms.txt', 'w', encoding='utf-8') as f:
             f.write(resporse)
         return resporse
 

@@ -1546,6 +1546,117 @@ class BarsicReport2(App):
                     except TypeError:
                         pass
 
+    def agent_report_month(self):
+        """
+        Форминует отчет платежного агента за месяц в установленном формате
+        :return - dict
+        """
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование отчета платежного агента за месяц')
+        self.agentreport_dict_month = {}
+        self.agentreport_dict_month['Контрольная сумма'] = {}
+        self.agentreport_dict_month['Контрольная сумма']['Cумма'] = [['Сумма', 0, 0.0]]
+        print(f'self.itog_report_month = {self.itog_report_month}')
+        print(f'self.agent_dict = {self.agent_dict}')
+        for org in self.agent_dict:
+            self.agentreport_dict_month[org] = {}
+            self.agentreport_dict_month[org]['Итого по группе'] = [
+                ['Итого по группе', 0, 0.0]
+            ]
+            for tariff in self.agent_dict[org]:
+                try:
+                    if tariff == 'Дата':
+                        self.agentreport_dict_month[org][tariff] = []
+                        self.agentreport_dict_month[org][tariff].append(
+                            [tariff, self.itog_report_month[tariff][0], self.itog_report_month[tariff][1]]
+                        )
+                    elif tariff == 'Депозит':
+                        self.agentreport_dict_month[org][tariff] = []
+                        self.agentreport_dict_month[org][tariff].append(
+                            [tariff, 0, self.itog_report_month[tariff][1]]
+                        )
+                        self.agentreport_dict_month[org]['Итого по группе'][0][2] += self.itog_report_month[tariff][1]
+                        self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2] += self.itog_report_month[tariff][1]
+                    elif tariff == 'Организация':
+                        pass
+                    else:
+                        try:
+                            if self.agentreport_dict_month[org][self.itog_report_month[tariff][2]]:
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]]. \
+                                    append([tariff, self.itog_report_month[tariff][0], self.itog_report_month[tariff][1]])
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]][0][1] += \
+                                    self.itog_report_month[tariff][0]
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]][0][2] += \
+                                    self.itog_report_month[tariff][1]
+                                self.agentreport_dict_month[org]['Итого по группе'][0][1] += \
+                                    self.itog_report_month[tariff][0]
+                                self.agentreport_dict_month[org]['Итого по группе'][0][2] += \
+                                    self.itog_report_month[tariff][1]
+                                print(f'tariff = {tariff}')
+                                print(f'self.agentreport_dict_month[org]["Итого по группе"][0][2] = {self.agentreport_dict_month[org]["Итого по группе"][0][2]}')
+                                if tariff != 'Итого по отчету':
+                                    self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
+                                        self.itog_report_month[tariff][0]
+                                    self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2] += \
+                                        self.itog_report_month[tariff][1]
+                            else:
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]] = []
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]]. \
+                                    append(['Итого по папке', 0, 0.0])
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]]. \
+                                    append([tariff, self.itog_report_month[tariff][0], self.itog_report_month[tariff][1]])
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]][0][1] += \
+                                    self.itog_report_month[tariff][0]
+                                self.agentreport_dict_month[org][self.itog_report_month[tariff][2]][0][2] += \
+                                    self.itog_report_month[tariff][1]
+                                self.agentreport_dict_month[org]['Итого по группе'][0][1] += \
+                                    self.itog_report_month[tariff][0]
+                                self.agentreport_dict_month[org]['Итого по группе'][0][2] += \
+                                    self.itog_report_month[tariff][1]
+                                if tariff != 'Итого по отчету':
+                                    self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
+                                        self.itog_report_month[tariff][0]
+                                    self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2] += \
+                                        self.itog_report_month[tariff][1]
+                        except KeyError:
+                            self.agentreport_dict_month[org][self.itog_report_month[tariff][2]] = []
+                            self.agentreport_dict_month[org][self.itog_report_month[tariff][2]]. \
+                                append(['Итого по папке', 0, 0.0])
+                            self.agentreport_dict_month[org][self.itog_report_month[tariff][2]]. \
+                                append((tariff, self.itog_report_month[tariff][0], self.itog_report_month[tariff][1]))
+                            self.agentreport_dict_month[org][self.itog_report_month[tariff][2]][0][1] += \
+                                self.itog_report_month[tariff][0]
+                            self.agentreport_dict_month[org][self.itog_report_month[tariff][2]][0][2] += \
+                                self.itog_report_month[tariff][1]
+                            self.agentreport_dict_month[org]['Итого по группе'][0][1] += \
+                                self.itog_report_month[tariff][0]
+                            self.agentreport_dict_month[org]['Итого по группе'][0][2] += \
+                                self.itog_report_month[tariff][1]
+                            if tariff != 'Итого по отчету':
+                                self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
+                                    self.itog_report_month[tariff][0]
+                                self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2] += \
+                                    self.itog_report_month[tariff][1]
+                except KeyError:
+                    pass
+                except TypeError:
+                    pass
+        if self.agentreport_dict_month['ИТОГО'][''][1][2] != \
+                self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2] or \
+                self.agentreport_dict_month['ИТОГО'][''][1][1] != \
+                self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1]:
+            self.show_dialog("Несоответствие Контрольных сумм.",
+                             f"Итого по отчету ({self.agentreport_dict_month['ИТОГО'][''][1][1]}: "
+                             f"{self.agentreport_dict_month['ИТОГО'][''][1][2]}) не равно Контрольной сумме услуг"
+                             f"({self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1]}: "
+                             f"{self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2]})"
+                             )
+            logging.error(f"{__name__}: {str(datetime.now())[:-7]}:    Несоответствие Контрольных сумм. "
+                          f"Итого по отчету ({self.agentreport_dict_month['ИТОГО'][''][1][1]}: "
+                          f"{self.agentreport_dict_month['ИТОГО'][''][1][2]}) не равно Контрольной сумме услуг"
+                          f"({self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1]}: "
+                          f"{self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2]})")
+        print(f'agentreport_dict_month = {self.agentreport_dict_month}')
+
     def export_fin_report(self):
         """
         Сохраняет Финансовый отчет в виде Excel-файла в локальную директорию
@@ -2166,13 +2277,15 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Сохранение Финансового отчета в Google-таблицах...')
 
-        self.doc_version = 5
+        self.doc_version = 6
 
         self.sheet_width = 37
         self.sheet2_width = 11
         self.sheet3_width = 3
+        self.sheet4_width = 3
         self.height = 40
         self.sheet3_height = 300
+        self.sheet4_height = 300
 
         # self.CREDENTIALS_FILE # имя файла с закрытым ключом
         credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,
@@ -2264,6 +2377,11 @@ class BarsicReport2(App):
                                                'title': 'Итоговый',
                                                'gridProperties': {'rowCount': self.sheet3_height,
                                                                   'columnCount': self.sheet3_width}}},
+                               {'properties': {'sheetType': 'GRID',
+                                               'sheetId': 3,
+                                               'title': 'Итоговый ПА',
+                                               'gridProperties': {'rowCount': self.sheet4_height,
+                                                                  'columnCount': self.sheet4_width}}},
                                ]
                 }).execute()
 
@@ -2730,6 +2848,67 @@ class BarsicReport2(App):
                                   "endColumnIndex": j + 1},
                         "bottom": {"style": "SOLID", "width": 1,
                                  "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                ss.runPrepared()
+
+                # ЛИСТ 4
+                logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                             f'Создание листа 4 в файле GoogleSheets...')
+                sheetId = 3
+                # Ширина столбцов
+                ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId,
+                                                  self.googleservice,
+                                                  self.spreadsheet['sheets'][sheetId]['properties']['title'])
+                ss.prepare_setColumnWidth(0, 300)
+                ss.prepare_setColumnsWidth(1, 2, 160)
+
+                ss.prepare_setValues("A1:C1", [[
+                    '=JOIN(" ";"Итоговый отчет платежного агента будет сформирован через";DATEDIF(TODAY();DATE(YEAR(TODAY());'
+                    'MONTH(TODAY())+1;1)-1;"D");IF(MOD(DATEDIF(TODAY();DATE(YEAR(TODAY());MONTH(TODAY())+1;1)-1;'
+                    '"D");10)<5;"дня";"дней"))', "", ""
+                ], ], "ROWS")
+                # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
+
+                ss.prepare_setCellsFormats(
+                    f"A1:C1",
+                    [
+                        [
+                            {'textFormat': {'bold': True}},
+                            {'textFormat': {'bold': True}},
+                            {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                             'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00%'}},
+                        ]
+                    ]
+                )
+                # Цвет фона ячеек
+                ss.prepare_setCellsFormat("A1:C1", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                                          fields="userEnteredFormat.backgroundColor")
+
+                # Бордер
+                i = 0
+                for j in range(self.sheet3_width):
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "right": {"style": "SOLID", "width": 1,
+                                  "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "left": {"style": "SOLID", "width": 1,
+                                 "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "bottom": {"style": "SOLID", "width": 1,
+                                   "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
                 ss.runPrepared()
 
                 self.google_doc = (self.date_from.strftime('%Y-%m'), self.spreadsheet['spreadsheetId'])
@@ -3237,9 +3416,9 @@ class BarsicReport2(App):
         ss.runPrepared()
 
         if self.itog_report_month:
+            # SHEET 3
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                          f'Заполнение  листа 3...')
-            # SHEET 3
             sheetId = 2
             ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
                                               self.spreadsheet['sheets'][sheetId]['properties']['title'])
@@ -3497,6 +3676,277 @@ class BarsicReport2(App):
                                    "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
             ss.runPrepared()
 
+            # SHEET 4
+            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                         f'Заполнение  листа 4...')
+            sheetId = 3
+            ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
+                                              self.spreadsheet['sheets'][sheetId]['properties']['title'])
+
+            self.nex_line = 1
+            ss.prepare_setValues(
+                f"A{self.nex_line}:C{self.nex_line}",
+                [[f'Итоговый отчет платежного агента', '', '']], "ROWS"
+            )
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                      {'horizontalAlignment': 'LEFT', 'textFormat': {'bold': True, 'fontSize': 18}})
+
+            self.nex_line += 1
+            ss.prepare_setValues(
+                f"A{self.nex_line}:C{self.nex_line}",
+                [[f"За {self.data_report} {datetime.strftime(self.finreport_dict['Дата'][0], '%Y')}",
+                  '', '', ]], "ROWS"
+            )
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                      {'horizontalAlignment': 'LEFT', 'textFormat': {'bold': False}})
+
+            self.nex_line += 2
+            ss.prepare_setValues(
+                f"A{self.nex_line}:C{self.nex_line}",
+                [['Название', 'Количество', 'Сумма']], "ROWS"
+            )
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                      {'horizontalAlignment': 'LEFT', 'textFormat': {'bold': True, 'fontSize': 14}})
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                      {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                                      fields="userEnteredFormat.backgroundColor")
+            for j in range(self.sheet4_width):
+                ss.requests.append({"updateBorders": {
+                    "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                              "startColumnIndex": j,
+                              "endColumnIndex": j + 1},
+                    "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                ss.requests.append({"updateBorders": {
+                    "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                              "startColumnIndex": j,
+                              "endColumnIndex": j + 1},
+                    "right": {"style": "SOLID", "width": 1,
+                              "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                ss.requests.append({"updateBorders": {
+                    "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                              "startColumnIndex": j,
+                              "endColumnIndex": j + 1},
+                    "left": {"style": "SOLID", "width": 1,
+                             "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                ss.requests.append({"updateBorders": {
+                    "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                              "startColumnIndex": j,
+                              "endColumnIndex": j + 1},
+                    "bottom": {"style": "SOLID", "width": 1,
+                               "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.runPrepared()
+
+            for group in self.agentreport_dict_month:
+                if group == 'Контрольная сумма':
+                    continue
+                if group == 'Дата':
+                    continue
+                if group == 'Не учитывать':
+                    continue
+                self.nex_line += 1
+                print(group)
+                print(self.agentreport_dict_month[group])
+                ss.prepare_setValues(
+                    f"A{self.nex_line}:C{self.nex_line}",
+                    [[
+                        group,
+                        self.agentreport_dict_month[group]["Итого по группе"][0][1],
+                        self.agentreport_dict_month[group]["Итого по группе"][0][2]
+                    ]], "ROWS"
+                )
+                ss.prepare_setCellsFormats(
+                    f"A{self.nex_line}:C{self.nex_line}",
+                    [
+                        [
+                            {'textFormat': {'bold': True, 'fontSize': 12}},
+                            {'textFormat': {'bold': True, 'fontSize': 12}, 'horizontalAlignment': 'RIGHT',
+                             'numberFormat': {}},
+                            {'textFormat': {'bold': True, 'fontSize': 12}, 'horizontalAlignment': 'RIGHT',
+                             'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                        ]
+                    ]
+                )
+                ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                          {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                          fields="userEnteredFormat.backgroundColor")
+                for j in range(self.sheet3_width):
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "right": {"style": "SOLID", "width": 1,
+                                  "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "left": {"style": "SOLID", "width": 1,
+                                 "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "bottom": {"style": "SOLID", "width": 1,
+                                   "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                for folder in self.agentreport_dict_month[group]:
+                    if folder == 'Итого по группе':
+                        continue
+                    if folder == '':
+                        continue
+                    self.nex_line += 1
+                    if folder is None:
+                        folder_name = 'Без группировки'
+                    else:
+                        folder_name = folder
+                    ss.prepare_setValues(
+                        f"A{self.nex_line}:C{self.nex_line}",
+                        [[
+                            folder_name,
+                            self.agentreport_dict_month[group][folder][0][1],
+                            self.agentreport_dict_month[group][folder][0][2]
+                        ]], "ROWS"
+                    )
+                    ss.prepare_setCellsFormats(
+                        f"A{self.nex_line}:C{self.nex_line}",
+                        [
+                            [
+                                {'textFormat': {'bold': True}},
+                                {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                                 'numberFormat': {}},
+                                {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                                 'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                            ]
+                        ]
+                    )
+                    ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                              {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
+                                              fields="userEnteredFormat.backgroundColor")
+                    for j in range(self.sheet3_width):
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                      "endRowIndex": self.nex_line,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                      "endRowIndex": self.nex_line,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "right": {"style": "SOLID", "width": 1,
+                                      "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                      "endRowIndex": self.nex_line,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "left": {"style": "SOLID", "width": 1,
+                                     "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                      "endRowIndex": self.nex_line,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "bottom": {"style": "SOLID", "width": 1,
+                                       "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    for servise in self.agentreport_dict_month[group][folder]:
+                        if servise[0] == 'Итого по папке':
+                            continue
+                        self.nex_line += 1
+                        ss.prepare_setValues(
+                            f"A{self.nex_line}:C{self.nex_line}",
+                            [[
+                                servise[0],
+                                servise[1],
+                                servise[2]
+                            ]], "ROWS"
+                        )
+                        ss.prepare_setCellsFormats(
+                            f"A{self.nex_line}:C{self.nex_line}",
+                            [
+                                [
+                                    {'textFormat': {'bold': False}},
+                                    {'textFormat': {'bold': False}, 'horizontalAlignment': 'RIGHT',
+                                     'numberFormat': {}},
+                                    {'textFormat': {'bold': False}, 'horizontalAlignment': 'RIGHT',
+                                     'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                                ]
+                            ]
+                        )
+                        for j in range(self.sheet4_width):
+                            ss.requests.append({"updateBorders": {
+                                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                          "endRowIndex": self.nex_line,
+                                          "startColumnIndex": j,
+                                          "endColumnIndex": j + 1},
+                                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                            ss.requests.append({"updateBorders": {
+                                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                          "endRowIndex": self.nex_line,
+                                          "startColumnIndex": j,
+                                          "endColumnIndex": j + 1},
+                                "right": {"style": "SOLID", "width": 1,
+                                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                            ss.requests.append({"updateBorders": {
+                                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                          "endRowIndex": self.nex_line,
+                                          "startColumnIndex": j,
+                                          "endColumnIndex": j + 1},
+                                "left": {"style": "SOLID", "width": 1,
+                                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                            ss.requests.append({"updateBorders": {
+                                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                          "endRowIndex": self.nex_line,
+                                          "startColumnIndex": j,
+                                          "endColumnIndex": j + 1},
+                                "bottom": {"style": "SOLID", "width": 1,
+                                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+
+            while self.nex_line < self.sheet4_height:
+                self.nex_line += 1
+                ss.prepare_setValues(
+                    f"A{self.nex_line}:C{self.nex_line}",
+                    [['', '', '']], "ROWS"
+                )
+                ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                          {'horizontalAlignment': 'LEFT',
+                                           'textFormat': {'bold': False, 'fontSize': 10}})
+                ss.prepare_setCellsFormat(f"A{self.nex_line}:C{self.nex_line}",
+                                          {"backgroundColor": functions.htmlColorToJSON("#ffffff")},
+                                          fields="userEnteredFormat.backgroundColor")
+                for j in range(self.sheet4_width):
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "right": {"style": "NONE", "width": 1,
+                                  "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "left": {"style": "NONE", "width": 1,
+                                 "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                    ss.requests.append({"updateBorders": {
+                        "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1,
+                                  "endRowIndex": self.nex_line,
+                                  "startColumnIndex": j,
+                                  "endColumnIndex": j + 1},
+                        "bottom": {"style": "NONE", "width": 1,
+                                   "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.runPrepared()
+
 
     def open_googlesheet(self):
         """
@@ -3539,6 +3989,8 @@ class BarsicReport2(App):
             resporse += f'Люди (пляж) - {self.itog_report_org2["Летняя зона | БЕЗЛИМИТ | 1 проход"][0]};\n'
             resporse += f'Итого по пляжу - {self.itog_report_org2["Итого по отчету"][1]:.2f} ₽;\n'
         resporse += f'Без ЧП.'
+        with open(f'reports/{self.data_report.strftime("%Y.%m.%d")}_sms.txt', 'w', encoding='utf-8') as f:
+            f.write(resporse)
         return resporse
 
     def send_message_to_telegram(self):
@@ -4786,6 +5238,7 @@ class BarsicReport2(App):
             self.fin_report_lastyear()
             if self.itog_report_month:
                 self.fin_report_month()
+                self.agent_report_month()
             if self.export_to_google_sheet():
                 self.open_googlesheet()
         if self.finreport_telegram:

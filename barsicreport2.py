@@ -1515,6 +1515,30 @@ class BarsicReport2(App):
                              f"({self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1]}: "
                              f"{self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2]})")
 
+    def fin_report_beach(self):
+        """
+        Форминует финансовый отчет по пляжу в установленном формате
+        :return - dict
+        """
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета по пляжу')
+        self.finreport_dict_beach = {
+            'Депозит': (0, 0),
+            'Товары': (0, 0),
+            'Услуги': (0, 0),
+            'Карты': (0, 0),
+            'Итого по отчету': (0, 0),
+        }
+        for service in self.itog_report_org2:
+            if service == 'Дата':
+                self.finreport_dict_beach[service] = \
+                    self.itog_report_org2[service][0], self.itog_report_org2[service][1]
+            elif not self.itog_report_org2[service][3] in self.finreport_dict_beach:
+                self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
+                    self.itog_report_org2[service][0], self.itog_report_org2[service][1]
+            else:
+                self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
+                    self.finreport_dict_beach[self.itog_report_org2[service][3]][0] + self.itog_report_org2[service][0], \
+                    self.finreport_dict_beach[self.itog_report_org2[service][3]][1] + self.itog_report_org2[service][1]
 
     def agent_report(self):
         """
@@ -2277,15 +2301,17 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Сохранение Финансового отчета в Google-таблицах...')
 
-        self.doc_version = 6
+        self.doc_version = 7
 
         self.sheet_width = 37
         self.sheet2_width = 11
         self.sheet3_width = 3
         self.sheet4_width = 3
+        self.sheet5_width = 13
         self.height = 40
         self.sheet3_height = 300
         self.sheet4_height = 300
+        self.sheet5_height = 40
 
         # self.CREDENTIALS_FILE # имя файла с закрытым ключом
         credentials = ServiceAccountCredentials.from_json_keyfile_name(self.CREDENTIALS_FILE,
@@ -2382,6 +2408,11 @@ class BarsicReport2(App):
                                                'title': 'Итоговый ПА',
                                                'gridProperties': {'rowCount': self.sheet4_height,
                                                                   'columnCount': self.sheet4_width}}},
+                               {'properties': {'sheetType': 'GRID',
+                                               'sheetId': 4,
+                                               'title': 'Пляж',
+                                               'gridProperties': {'rowCount': self.sheet5_height,
+                                                                  'columnCount': self.sheet5_width}}},
                                ]
                 }).execute()
 
@@ -2604,13 +2635,13 @@ class BarsicReport2(App):
                                       "endColumnIndex": j + 1},
                             "left": {"style": "SOLID", "width": 1,
                                      "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
-                ss.runPrepared()
+                # ss.runPrepared()
 
                 # Заполнение таблицы 2
                 logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                              f'Заполнение листа 2 в файле GoogleSheets...')
-                ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
-                                                  self.spreadsheet['sheets'][sheetId]['properties']['title'])
+                # ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
+                #                                   self.spreadsheet['sheets'][sheetId]['properties']['title'])
 
                 # Заполнение строки с данными
                 weekday_rus = [
@@ -2702,7 +2733,7 @@ class BarsicReport2(App):
                                       "endColumnIndex": j + 1},
                             "bottom": {"style": "SOLID", "width": 1,
                                        "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
-                    ss.runPrepared()
+                    # ss.runPrepared()
                     self.sheet2_line += 1
                     dateline += timedelta(1)
 
@@ -2911,6 +2942,83 @@ class BarsicReport2(App):
                                    "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
                 ss.runPrepared()
 
+                # ЛИСТ 5
+                logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                             f'Создание листа 5 в файле GoogleSheets...')
+                sheetId = 4
+                # Ширина столбцов
+                ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId,
+                                                  self.googleservice,
+                                                  self.spreadsheet['sheets'][sheetId]['properties']['title'])
+                ss.prepare_setColumnsWidth(0, 1, 105)
+                ss.prepare_setColumnWidth(2, 120)
+                ss.prepare_setColumnWidth(3, 100)
+                ss.prepare_setColumnWidth(4, 65)
+                ss.prepare_setColumnWidth(5, 120)
+                ss.prepare_setColumnWidth(6, 100)
+                ss.prepare_setColumnWidth(7, 65)
+                ss.prepare_setColumnWidth(8, 120)
+                ss.prepare_setColumnWidth(9, 100)
+                ss.prepare_setColumnWidth(10, 65)
+                ss.prepare_setColumnWidth(11, 120)
+                ss.prepare_setColumnWidth(12, 100)
+
+                # Объединение ячеек
+                ss.prepare_mergeCells("A1:A2")
+                ss.prepare_mergeCells("B1:B2")
+                ss.prepare_mergeCells("C1:C2")
+                ss.prepare_mergeCells("D1:D2")
+                ss.prepare_mergeCells("E1:G1")
+                ss.prepare_mergeCells("H1:J1")
+                ss.prepare_mergeCells("K1:M1")
+
+                # Задание параметров группе ячеек
+                # Жирный, по центру
+                ss.prepare_setCellsFormat('A1:M2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
+                #                           fields='userEnteredFormat.numberFormat')
+
+                # Заполнение таблицы
+                ss.prepare_setValues("A1:M2", [
+                    [
+                        "Дата", "День недели", "Общая сумма", "Депозит",
+                         "Карты", "", "", "Услуги", "", "", "Товары", "", "",
+                    ],
+                    [
+                        "", "", "", "", "Кол-во", "Сумма", "Средний чек",
+                        "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
+                    ]
+                ],
+                                     "ROWS")
+                # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
+
+                # Цвет фона ячеек
+                ss.prepare_setCellsFormat("A1:M2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                                          fields="userEnteredFormat.backgroundColor")
+
+                # Бордер
+                for i in range(2):
+                    for j in range(self.sheet5_width):
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "right": {"style": "SOLID", "width": 1,
+                                      "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+                        ss.requests.append({"updateBorders": {
+                            "range": {"sheetId": ss.sheetId, "startRowIndex": i, "endRowIndex": i + 1,
+                                      "startColumnIndex": j,
+                                      "endColumnIndex": j + 1},
+                            "left": {"style": "SOLID", "width": 1,
+                                     "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+
+                ss.runPrepared()
+
                 self.google_doc = (self.date_from.strftime('%Y-%m'), self.spreadsheet['spreadsheetId'])
                 self.google_links[self.google_doc[0]] = [self.google_doc[1], self.doc_version]
                 links = []
@@ -2941,7 +3049,7 @@ class BarsicReport2(App):
             # Проверка нет ли текущей даты в таблице
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                          f'Проверка нет ли текущей даты в таблице...')
-            self.nex_line = 1
+            self.start_line = 1
             self.reprint = 2
 
             for line_table in self.spreadsheet['sheets'][0]['data'][0]['rowData']:
@@ -2962,9 +3070,9 @@ class BarsicReport2(App):
                     elif line_table['values'][0]['formattedValue'] == "ИТОГО":
                         break
                     else:
-                        self.nex_line += 1
+                        self.start_line += 1
                 except KeyError:
-                    self.nex_line += 1
+                    self.start_line += 1
             if self.reprint:
                 self.write_google_sheet()
             # width_table = len(self.spreadsheet['sheets'][0]['data'][0]['rowData'][0]['values'])
@@ -2983,18 +3091,18 @@ class BarsicReport2(App):
         Заполнение google-таблицы
         """
         # SHEET 1
-        try:
-            while True:
-                time_of = (datetime.now() - self.google_kwote_timer).seconds
-                if time_of < 100:
-                    logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                                 f'Превышено количество запросов в API GoogleSheets. \n'
-                                 f'Программа продолжит выполнение через {100-time_of} сек...')
-                    time.sleep(5)
-                else:
-                    break
-        except AttributeError:
-            pass
+        # try:
+        #     while True:
+        #         time_of = (datetime.now() - self.google_kwote_timer).seconds
+        #         if time_of < 100:
+        #             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+        #                          f'Превышено количество запросов в API GoogleSheets. \n'
+        #                          f'Программа продолжит выполнение через {100-time_of} сек...')
+        #             time.sleep(5)
+        #         else:
+        #             break
+        # except AttributeError:
+        #     pass
 
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Заполнение листа 1...')
@@ -3012,6 +3120,7 @@ class BarsicReport2(App):
             "Суббота",
             "Воскресенье",
         ]
+        self.nex_line = self.start_line
 
         if self.finreport_dict['ИТОГО'][1] != (self.finreport_dict['Билеты аквапарка'][1] +
             self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] +
@@ -3946,6 +4055,195 @@ class BarsicReport2(App):
                         "bottom": {"style": "NONE", "width": 1,
                                    "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
             ss.runPrepared()
+
+        # Заполнение листа 5
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                     f'Заполнение листа 5...')
+        sheetId = 4
+        ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
+                                          self.spreadsheet['sheets'][sheetId]['properties']['title'])
+
+        # Заполнение строки с данными
+        weekday_rus = [
+            "Понедельник",
+            "Вторник",
+            "Среда",
+            "Четверг",
+            "Пятница",
+            "Суббота",
+            "Воскресенье",
+        ]
+        self.nex_line = self.start_line
+        ss.prepare_setValues(
+            f"A{self.nex_line}:M{self.nex_line}",
+            [
+                [
+                    datetime.strftime(self.finreport_dict_beach['Дата'][0], '%d.%m.%Y'),
+                    weekday_rus[self.finreport_dict_beach['Дата'][0].weekday()],
+                    str(self.finreport_dict_beach['Итого по отчету'][1]).replace('.', ','),
+                    self.finreport_dict_beach['Депозит'][1],
+                    self.finreport_dict_beach['Карты'][0],
+                    self.finreport_dict_beach['Карты'][1],
+                    f"=IFERROR(F{self.nex_line}/E{self.nex_line};0)",
+                    self.finreport_dict_beach['Услуги'][0],
+                    self.finreport_dict_beach['Услуги'][1],
+                    f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
+                    self.finreport_dict_beach['Товары'][0],
+                    self.finreport_dict_beach['Товары'][1],
+                    f"=IFERROR(L{self.nex_line}/K{self.nex_line};0)",
+                ]
+            ],
+            "ROWS"
+        )
+
+        # Задание форматы вывода строки
+        ss.prepare_setCellsFormats(
+            f"A{self.nex_line}:M{self.nex_line}",
+            [
+                [
+                    {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'}, 'horizontalAlignment': 'LEFT'},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                ]
+            ]
+        )
+        # Цвет фона ячеек
+        if self.nex_line % 2 != 0:
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:M{self.nex_line}",
+                                      {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
+                                      fields="userEnteredFormat.backgroundColor")
+
+        # Бордер
+        for j in range(self.sheet5_width):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": self.nex_line - 1, "endRowIndex": self.nex_line,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+        ss.runPrepared()
+
+        # ------------------------------------------- Заполнение ИТОГО --------------------------------------
+        # Вычисление последней строки в таблице
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                     f'Заполнение строки ИТОГО на листе 1...')
+
+        for i, line_table in enumerate(self.spreadsheet['sheets'][4]['data'][0]['rowData']):
+            try:
+                if line_table['values'][0]['formattedValue'] == "ИТОГО":
+                    # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
+                    height_table = i + self.reprint
+                    break
+                else:
+                    height_table = 4
+            except KeyError:
+                pass
+
+        ss.prepare_setValues(f"A{height_table}:M{height_table}",
+                             [[f'ИТОГО',
+                               "",
+                               f"=SUM(C3:C{height_table - 1})",
+                               f"=SUM(D3:D{height_table - 1})",
+                               f"=SUM(E3:E{height_table - 1})",
+                               f"=SUM(F3:F{height_table - 1})",
+                               f"=IFERROR(ROUND(F{height_table}/E{height_table};2);0)",
+                               f"=SUM(H3:H{height_table - 1})",
+                               f"=SUM(I3:I{height_table - 1})",
+                               f"=IFERROR(ROUND(I{height_table}/H{height_table};2);0)",
+                               f"=SUM(K3:K{height_table - 1})",
+                               f"=SUM(L3:L{height_table - 1})",
+                               f"=IFERROR(ROUND(L{height_table}/K{height_table};2);0)",
+                               ]],
+                             "ROWS")
+
+        # Задание формата вывода строки
+        ss.prepare_setCellsFormats(
+            f"A{height_table}:M{height_table}",
+            [
+                [
+                    {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                ]
+            ]
+        )
+
+        # Цвет фона ячеек
+        ss.prepare_setCellsFormat(f"A{height_table}:M{height_table}",
+                                  {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                  fields="userEnteredFormat.backgroundColor")
+
+        # Бордер
+        for j in range(self.sheet5_width):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+        ss.runPrepared()
 
 
     def open_googlesheet(self):
@@ -5236,6 +5534,7 @@ class BarsicReport2(App):
             self.path_list.append(self.export_agent_report(self.agentreport_dict))
         if self.finreport_google:
             self.fin_report_lastyear()
+            self.fin_report_beach()
             if self.itog_report_month:
                 self.fin_report_month()
                 self.agent_report_month()

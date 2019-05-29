@@ -1536,9 +1536,12 @@ class BarsicReport2(App):
                 self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]
             else:
-                self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
-                    self.finreport_dict_beach[self.itog_report_org2[service][3]][0] + self.itog_report_org2[service][0], \
-                    self.finreport_dict_beach[self.itog_report_org2[service][3]][1] + self.itog_report_org2[service][1]
+                try:
+                    self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
+                        self.finreport_dict_beach[self.itog_report_org2[service][3]][0] + self.itog_report_org2[service][0], \
+                        self.finreport_dict_beach[self.itog_report_org2[service][3]][1] + self.itog_report_org2[service][1]
+                except TypeError:
+                    pass
 
     def agent_report(self):
         """

@@ -1533,8 +1533,11 @@ class BarsicReport2(App):
                 self.finreport_dict_beach[service] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]
             elif service == 'Выход с пляжа':
-                self.finreport_dict_beach[service] = \
-                    self.itog_report_org2[service][0], self.itog_report_org2[service][1]
+                try:
+                    self.finreport_dict_beach[service] = \
+                        self.itog_report_org2[service][0], self.itog_report_org2[service][1]
+                except KeyError:
+                    self.finreport_dict_beach[service] = 0, 0
             elif not self.itog_report_org2[service][3] in self.finreport_dict_beach:
                 self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]

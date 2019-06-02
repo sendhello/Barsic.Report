@@ -1532,6 +1532,9 @@ class BarsicReport2(App):
             if service == 'Дата':
                 self.finreport_dict_beach[service] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]
+            elif service == 'Выход с пляжа':
+                self.finreport_dict_beach[service] = \
+                    self.itog_report_org2[service][0], self.itog_report_org2[service][1]
             elif not self.itog_report_org2[service][3] in self.finreport_dict_beach:
                 self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]
@@ -2304,13 +2307,13 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Сохранение Финансового отчета в Google-таблицах...')
 
-        self.doc_version = 7
+        self.doc_version = 8
 
         self.sheet_width = 37
-        self.sheet2_width = 11
+        self.sheet2_width = 14
         self.sheet3_width = 3
         self.sheet4_width = 3
-        self.sheet5_width = 13
+        self.sheet5_width = 16
         self.height = 40
         self.sheet3_height = 300
         self.sheet4_height = 300
@@ -2581,6 +2584,9 @@ class BarsicReport2(App):
                 ss.prepare_setColumnWidth(8, 65)
                 ss.prepare_setColumnWidth(9, 120)
                 ss.prepare_setColumnWidth(10, 100)
+                ss.prepare_setColumnWidth(8, 65)
+                ss.prepare_setColumnWidth(9, 120)
+                ss.prepare_setColumnWidth(10, 100)
 
                 # Объединение ячеек
                 ss.prepare_mergeCells("A1:A2")
@@ -2592,30 +2598,32 @@ class BarsicReport2(App):
                 ss.prepare_mergeCells("G1:G2")
                 ss.prepare_mergeCells("H1:H2")
                 ss.prepare_mergeCells("I1:K1")
+                ss.prepare_mergeCells("L1:N1")
 
                 # Задание параметров группе ячеек
                 # Жирный, по центру
-                ss.prepare_setCellsFormat('A1:K2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                ss.prepare_setCellsFormat('A1:N2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
                 # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
                 #                           fields='userEnteredFormat.numberFormat')
 
                 # Заполнение таблицы
-                ss.prepare_setValues("A1:K2", [
+                ss.prepare_setValues("A1:N2", [
                     [
                         "Дата", "День недели", "Кол-во проходов \nПРОГНОЗ", "Кол-во проходов \nФАКТ",
                         "Общая сумма \nПРОГНОЗ", "Общая сумма \nФАКТ",
                         "Средний чек \nПРОГНОЗ", "Средний чек \nФАКТ",
-                        "Общепит ПЛАН", "", "",
+                        "Общепит ПЛАН", "", "", "Пляж ПЛАН", "", "",
                     ],
                     [
                         "", "", "", "", "", "", "", "", "Кол-во", "Сумма", "Средний чек",
+                        "Трафик", "Общая сумма", "Средний чек",
                     ]
                 ],
                                      "ROWS")
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:K2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:N2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -2663,7 +2671,7 @@ class BarsicReport2(App):
                 self.sheet2_line = 3
                 while dateline < enddate:
                     ss.prepare_setValues(
-                        f"A{self.sheet2_line}:K{self.sheet2_line}",
+                        f"A{self.sheet2_line}:N{self.sheet2_line}",
                         [
                             [
                                 datetime.strftime(dateline, '%d.%m.%Y'),
@@ -2677,6 +2685,9 @@ class BarsicReport2(App):
                                 "",
                                 "",
                                 f"=IFERROR(J{self.sheet2_line}/I{self.sheet2_line};0)",
+                                "",
+                                "",
+                                f"=IFERROR(M{self.sheet2_line}/L{self.sheet2_line};0)",
                             ]
                         ],
                         "ROWS"
@@ -2684,7 +2695,7 @@ class BarsicReport2(App):
 
                     # Задание форматы вывода строки
                     ss.prepare_setCellsFormats(
-                        f"A{self.sheet2_line}:K{self.sheet2_line}",
+                        f"A{self.sheet2_line}:N{self.sheet2_line}",
                         [
                             [
                                 {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'}},
@@ -2698,12 +2709,15 @@ class BarsicReport2(App):
                                 {'numberFormat': {}},
                                 {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                                 {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                                {'numberFormat': {}},
+                                {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                                {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                             ]
                         ]
                     )
                     # Цвет фона ячеек
                     if self.sheet2_line % 2 != 0:
-                        ss.prepare_setCellsFormat(f"A{self.sheet2_line}:K{self.sheet2_line}",
+                        ss.prepare_setCellsFormat(f"A{self.sheet2_line}:N{self.sheet2_line}",
                                                   {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
                                                   fields="userEnteredFormat.backgroundColor")
 
@@ -2742,7 +2756,7 @@ class BarsicReport2(App):
 
                 # ИТОГО
                 ss.prepare_setValues(
-                    f"A{self.sheet2_line}:K{self.sheet2_line}",
+                    f"A{self.sheet2_line}:N{self.sheet2_line}",
                     [
                         [
                             "ИТОГО",
@@ -2755,7 +2769,10 @@ class BarsicReport2(App):
                             f"=IFERROR(F{self.sheet2_line}/D{self.sheet2_line};0)",
                             f"=SUM(I3:I{self.sheet2_line - 1})",
                             f"=SUM(J3:J{self.sheet2_line - 1})",
-                            f"=IFERROR(F{self.sheet2_line}/D{self.sheet2_line};0)",
+                            f"=IFERROR(J{self.sheet2_line}/I{self.sheet2_line};0)",
+                            f"=SUM(L3:L{self.sheet2_line - 1})",
+                            f"=SUM(M3:M{self.sheet2_line - 1})",
+                            f"=IFERROR(M{self.sheet2_line}/L{self.sheet2_line};0)",
                         ]
                     ],
                     "ROWS"
@@ -2763,7 +2780,7 @@ class BarsicReport2(App):
 
                 # Задание форматы вывода строки
                 ss.prepare_setCellsFormats(
-                    f"A{self.sheet2_line}:K{self.sheet2_line}",
+                    f"A{self.sheet2_line}:N{self.sheet2_line}",
                     [
                         [
                             {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'},
@@ -2784,11 +2801,16 @@ class BarsicReport2(App):
                              'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                             {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
                              'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                            {'numberFormat': {}, 'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                            {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                             'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                            {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                             'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                         ]
                     ]
                 )
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat(f"A{self.sheet2_line}:K{self.sheet2_line}",
+                ss.prepare_setCellsFormat(f"A{self.sheet2_line}:N{self.sheet2_line}",
                                           {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                           fields="userEnteredFormat.backgroundColor")
 
@@ -2954,10 +2976,7 @@ class BarsicReport2(App):
                                                   self.googleservice,
                                                   self.spreadsheet['sheets'][sheetId]['properties']['title'])
                 ss.prepare_setColumnsWidth(0, 1, 105)
-                ss.prepare_setColumnWidth(2, 120)
-                ss.prepare_setColumnWidth(3, 100)
-                ss.prepare_setColumnWidth(4, 65)
-                ss.prepare_setColumnWidth(5, 120)
+                ss.prepare_setColumnsWidth(2, 5, 120)
                 ss.prepare_setColumnWidth(6, 100)
                 ss.prepare_setColumnWidth(7, 65)
                 ss.prepare_setColumnWidth(8, 120)
@@ -2965,30 +2984,36 @@ class BarsicReport2(App):
                 ss.prepare_setColumnWidth(10, 65)
                 ss.prepare_setColumnWidth(11, 120)
                 ss.prepare_setColumnWidth(12, 100)
+                ss.prepare_setColumnWidth(13, 65)
+                ss.prepare_setColumnWidth(14, 120)
+                ss.prepare_setColumnWidth(15, 100)
 
                 # Объединение ячеек
                 ss.prepare_mergeCells("A1:A2")
                 ss.prepare_mergeCells("B1:B2")
                 ss.prepare_mergeCells("C1:C2")
                 ss.prepare_mergeCells("D1:D2")
-                ss.prepare_mergeCells("E1:G1")
+                ss.prepare_mergeCells("E1:E2")
+                ss.prepare_mergeCells("F1:F2")
+                ss.prepare_mergeCells("G1:G2")
                 ss.prepare_mergeCells("H1:J1")
                 ss.prepare_mergeCells("K1:M1")
+                ss.prepare_mergeCells("N1:P1")
 
                 # Задание параметров группе ячеек
                 # Жирный, по центру
-                ss.prepare_setCellsFormat('A1:M2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                ss.prepare_setCellsFormat('A1:P2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
                 # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
                 #                           fields='userEnteredFormat.numberFormat')
 
                 # Заполнение таблицы
-                ss.prepare_setValues("A1:M2", [
+                ss.prepare_setValues("A1:P2", [
                     [
-                        "Дата", "День недели", "Общая сумма", "Депозит",
-                         "Карты", "", "", "Услуги", "", "", "Товары", "", "",
+                        "Дата", "День недели", "Кол-во проходов\n ПЛАН", "Кол-во проходов\n ФАКТ", "Общая сумма\n ПЛАН",
+                        "Общая сумма\n ФАКТ", "Депозит", "Карты", "", "", "Услуги", "", "", "Товары", "", "",
                     ],
                     [
-                        "", "", "", "", "Кол-во", "Сумма", "Средний чек",
+                        "", "", "", "", "", "", "", "Кол-во", "Сумма", "Средний чек",
                         "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
                     ]
                 ],
@@ -2996,7 +3021,7 @@ class BarsicReport2(App):
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:M2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:P2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -4078,22 +4103,25 @@ class BarsicReport2(App):
         ]
         self.nex_line = self.start_line
         ss.prepare_setValues(
-            f"A{self.nex_line}:M{self.nex_line}",
+            f"A{self.nex_line}:P{self.nex_line}",
             [
                 [
                     datetime.strftime(self.finreport_dict_beach['Дата'][0], '%d.%m.%Y'),
                     weekday_rus[self.finreport_dict_beach['Дата'][0].weekday()],
+                    f'=\'План\'!L{self.nex_line}',
+                    self.finreport_dict_beach['Выход с пляжа'][0],
+                    f'=\'План\'!M{self.nex_line}',
                     str(self.finreport_dict_beach['Итого по отчету'][1]).replace('.', ','),
                     self.finreport_dict_beach['Депозит'][1],
                     self.finreport_dict_beach['Карты'][0],
                     self.finreport_dict_beach['Карты'][1],
-                    f"=IFERROR(F{self.nex_line}/E{self.nex_line};0)",
+                    f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
                     self.finreport_dict_beach['Услуги'][0],
                     self.finreport_dict_beach['Услуги'][1],
-                    f"=IFERROR(I{self.nex_line}/H{self.nex_line};0)",
+                    f"=IFERROR(L{self.nex_line}/K{self.nex_line};0)",
                     self.finreport_dict_beach['Товары'][0],
                     self.finreport_dict_beach['Товары'][1],
-                    f"=IFERROR(L{self.nex_line}/K{self.nex_line};0)",
+                    f"=IFERROR(O{self.nex_line}/N{self.nex_line};0)",
                 ]
             ],
             "ROWS"
@@ -4101,11 +4129,14 @@ class BarsicReport2(App):
 
         # Задание форматы вывода строки
         ss.prepare_setCellsFormats(
-            f"A{self.nex_line}:M{self.nex_line}",
+            f"A{self.nex_line}:P{self.nex_line}",
             [
                 [
                     {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'}, 'horizontalAlignment': 'LEFT'},
                     {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                     {'numberFormat': {}},
@@ -4122,7 +4153,7 @@ class BarsicReport2(App):
         )
         # Цвет фона ячеек
         if self.nex_line % 2 != 0:
-            ss.prepare_setCellsFormat(f"A{self.nex_line}:M{self.nex_line}",
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:P{self.nex_line}",
                                       {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
                                       fields="userEnteredFormat.backgroundColor")
 
@@ -4169,30 +4200,51 @@ class BarsicReport2(App):
             except KeyError:
                 pass
 
-        ss.prepare_setValues(f"A{height_table}:M{height_table}",
+        ss.prepare_setValues(f"A{height_table}:P{height_table}",
                              [[f'ИТОГО',
                                "",
                                f"=SUM(C3:C{height_table - 1})",
                                f"=SUM(D3:D{height_table - 1})",
                                f"=SUM(E3:E{height_table - 1})",
                                f"=SUM(F3:F{height_table - 1})",
-                               f"=IFERROR(ROUND(F{height_table}/E{height_table};2);0)",
+                               f"=SUM(G3:G{height_table - 1})",
                                f"=SUM(H3:H{height_table - 1})",
                                f"=SUM(I3:I{height_table - 1})",
                                f"=IFERROR(ROUND(I{height_table}/H{height_table};2);0)",
                                f"=SUM(K3:K{height_table - 1})",
                                f"=SUM(L3:L{height_table - 1})",
                                f"=IFERROR(ROUND(L{height_table}/K{height_table};2);0)",
+                               f"=SUM(N3:N{height_table - 1})",
+                               f"=SUM(O3:O{height_table - 1})",
+                               f"=IFERROR(ROUND(O{height_table}/N{height_table};2);0)",
+                               ]],
+                             "ROWS")
+        ss.prepare_setValues(f"A{height_table + 1}:D{height_table + 1}",
+                             [[f'Выполнение плана (трафик)',
+                               "",
+                               f"=IFERROR('План'!L{self.sheet2_line};0)",
+                               f"=IFERROR(ROUND(D{height_table}/C{height_table + 1};2);0)",
+                               ]],
+                             "ROWS")
+        ss.prepare_setValues(f"A{height_table + 2}:D{height_table + 2}",
+                             [[f'Выполнение плана (доход)',
+                               "",
+                               f"=IFERROR('План'!M{self.sheet2_line};0)",
+                               f"=IFERROR(ROUND(F{height_table}/C{height_table + 2};2);0)",
                                ]],
                              "ROWS")
 
         # Задание формата вывода строки
         ss.prepare_setCellsFormats(
-            f"A{height_table}:M{height_table}",
+            f"A{height_table}:P{height_table}",
             [
                 [
                     {'textFormat': {'bold': True}},
                     {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
                      'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
@@ -4215,9 +4267,41 @@ class BarsicReport2(App):
                 ]
             ]
         )
+        ss.prepare_setCellsFormats(
+            f"A{height_table + 1}:D{height_table + 1}",
+            [
+                [
+                    {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                     'numberFormat': {}},
+                    {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                     'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00%'}},
+                ]
+            ]
+        )
+        ss.prepare_setCellsFormats(
+            f"A{height_table + 2}:D{height_table + 2}",
+            [
+                [
+                    {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}},
+                    {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                     'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
+                     'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00%'}},
+                ]
+            ]
+        )
 
         # Цвет фона ячеек
-        ss.prepare_setCellsFormat(f"A{height_table}:M{height_table}",
+        ss.prepare_setCellsFormat(f"A{height_table}:P{height_table}",
+                                  {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                  fields="userEnteredFormat.backgroundColor")
+        ss.prepare_setCellsFormat(f"A{height_table + 1}:D{height_table + 1}",
+                                  {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
+                                  fields="userEnteredFormat.backgroundColor")
+        ss.prepare_setCellsFormat(f"A{height_table + 2}:D{height_table + 2}",
                                   {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                   fields="userEnteredFormat.backgroundColor")
 
@@ -4242,6 +4326,54 @@ class BarsicReport2(App):
                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
             ss.requests.append({"updateBorders": {
                 "range": {"sheetId": ss.sheetId, "startRowIndex": height_table - 1, "endRowIndex": height_table,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+        for j in range(4):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table, "endRowIndex": height_table + 1,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "bottom": {"style": "SOLID", "width": 1,
+                           "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+        for j in range(4):
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "top": {"style": "SOLID", "width": 1, "color": {"red": 0, "green": 0, "blue": 0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "right": {"style": "SOLID", "width": 1,
+                          "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
+                          "startColumnIndex": j,
+                          "endColumnIndex": j + 1},
+                "left": {"style": "SOLID", "width": 1,
+                         "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
+            ss.requests.append({"updateBorders": {
+                "range": {"sheetId": ss.sheetId, "startRowIndex": height_table + 1, "endRowIndex": height_table + 2,
                           "startColumnIndex": j,
                           "endColumnIndex": j + 1},
                 "bottom": {"style": "SOLID", "width": 1,

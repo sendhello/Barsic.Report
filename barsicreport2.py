@@ -1533,11 +1533,8 @@ class BarsicReport2(App):
                 self.finreport_dict_beach[service] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]
             elif service == 'Выход с пляжа':
-                try:
-                    self.finreport_dict_beach[service] = \
-                        self.itog_report_org2[service][0], self.itog_report_org2[service][1]
-                except KeyError:
-                    self.finreport_dict_beach[service] = 0, 0
+                self.finreport_dict_beach[service] = \
+                    self.itog_report_org2[service][0], self.itog_report_org2[service][1]
             elif not self.itog_report_org2[service][3] in self.finreport_dict_beach:
                 self.finreport_dict_beach[self.itog_report_org2[service][3]] = \
                     self.itog_report_org2[service][0], self.itog_report_org2[service][1]
@@ -1548,6 +1545,8 @@ class BarsicReport2(App):
                         self.finreport_dict_beach[self.itog_report_org2[service][3]][1] + self.itog_report_org2[service][1]
                 except TypeError:
                     pass
+        if 'Выход с пляжа' not in self.finreport_dict_beach:
+            self.finreport_dict_beach['Выход с пляжа'] = 0, 0
 
     def agent_report(self):
         """
@@ -2421,7 +2420,7 @@ class BarsicReport2(App):
                                                'sheetId': 4,
                                                'title': 'Пляж',
                                                'gridProperties': {'rowCount': self.sheet5_height,
-                                                                  'columnCount': self.sheet5_width}}},
+                                                                  'columnCount': self.sheet5_width}}}
                                ]
                 }).execute()
 
@@ -4190,7 +4189,7 @@ class BarsicReport2(App):
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
         # Вычисление последней строки в таблице
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                     f'Заполнение строки ИТОГО на листе 1...')
+                     f'Заполнение строки ИТОГО на листе 5...')
 
         for i, line_table in enumerate(self.spreadsheet['sheets'][4]['data'][0]['rowData']):
             try:

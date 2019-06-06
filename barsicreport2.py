@@ -2309,9 +2309,9 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Сохранение Финансового отчета в Google-таблицах...')
 
-        self.doc_version = 8
+        self.doc_version = 9
 
-        self.sheet_width = 37
+        self.sheet_width = 43
         self.sheet2_width = 14
         self.sheet3_width = 3
         self.sheet4_width = 3
@@ -2486,11 +2486,17 @@ class BarsicReport2(App):
                 ss.prepare_setColumnWidth(29, 100)
                 ss.prepare_setColumnWidth(30, 65)
                 ss.prepare_setColumnWidth(31, 120)
-                ss.prepare_setColumnWidth(32, 65)
-                ss.prepare_setColumnWidth(33, 120)
-                ss.prepare_setColumnWidth(34, 100)
-                ss.prepare_setColumnWidth(35, 120)
-                ss.prepare_setColumnWidth(36, 120)
+                ss.prepare_setColumnWidth(32, 100)
+                ss.prepare_setColumnWidth(33, 65)
+                ss.prepare_setColumnWidth(34, 120)
+                ss.prepare_setColumnWidth(35, 100)
+                ss.prepare_setColumnWidth(36, 65)
+                ss.prepare_setColumnWidth(37, 120)
+                ss.prepare_setColumnWidth(38, 65)
+                ss.prepare_setColumnWidth(39, 120)
+                ss.prepare_setColumnWidth(40, 100)
+                ss.prepare_setColumnWidth(41, 120)
+                ss.prepare_setColumnWidth(41, 120)
 
                 # Объединение ячеек
                 ss.prepare_mergeCells("A1:A2")
@@ -2509,19 +2515,21 @@ class BarsicReport2(App):
                 ss.prepare_mergeCells("V1:X1")
                 ss.prepare_mergeCells("Y1:AA1")
                 ss.prepare_mergeCells("AB1:AD1")
-                ss.prepare_mergeCells("AE1:AF1")
-                ss.prepare_mergeCells("AG1:AI1")
-                ss.prepare_mergeCells("AJ1:AJ2")
-                ss.prepare_mergeCells("AK1:AK2")
+                ss.prepare_mergeCells("AE1:AG1")
+                ss.prepare_mergeCells("AH1:AJ1")
+                ss.prepare_mergeCells("AK1:AL1")
+                ss.prepare_mergeCells("AM1:AO1")
+                ss.prepare_mergeCells("AP1:AP2")
+                ss.prepare_mergeCells("AQ1:AQ2")
 
                 # Задание параметров группе ячеек
                 # Жирный, по центру
-                ss.prepare_setCellsFormat('A1:AK2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                ss.prepare_setCellsFormat('A1:AQ2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
                 # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
                 #                           fields='userEnteredFormat.numberFormat')
 
                 # Заполнение таблицы
-                ss.prepare_setValues("A1:AK2", [
+                ss.prepare_setValues("A1:AQ2", [
                     [
                         "Дата", "День недели", "Кол-во проходов \nПЛАН", "Кол-во проходов \nФАКТ",
                     f"Кол-во проходов \n{self.data_report} "
@@ -2532,11 +2540,12 @@ class BarsicReport2(App):
                     "Билеты", "", "", "Депозит", "Термозона", "", "", "Общепит ПЛАН", "", "", "Общепит ФАКТ",  "", "",
                     f"Общепит {self.data_report} "
                     f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}", "", "",
-                    "Билеты КОРП", "", "", "Термозона КОРП", "", "", "Прочее", "", "Online Продажи", "", "",
-                    "Сумма безнал", "Сумма Biglion"
+                    "Билеты КОРП", "", "", "Термозона КОРП", "", "", "Билеты РЕГ", "", "", "Термозона РЕГ", "", "",
+                    "Прочее", "", "Online Продажи", "", "", "Сумма безнал", "Сумма Biglion"
                     ],
                     [
                         "", "", "", "", "", "", "", "", "Кол-во", "Сумма", "Средний чек", "",
+                        "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
                         "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
                         "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
                         "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
@@ -2547,7 +2556,7 @@ class BarsicReport2(App):
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:AK2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:AQ2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -3155,17 +3164,18 @@ class BarsicReport2(App):
         if self.finreport_dict['ИТОГО'][1] != (self.finreport_dict['Билеты аквапарка'][1] +
             self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] +
             self.finreport_dict['Билеты аквапарка КОРП'][1] + self.finreport_dict['Прочее'][1] +
-            self.finreport_dict['Термозона КОРП'][1] + self.finreport_dict['Сопутствующие товары'][1] + self.finreport_dict['Депозит'][1]):
+            self.finreport_dict['Термозона КОРП'][1] + self.finreport_dict['Билеты РЕГ'][1] +
+            self.finreport_dict['Термозона РЕГ'][1] + self.finreport_dict['Сопутствующие товары'][1] + self.finreport_dict['Депозит'][1]):
             logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    '
                          f'Несоответствие данных: Сумма услуг не равна итоговой сумме')
             self.show_dialog('Несоответствие данных',
                              f"Сумма услуг по группам + депозит ("
-                             f"{self.finreport_dict['Билеты аквапарка'][1] + self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] + self.finreport_dict['Билеты аквапарка КОРП'][1] + self.finreport_dict['Прочее'][1] + self.finreport_dict['Термозона КОРП'][1] + self.finreport_dict['Сопутствующие товары'][1] + self.finreport_dict['Депозит'][1]}) "
+                             f"{self.finreport_dict['Билеты аквапарка'][1] + self.finreport_dict['Термозона'][1] + self.finreport_dict['Общепит'][1] + self.finreport_dict['Билеты аквапарка КОРП'][1] + self.finreport_dict['Прочее'][1] + self.finreport_dict['Термозона КОРП'][1] + self.finreport_dict['Билеты РЕГ'][1] + self.finreport_dict['Термозона РЕГ'][1] + self.finreport_dict['Сопутствующие товары'][1] + self.finreport_dict['Депозит'][1]}) "
                              f"не равна итоговой сумме ({self.finreport_dict['ИТОГО'][1]}). \n"
                              f"Рекомендуется проверить правильно ли разделены услуги по группам.")
 
         ss.prepare_setValues(
-            f"A{self.nex_line}:AK{self.nex_line}",
+            f"A{self.nex_line}:AQ{self.nex_line}",
             [
                 [
                     datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
@@ -3174,8 +3184,8 @@ class BarsicReport2(App):
                     f"{self.finreport_dict['Кол-во проходов'][0]}",
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
                     f'=\'План\'!E{self.nex_line}',
-                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AH{self.nex_line}+"
-                        f"AJ{self.nex_line}+AK{self.nex_line}",
+                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AN{self.nex_line}+"
+                        f"AP{self.nex_line}+AQ{self.nex_line}",
                     f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
                         f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
                     self.finreport_dict['Билеты аквапарка'][0],
@@ -3200,11 +3210,17 @@ class BarsicReport2(App):
                     self.finreport_dict['Термозона КОРП'][0],
                     self.finreport_dict['Термозона КОРП'][1],
                     f"=IFERROR(AC{self.nex_line}/AB{self.nex_line};0)",
+                    self.finreport_dict['Билеты РЕГ'][0],
+                    self.finreport_dict['Билеты РЕГ'][1],
+                    f"=IFERROR(AF{self.nex_line}/AE{self.nex_line};0)",
+                    self.finreport_dict['Термозона РЕГ'][0],
+                    self.finreport_dict['Термозона РЕГ'][1],
+                    f"=IFERROR(AI{self.nex_line}/AH{self.nex_line};0)",
                     self.finreport_dict['Прочее'][0] + self.finreport_dict['Сопутствующие товары'][0],
                     self.finreport_dict['Прочее'][1] + self.finreport_dict['Сопутствующие товары'][1],
                     self.finreport_dict['Online Продажи'][0],
                     self.finreport_dict['Online Продажи'][1],
-                    f"=IFERROR(AH{self.nex_line}/AG{self.nex_line};0)",
+                    f"=IFERROR(AN{self.nex_line}/AM{self.nex_line};0)",
                     0,
                     0,
                 ]
@@ -3214,7 +3230,7 @@ class BarsicReport2(App):
 
         # Задание форматы вывода строки
         ss.prepare_setCellsFormats(
-            f"A{self.nex_line}:AK{self.nex_line}",
+            f"A{self.nex_line}:AQ{self.nex_line}",
             [
                 [
                     {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'}, 'horizontalAlignment': 'LEFT'},
@@ -3249,6 +3265,12 @@ class BarsicReport2(App):
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                     {'numberFormat': {}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
+                    {'numberFormat': {}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                     {'numberFormat': {}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'}},
@@ -3259,7 +3281,7 @@ class BarsicReport2(App):
         )
         # Цвет фона ячеек
         if self.nex_line % 2 != 0:
-            ss.prepare_setCellsFormat(f"A{self.nex_line}:AK{self.nex_line}",
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:AQ{self.nex_line}",
                                       {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
                                       fields="userEnteredFormat.backgroundColor")
 
@@ -3318,7 +3340,7 @@ class BarsicReport2(App):
             except KeyError:
                 pass
 
-        ss.prepare_setValues(f"A{height_table}:AK{height_table}",
+        ss.prepare_setValues(f"A{height_table}:AQ{height_table}",
                              [[f'ИТОГО',
                                "",
                                f"=SUM(C3:C{height_table - 1})",
@@ -3351,11 +3373,17 @@ class BarsicReport2(App):
                                f"=IFERROR(ROUND(AC{height_table}/AB{height_table};2);0)",
                                f"=SUM(AE3:AE{height_table - 1})",
                                f"=SUM(AF3:AF{height_table - 1})",
-                               f"=SUM(AG3:AG{height_table - 1})",
+                               f"=IFERROR(ROUND(AF{height_table}/AE{height_table};2);0)",
                                f"=SUM(AH3:AH{height_table - 1})",
-                               f"=IFERROR(ROUND(AH{height_table}/AG{height_table};2);0)",
-                               f"=SUM(AJ3:AJ{height_table - 1})",
+                               f"=SUM(AI3:AI{height_table - 1})",
+                               f"=IFERROR(ROUND(AI{height_table}/AH{height_table};2);0)",
                                f"=SUM(AK3:AK{height_table - 1})",
+                               f"=SUM(AL3:AL{height_table - 1})",
+                               f"=SUM(AM3:AM{height_table - 1})",
+                               f"=SUM(AN3:AN{height_table - 1})",
+                               f"=IFERROR(ROUND(AN{height_table}/AM{height_table};2);0)",
+                               f"=SUM(AP3:AP{height_table - 1})",
+                               f"=SUM(AQ3:AQ{height_table - 1})",
                                ]],
                              "ROWS")
         ss.prepare_setValues(f"A{height_table + 1}:D{height_table + 1}",
@@ -3375,7 +3403,7 @@ class BarsicReport2(App):
 
         # Задание формата вывода строки
         ss.prepare_setCellsFormats(
-            f"A{height_table}:AK{height_table}",
+            f"A{height_table}:AQ{height_table}",
             [
                 [
                     {'textFormat': {'bold': True}},
@@ -3392,6 +3420,16 @@ class BarsicReport2(App):
                     {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
                      'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
                      'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
@@ -3469,7 +3507,7 @@ class BarsicReport2(App):
         )
 
         # Цвет фона ячеек
-        ss.prepare_setCellsFormat(f"A{height_table}:AK{height_table}",
+        ss.prepare_setCellsFormat(f"A{height_table}:AQ{height_table}",
                                   {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                   fields="userEnteredFormat.backgroundColor")
         ss.prepare_setCellsFormat(f"A{height_table+1}:D{height_table+1}",

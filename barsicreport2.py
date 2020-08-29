@@ -22,6 +22,7 @@ import csv
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Protection, Font, Side
 from dateutil.relativedelta import relativedelta
+from typing import Tuple
 
 from kivy.app import App
 from kivy.uix.modalview import ModalView
@@ -105,8 +106,9 @@ class BarsicReport2(App):
         self.date_from = datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
         self.date_to = self.date_from + timedelta(1)
 
-        self.org1 = ''
-        self.org2 = ''
+        self.org1 = None
+        self.org2 = None
+        self.org3 = None
 
         self.count_sql_error = 0
         self.org_for_finreport = {}
@@ -115,7 +117,7 @@ class BarsicReport2(App):
         self.new_agentservice = []
         self.agentorgs = []
 
-    def get_application_config(self):
+    def get_application_conorgfig(self):
         return super(BarsicReport2, self).get_application_config(
             '{}/%(appname)s.ini'.format(self.directory))
 
@@ -675,7 +677,11 @@ class BarsicReport2(App):
             pwd=self.pwd,
             driver=self.driver,
         )
-        self.org1 = (org_list1[0][0], org_list1[0][2])
+        for org in org_list1:
+            if org[0] == 36:
+                self.org1 = (org[0], org[2])
+            if org[0] == 7203673:
+                self.org3 = (org[0], org[2])
         self.org2 = (org_list2[0][0], org_list2[0][2])
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Выбраны организации {org_list1[0][2]} и {org_list2[0][2]}')
 
@@ -1196,6 +1202,8 @@ class BarsicReport2(App):
         self.agent_dict = self.read_reportgroup(self.agentXML)
         self.find_new_agentservice(self.itog_report_org1, self.agent_dict)
         self.find_new_agentservice(self.itog_report_org1_lastyear, self.agent_dict)
+        self.find_new_agentservice(self.itog_report_org3, self.agent_dict)
+        self.find_new_agentservice(self.itog_report_org3_lastyear, self.agent_dict)
         if self.itog_report_month:
             self.find_new_agentservice(self.itog_report_month, self.agent_dict)
         self.distibution_agentservice()
@@ -1337,33 +1345,38 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета')
         self.finreport_dict = {}
         is_aquazona = None
-        for key in self.orgs_dict:
-            if key != 'Не учитывать':
-                self.finreport_dict[key] = [0, 0.00]
-                for serv in self.orgs_dict[key]:
+        for org, services in self.orgs_dict.items():
+            if org != 'Не учитывать':
+                self.finreport_dict[org] = [0, 0.00]
+                for serv in services:
                     try:
-                        if key == 'Дата':
-                            self.finreport_dict[key][0] = self.itog_report_org1[serv][0]
-                            self.finreport_dict[key][1] = self.itog_report_org1[serv][1]
+                        if org == 'Дата':
+                            self.finreport_dict[org][0] = self.itog_report_org1[serv][0]
+                            self.finreport_dict[org][1] = self.itog_report_org1[serv][1]
                         elif serv == 'Депозит':
-                            self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.finreport_dict[org][1] += self.itog_report_org1[serv][1]
                         elif serv == 'Аквазона':
                             self.finreport_dict['Кол-во проходов'] = [self.itog_report_org1[serv][0], 0]
-                            self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.finreport_dict[org][1] += self.itog_report_org1[serv][1]
                             is_aquazona = True
                         elif serv == 'Организация':
                             pass
                         else:
                             if not self.itog_report_org1[serv][1] == 0.0:
-                                self.finreport_dict[key][0] += self.itog_report_org1[serv][0]
-                                self.finreport_dict[key][1] += self.itog_report_org1[serv][1]
+                                self.finreport_dict[org][0] += self.itog_report_org1[serv][0]
+                                self.finreport_dict[org][1] += self.itog_report_org1[serv][1]
+                            if not self.itog_report_org3[serv][1] == 0.0:
+                                self.finreport_dict[org][0] += self.itog_report_org3[serv][0]
+                                self.finreport_dict[org][1] += self.itog_report_org3[serv][1]
                     except KeyError:
                         pass
                     except TypeError:
                         pass
         if not is_aquazona:
             self.finreport_dict['Кол-во проходов'] = [0, 0.00]
-        self.finreport_dict['Online Продажи'] = list(self.report_bitrix)
+        self.finreport_dict.setdefault('Online Продажи', [0, 0.0])
+        self.finreport_dict['Online Продажи'][0] += self.report_bitrix[0]
+        self.finreport_dict['Online Продажи'][1] += self.report_bitrix[1]
         # self.finreport_dict['ИТОГО'][1] -= self.finreport_dict['Депозит'][1]
 
     def fin_report_lastyear(self):
@@ -1374,34 +1387,38 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета за прошлый год')
         self.finreport_dict_lastyear = {}
         is_aquazona = None
-        for key in self.orgs_dict:
-            if key != 'Не учитывать':
-                self.finreport_dict_lastyear[key] = [0, 0.00]
-                for serv in self.orgs_dict[key]:
+        for org, services in self.orgs_dict.items():
+            if org != 'Не учитывать':
+                self.finreport_dict_lastyear[org] = [0, 0.00]
+                for serv in services:
                     try:
-                        if key == 'Дата':
-                            self.finreport_dict_lastyear[key][0] = self.itog_report_org1_lastyear[serv][0]
-                            self.finreport_dict_lastyear[key][1] = self.itog_report_org1_lastyear[serv][1]
+                        if org == 'Дата':
+                            self.finreport_dict_lastyear[org][0] = self.itog_report_org1_lastyear[serv][0]
+                            self.finreport_dict_lastyear[org][1] = self.itog_report_org1_lastyear[serv][1]
                         elif serv == 'Депозит':
-                            self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                            self.finreport_dict_lastyear[org][1] += self.itog_report_org1_lastyear[serv][1]
                         elif serv == 'Аквазона':
                             self.finreport_dict_lastyear['Кол-во проходов'] = [self.itog_report_org1_lastyear[serv][0], 0]
-                            self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                            self.finreport_dict_lastyear[org][1] += self.itog_report_org1_lastyear[serv][1]
                             is_aquazona = True
                         elif serv == 'Организация':
                             pass
                         else:
                             if not self.itog_report_org1_lastyear[serv][1] == 0.0:
-                                self.finreport_dict_lastyear[key][0] += self.itog_report_org1_lastyear[serv][0]
-                                self.finreport_dict_lastyear[key][1] += self.itog_report_org1_lastyear[serv][1]
+                                self.finreport_dict_lastyear[org][0] += self.itog_report_org1_lastyear[serv][0]
+                                self.finreport_dict_lastyear[org][1] += self.itog_report_org1_lastyear[serv][1]
+                            if not self.itog_report_org3_lastyear[serv][1] == 0.0:
+                                self.finreport_dict_lastyear[org][0] += self.itog_report_org3_lastyear[serv][0]
+                                self.finreport_dict_lastyear[org][1] += self.itog_report_org3_lastyear[serv][1]
                     except KeyError:
                         pass
                     except TypeError:
                         pass
         if not is_aquazona:
             self.finreport_dict_lastyear['Кол-во проходов'] = [0, 0.00]
-        self.finreport_dict_lastyear['Online Продажи'] = list(self.report_bitrix_lastyear)
-
+        self.finreport_dict.setdefault('Online Продажи', [0, 0.0])
+        self.finreport_dict['Online Продажи'][0] += self.report_bitrix_lastyear[0]
+        self.finreport_dict['Online Продажи'][1] += self.report_bitrix_lastyear[1]
 
     def fin_report_month(self):
         """
@@ -1557,23 +1574,25 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование отчета платежного агента')
         self.agentreport_dict = {}
         self.agentreport_dict['Организация'] = [self.org1[0], self.org1[1]]
-        for key in self.agent_dict:
-            if key != 'Не учитывать':
-                self.agentreport_dict[key] = [0, 0]
-                for serv in self.agent_dict[key]:
+        for org, services in self.agent_dict.items():
+            if org != 'Не учитывать':
+                self.agentreport_dict[org] = [0, 0]
+                for serv in services:
                     try:
-                        if key == 'Дата':
-                            self.agentreport_dict[key][0] = self.itog_report_org1[serv][0]
-                            self.agentreport_dict[key][1] = self.itog_report_org1[serv][1]
+                        if org == 'Дата':
+                            self.agentreport_dict[org][0] = self.itog_report_org1[serv][0]
+                            self.agentreport_dict[org][1] = self.itog_report_org1[serv][1]
                         elif serv == 'Депозит':
-                            self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.agentreport_dict[org][1] += self.itog_report_org1[serv][1]
                         elif serv == 'Аквазона':
-                            self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.agentreport_dict[org][1] += self.itog_report_org1[serv][1]
                         elif serv == 'Организация':
                             pass
                         else:
-                            self.agentreport_dict[key][0] += self.itog_report_org1[serv][0]
-                            self.agentreport_dict[key][1] += self.itog_report_org1[serv][1]
+                            self.agentreport_dict[org][0] += self.itog_report_org1[serv][0]
+                            self.agentreport_dict[org][1] += self.itog_report_org1[serv][1]
+                            self.agentreport_dict[org][0] += self.itog_report_org3[serv][0]
+                            self.agentreport_dict[org][1] += self.itog_report_org3[serv][1]
                     except KeyError:
                         pass
                     except TypeError:
@@ -5631,6 +5650,8 @@ class BarsicReport2(App):
                 self.path_list.append(self.save_organisation_total(self.itog_report_org1))
             if self.itog_report_org2['Итого по отчету'][1]:
                 self.path_list.append(self.save_organisation_total(self.itog_report_org2))
+            if self.itog_report_org3['Итого по отчету'][1]:
+                self.path_list.append(self.save_organisation_total(self.itog_report_org3))
         if self.check_cashreport_xls:
             if self.cashdesk_report_org1['Итого'][0][1]:
                 self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org1))
@@ -5648,6 +5669,7 @@ class BarsicReport2(App):
         """
         self.itog_report_org1 = None
         self.itog_report_org2 = None
+        self.itog_report_org3 = None
         self.report_bitrix = None
 
         self.click_select_org()
@@ -5693,6 +5715,32 @@ class BarsicReport2(App):
                 pwd=self.pwd,
                 org=self.org1[0],
                 org_name=self.org1[1],
+                date_from=self.date_from - relativedelta(years=1),
+                date_to=self.date_to - relativedelta(years=1),
+                hide_zeroes='0',
+                hide_internal='1',
+            )
+            self.itog_report_org3 = self.itog_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org3[0],
+                org_name=self.org3[1],
+                date_from=self.date_from,
+                date_to=self.date_to,
+                hide_zeroes='0',
+                hide_internal='1',
+            )
+            self.itog_report_org3_lastyear = self.itog_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org3[0],
+                org_name=self.org3[1],
                 date_from=self.date_from - relativedelta(years=1),
                 date_to=self.date_to - relativedelta(years=1),
                 hide_zeroes='0',
@@ -5775,6 +5823,8 @@ class BarsicReport2(App):
         # Поиск новых услуг
         self.find_new_service(self.itog_report_org1, self.orgs_dict)
         self.find_new_service(self.itog_report_org1_lastyear, self.orgs_dict)
+        self.find_new_service(self.itog_report_org3, self.orgs_dict)
+        self.find_new_service(self.itog_report_org3_lastyear, self.orgs_dict)
         if self.itog_report_month:
             self.find_new_service(self.itog_report_month, self.orgs_dict)
         self.distibution_service()

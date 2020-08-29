@@ -66,6 +66,7 @@ import time
 
 logging.basicConfig(filename="barsic_reports.log", level=logging.INFO)
 
+
 class BarsicReport2(App):
     """
     Функционал программы.
@@ -4459,7 +4460,10 @@ class BarsicReport2(App):
             #     resporse += f'{datetime.strftime(beach_report["Дата"][0], "%d.%m.%Y")}:\n'
             # else:
             #     resporse += f'{datetime.strftime(beach_report["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(beach_report["Дата"][0], "%d.%m.%Y")}:\n'
-            resporse += f'Люди (пляж) - {self.itog_report_org2["Летняя зона | БЕЗЛИМИТ | 1 проход"][0]};\n'
+            try:
+                resporse += f'Люди (пляж) - {self.itog_report_org2["Летняя зона | БЕЗЛИМИТ | 1 проход"][0]};\n'
+            except KeyError:
+                pass
             resporse += f'Итого по пляжу - {self.itog_report_org2["Итого по отчету"][1]:.2f} ₽;\n'
         resporse += f'Без ЧП.'
         with open(f'reports/{self.date_from.strftime("%Y.%m.%d")}_sms.txt', 'w', encoding='utf-8') as f:
@@ -5463,7 +5467,6 @@ class BarsicReport2(App):
                 r = session.post(url)
             else:
                 logging.error(f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Файл не содержит XML')
-
             return result
 
     def parseXML(self, xmlString):
@@ -5472,16 +5475,15 @@ class BarsicReport2(App):
         :param xmlString: строка XML из интернет-магазина Битрикс
         :return: список словарей с данными
         """
-
         x = re.search(r' encoding="windows-1251"', xmlString)
-        xml = xmlString[:x.start()] + xmlString[x.end():]
 
+        xml = xmlString[:x.start()] + xmlString[x.end():]
         result = []
         products_in_bay = -1
         last_elem = ''
-
+        with open('xml_root.xml', 'w') as f:
+            f.write(xml)
         root = objectify.fromstring(xml)
-
         for doc in root.getchildren():
             paydate = ''
             pay = False
@@ -5489,7 +5491,7 @@ class BarsicReport2(App):
             for req in doc.ЗначенияРеквизитов.getchildren():
                 if req.Наименование == 'Дата оплаты':
                     paydate = datetime.strftime(datetime.strptime(str(req.Значение), '%d.%m.%Y %H:%M:%S'),
-                                                '%Y-%d-%m %H:%M:%S')
+                                               '%Y-%m-%d %H:%M:%S')
                 if req.Наименование == 'Заказ оплачен':
                     pay = bool(req.Значение)
                 if req.Наименование == 'Статус заказа':
@@ -5509,7 +5511,7 @@ class BarsicReport2(App):
                     result[len(result) - 1]['ProductName'] = str(product.Наименование)
                     result[len(result) - 1]['OrderDate'] = datetime.strptime(str(doc.Дата + ' ' + doc.Время),
                                                                              '%Y-%m-%d %H:%M:%S').strftime(
-                        '%Y-%d-%m %H:%M:%S')
+                        '%Y-%m-%d %H:%M:%S')
                     result[len(result) - 1]['PayDate'] = paydate
                     result[len(result) - 1]['Sum_P'] = Decimal(float(product.ЦенаЗаЕдиницу))
                     result[len(result) - 1]['Pay_P'] = pay
@@ -5624,7 +5626,6 @@ class BarsicReport2(App):
                                           login=self.bitrix_login,
                                           password=self.bitrix_password,
                                      )
-
         ordersList = self.parseXML(XML)
 
         for order in ordersList:
@@ -5654,7 +5655,7 @@ class BarsicReport2(App):
                 )
 
                 logging.info(
-                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
+                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '//
                     f'{order["ProductName"]:50} | {order["OrderNumber"]:10} | '
                     f'{order["Sum_P"]: 10} | {order["OrderDate"]:25} | ВЫГРУЖЕН')
             else:
@@ -5789,7 +5790,7 @@ class BarsicReport2(App):
                 hide_zeroes='0',
                 hide_internal='1',
             )
-            if int((self.date_to - timedelta(1)).strftime('%m')) < int(self.date_to.strftime('%m')):
+            if int((self.date_to - timedelta(1)).strftime('%y%m')) < int(self.date_to.strftime('%y%m')):
                 self.itog_report_month = self.itog_report(
                     server=self.server,
                     database=self.database1,
@@ -5903,6 +5904,7 @@ class BarsicReport2(App):
         if self.finreport_telegram:
             self.send_message_to_telegram()
             self.sms_report_list = []
+
 
 if __name__ == '__main__':
     pass

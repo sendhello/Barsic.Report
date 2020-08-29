@@ -5424,51 +5424,6 @@ class BarsicReport2(App):
         self.save_file(path, wb)
         return path
 
-    def import_xml_from_bitrix(self,
-                               exchange_url,
-                               exchange_path,
-                               login,
-                               password,
-                               ):
-        """
-        Выгрузка новых заказов с сайта Битрикс
-        :param exchange_url: адрес сайта
-        :param exchange_path: путь к модулювыгрузки
-        :param login: логин пользователя
-        :param password: пароль
-        :return: XML-файл с выгрузкой новых заказов
-        """
-        with requests.Session() as session:
-
-            params = urllib.parse.urlencode({'type': 'sale', 'mode': 'checkauth'})
-            url = 'http://' + exchange_url + exchange_path + '?' + params
-            auth = (login, password)
-            r = session.get(url, auth=auth)
-            temp = r.text.split('\n')
-            logging.info(str(temp))
-
-            params = urllib.parse.urlencode({'type': 'sale', 'mode': 'init'})
-            url = 'https://' + exchange_url + exchange_path + '?' + params
-            result = session.get(url).text
-            logging.info(result + '\n')
-
-            params = urllib.parse.urlencode({'type': 'sale', 'mode': 'query'})
-            url = 'http://' + exchange_url + exchange_path + '?' + params
-            r = session.post(url)
-            result = r.text
-            logging.info(f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
-                  f'Запрос в битрикс выполнен.')
-            if result[0] == '<':
-                logging.info(
-                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
-                    f'Данные выгружены, Отправка подтверждения в битрикс')
-                params = urllib.parse.urlencode({'type': 'sale', 'mode': 'success'})
-                url = 'http://' + exchange_url + exchange_path + '?' + params
-                r = session.post(url)
-            else:
-                logging.error(f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Файл не содержит XML')
-            return result
-
     def parseXML(self, xmlString):
         """
         ЧТЕНИЕ XML С ДАННЫМИ
@@ -5616,53 +5571,6 @@ class BarsicReport2(App):
             return False
         else:
             return True
-
-    def request_bitrix(self):
-        logging.info(
-            f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    Запрос в Битрикс...')
-
-        XML = self.import_xml_from_bitrix(exchange_url=self.bitrix_exchange_url,
-                                          exchange_path=self.bitrix_exchange_path,
-                                          login=self.bitrix_login,
-                                          password=self.bitrix_password,
-                                     )
-        ordersList = self.parseXML(XML)
-
-        for order in ordersList:
-
-            if self.if_in_base(
-                    server=self.server,
-                    database=self.database_bitrix,
-                    uid=self.user,
-                    pwd=self.pwd,
-                    Id_P=order['Id_P'],
-            ):
-                self.uploadToBase(
-                    server=self.server,
-                    database=self.database_bitrix,
-                    uid=self.user,
-                    pwd=self.pwd,
-                    Id_P=order['Id_P'],
-                    OrderNumber_P=order['OrderNumber'],
-                    ProductId_P=order['ProductId'],
-                    ProductName_P=order['ProductName'],
-                    OrderDate_P=order['OrderDate'],
-                    PayDate_P=order['PayDate'],
-                    Sum_P=order['Sum_P'],
-                    Pay_P=int(order['Pay_P']),
-                    Status_P=order['Status_P'],
-                    Client_P=order['Client_P'],
-                )
-
-                logging.info(
-                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '//
-                    f'{order["ProductName"]:50} | {order["OrderNumber"]:10} | '
-                    f'{order["Sum_P"]: 10} | {order["OrderDate"]:25} | ВЫГРУЖЕН')
-            else:
-                logging.info(
-                    f'{datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S"):20}:    '
-                    f'{order["ProductName"]:50} | {order["OrderNumber"]:10} | '
-                    f'{order["Sum_P"]: 10} | {order["OrderDate"]:25} | ОТМЕНА (Попытка повторной записи)')
 
     def load_checkbox(self):
         """
@@ -5875,8 +5783,6 @@ class BarsicReport2(App):
         self.open_browser = False
         self.path_list = []
         self.sms_report_list = []
-
-        self.request_bitrix()
 
         if self.date_switch:
             self.load_report()

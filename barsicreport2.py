@@ -1362,10 +1362,10 @@ class BarsicReport2(App):
                         elif serv == 'Организация':
                             pass
                         else:
-                            if not self.itog_report_org1[serv][1] == 0.0:
+                            if self.itog_report_org1.get(serv) and self.itog_report_org1[serv][1] != 0.0:
                                 self.finreport_dict[org][0] += self.itog_report_org1[serv][0]
                                 self.finreport_dict[org][1] += self.itog_report_org1[serv][1]
-                            if not self.itog_report_org3[serv][1] == 0.0:
+                            if self.itog_report_org3.get(serv) and self.itog_report_org3[serv][1] != 0.0:
                                 self.finreport_dict[org][0] += self.itog_report_org3[serv][0]
                                 self.finreport_dict[org][1] += self.itog_report_org3[serv][1]
                     except KeyError:
@@ -1404,10 +1404,12 @@ class BarsicReport2(App):
                         elif serv == 'Организация':
                             pass
                         else:
-                            if not self.itog_report_org1_lastyear[serv][1] == 0.0:
+                            if self.itog_report_org1_lastyear.get(serv) \
+                                    and self.itog_report_org1_lastyear[serv][1] != 0.0:
                                 self.finreport_dict_lastyear[org][0] += self.itog_report_org1_lastyear[serv][0]
                                 self.finreport_dict_lastyear[org][1] += self.itog_report_org1_lastyear[serv][1]
-                            if not self.itog_report_org3_lastyear[serv][1] == 0.0:
+                            if self.itog_report_org3_lastyear.get(serv) \
+                                    and self.itog_report_org3_lastyear[serv][1] != 0.0:
                                 self.finreport_dict_lastyear[org][0] += self.itog_report_org3_lastyear[serv][0]
                                 self.finreport_dict_lastyear[org][1] += self.itog_report_org3_lastyear[serv][1]
                     except KeyError:

@@ -5804,6 +5804,7 @@ class BarsicReport2(App):
                 self.load_report()
         # Отправка в яндекс диск
         if self.use_yadisk:
+            self.path_list = filter(lambda x: x is not None, self.path_list)
             self.sync_to_yadisk(self.path_list, self.yadisk_token)
             self.path_list = []
         # Отправка в телеграмм

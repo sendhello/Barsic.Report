@@ -1418,9 +1418,9 @@ class BarsicReport2(App):
                         pass
         if not is_aquazona:
             self.finreport_dict_lastyear['Кол-во проходов'] = [0, 0.00]
-        self.finreport_dict.setdefault('Online Продажи', [0, 0.0])
-        self.finreport_dict['Online Продажи'][0] += self.report_bitrix_lastyear[0]
-        self.finreport_dict['Online Продажи'][1] += self.report_bitrix_lastyear[1]
+        self.finreport_dict_lastyear.setdefault('Online Продажи', [0, 0.0])
+        self.finreport_dict_lastyear['Online Продажи'][0] += self.report_bitrix_lastyear[0]
+        self.finreport_dict_lastyear['Online Продажи'][1] += self.report_bitrix_lastyear[1]
 
     def fin_report_month(self):
         """

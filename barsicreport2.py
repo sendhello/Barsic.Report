@@ -4902,8 +4902,7 @@ class BarsicReport2(App):
             date_ = f'{datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")} - ' \
                     f'{datetime.strftime(itog_report["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
         path = self.local_folder + self.path + date_ + \
-               f' Итоговый отчет по {organisation_total["Организация"]["Организация"][0][0]} ' \
-               f'({organisation_total["ID организации"]["ID организации"][0][0]})' + ".xlsx"
+               f' Итоговый отчет по {organisation_total["Организация"]["Организация"][0][0]} ' + ".xlsx"
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение Итогового отчета '
                      f'по {organisation_total["Организация"]["Организация"][0][0]} в {path}')
         path = self.create_path(path)

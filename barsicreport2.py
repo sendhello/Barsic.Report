@@ -4800,7 +4800,10 @@ class BarsicReport2(App):
                     merge_width_h3()
                     service_count = 0
                     service_sum = 0
-                    for service in organisation_total[gr][group]:
+                    servises = organisation_total.get(gr, {}).get(group, [])
+                    if not servises:
+                        continue
+                    for service in servises:
                         try:
                             service_count += service[1]
                             service_sum += service[2]

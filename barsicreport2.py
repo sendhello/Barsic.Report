@@ -1593,8 +1593,6 @@ class BarsicReport2(App):
                         else:
                             self.agentreport_dict[org][0] += self.itog_report_org1[serv][0]
                             self.agentreport_dict[org][1] += self.itog_report_org1[serv][1]
-                            self.agentreport_dict[org][0] += self.itog_report_org3[serv][0]
-                            self.agentreport_dict[org][1] += self.itog_report_org3[serv][1]
                     except KeyError:
                         pass
                     except TypeError:

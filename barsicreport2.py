@@ -780,6 +780,7 @@ class BarsicReport2(App):
             else:
                 break
         report.append((0, 0, 0, 0, org_name, 0, 'Организация', 'Организация'))
+        report.append((0, 0, 0, 0, org, 0, 'ID организации', 'ID организации'))
         if len(report) > 1:
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Итоговый отчет сформирован ID организации = {org}, '
                          f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'
@@ -4827,18 +4828,20 @@ class BarsicReport2(App):
         except KeyError:
             pass
 
-        if all_sum == organisation_total["Итого по отчету"][""][0][2]:
-            ws[column[2] + next_row()] = organisation_total['Итого по отчету'][''][0][0]
-            ws[column[10] + self.row] = organisation_total['Итого по отчету'][''][0][1]
-            ws[column[12] + self.row] = organisation_total["Итого по отчету"][""][0][2]
+        bars_total_sum = organisation_total["Итого по отчету"][""][0]
+        if all_sum == bars_total_sum[2]:
+            ws[column[2] + next_row()] = bars_total_sum[0]
+            ws[column[10] + self.row] = bars_total_sum[1]
+            ws[column[12] + self.row] = bars_total_sum[2]
             self.total_report_sum = all_sum
         else:
-            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Ошибка: Итоговые суммы не совпадают. "Итого по отчету" '
-                          f'из Барса не совпадает с итоговой суммой по формируемым строкам.')
-            self.show_dialog(f'Ошибка: Итоговые суммы не совпадают',
-                             '"Итого по отчету" из Барса не совпадает с итоговой суммой по формируемым строкам.'
-                             )
+            error_code = f'Ошибка: Итоговые суммы не совпадают.'
+            error_message = f'"Итого по отчету" из Барса ({bars_total_sum[2]})' \
+                            f' не совпадает с итоговой суммой по формируемым строкам ({all_sum}).'
+            logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    {error_code} {error_message}')
+            self.show_dialog(error_code, error_message)
             return None
+
         ws[column[12] + self.row].number_format = '#,##0.00 ₽'
         merge_table_h2()
         ws[column[2] + self.row].alignment = align_bottom
@@ -4899,7 +4902,8 @@ class BarsicReport2(App):
             date_ = f'{datetime.strftime(itog_report["Дата"][0], "%Y-%m-%d")} - ' \
                     f'{datetime.strftime(itog_report["Дата"][1] - timedelta(1), "%Y-%m-%d")}'
         path = self.local_folder + self.path + date_ + \
-               f' Итоговый отчет по {organisation_total["Организация"]["Организация"][0][0]}' + ".xlsx"
+               f' Итоговый отчет по {organisation_total["Организация"]["Организация"][0][0]} ' \
+               f'({organisation_total["ID организации"]["ID организации"][0][0]})' + ".xlsx"
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Сохранение Итогового отчета '
                      f'по {organisation_total["Организация"]["Организация"][0][0]} в {path}')
         path = self.create_path(path)

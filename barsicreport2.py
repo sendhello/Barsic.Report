@@ -780,7 +780,7 @@ class BarsicReport2(App):
             else:
                 break
         report.append((0, 0, 0, 0, org_name, 0, 'Организация', 'Организация'))
-        report.append((0, 0, 0, 0, org, 0, 'ID организации', 'ID организации'))
+        report.append((0, 0, 0, 0, str(org), 0, 'ID организации', 'ID организации'))
         if len(report) > 1:
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Итоговый отчет сформирован ID организации = {org}, '
                          f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'

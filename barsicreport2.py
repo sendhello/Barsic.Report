@@ -4795,12 +4795,15 @@ class BarsicReport2(App):
                 merge_width_h2()
                 group_count = 0
                 group_sum = 0
-                for group in organisation_total[gr]:
+                organisation_total_groups = organisation_total.get(gr)
+                if not organisation_total_groups:
+                    continue
+                for group in organisation_total_groups:
                     ws[column[2] + next_row()] = group
                     merge_width_h3()
                     service_count = 0
                     service_sum = 0
-                    servises = organisation_total.get(gr, {}).get(group, [])
+                    servises = organisation_total_groups.get(group, [])
                     if not servises:
                         continue
                     for service in servises:

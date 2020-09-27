@@ -2532,7 +2532,7 @@ class BarsicReport2(App):
                 ss.prepare_mergeCells("L1:L2")
                 ss.prepare_mergeCells("M1:M2")
                 ss.prepare_mergeCells("N1:P1")
-                ss.prepare_mergeCells("R1:S1")
+                ss.prepare_mergeCells("Q1:S1")
                 ss.prepare_mergeCells("T1:V1")
                 ss.prepare_mergeCells("W1:Y1")
                 ss.prepare_mergeCells("Z1:AB1")

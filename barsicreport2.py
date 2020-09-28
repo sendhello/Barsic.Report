@@ -135,6 +135,8 @@ class BarsicReport2(App):
         config.setdefault('MSSQL', 'database2', 'database')
         config.setdefault('MSSQL', 'database_bitrix', 'database')
         config.setdefault('MSSQL', 'database_rk', 'database')
+        config.adddefaultsection('RK')
+        config.setdefault('RK', 'smile_group', 'ООО Рога и Копыта')
         config.adddefaultsection('PATH')
         config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
         config.setdefault('PATH', 'agentXML', 'data/org_plat_agent.xml')
@@ -188,6 +190,7 @@ class BarsicReport2(App):
         self.database2 = self.config.get('MSSQL', 'database2')
         self.database_bitrix = self.config.get('MSSQL', 'database_bitrix')
         self.database_rk = self.config.get('MSSQL', 'database_rk')
+        self.smile_group = self.config.get('RK', 'smile_group')
         self.reportXML = self.config.get('PATH', 'reportXML')
         self.agentXML = self.config.get('PATH', 'agentXML')
         self.itogreportXML = self.config.get('PATH', 'itogreportXML')
@@ -1516,8 +1519,7 @@ class BarsicReport2(App):
                                   f'Группа {oldgroup} не существует! \nKeyError: {e}')
 
                 if oldgroup == 'Общепит':
-                    product_group = finreport_group.setdefault(
-                        'Общепит ------------------------------------------------------------------------------ ИП Салахова', [])
+                    product_group = finreport_group.setdefault(self.smile_group, [['Итого по папке', 0, 0.0]])
                     product_group.append(['Смайл', smile[0], smile[1]])
                     product_group[0][1] += smile[0]
                     product_group[0][2] += smile[1]

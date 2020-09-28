@@ -1587,6 +1587,8 @@ class BarsicReport2(App):
         self.finreport_dict_month = {}
         control_sum_group = self.finreport_dict_month.setdefault('Контрольная сумма', {})
         control_sum = control_sum_group.setdefault('Cумма', [['Сумма', 0, 0.0]])
+        smile = [len(self.report_rk_month), float(sum([line['paid_sum'] for line in self.report_rk_month]))]
+
         for group_name, groups in self.itogreport_group_dict.items():
             finreport_group = self.finreport_dict_month.setdefault(group_name, {})
             finreport_group_total = finreport_group.setdefault('Итого по группе', [['Итого по группе', 0, 0.0]])
@@ -1628,20 +1630,18 @@ class BarsicReport2(App):
                                   f'Группа {oldgroup} не существует! \nKeyError: {e}')
 
                 if oldgroup == 'Общепит':
-                    product = [len(self.report_rk_month), float(sum([line['paid_sum'] for line in self.report_rk_month]))]
                     product_group = finreport_group.setdefault(
                         'Общепит ------------------------------------------------------------------------------ ИП Салахова', [])
-                    product_group.append(['Смайл', product[0], product[1]])
-                    product_group[0][1] += product[0]
-                    product_group[0][2] += product[1]
-                    finreport_group_total[0][1] += product[0]
-                    finreport_group_total[0][2] += product[1]
-                    if product_name != 'Итого по отчету':
-                        control_sum[0][1] += product[0]
-                        control_sum[0][2] += product[1]
+                    product_group.append(['Смайл', smile[0], smile[1]])
+                    product_group[0][1] += smile[0]
+                    product_group[0][2] += smile[1]
+                    finreport_group_total[0][1] += smile[0]
+                    finreport_group_total[0][2] += smile[1]
+                    control_sum[0][1] += smile[0]
+                    control_sum[0][2] += smile[1]
 
-        if self.finreport_dict_month['ИТОГО'][''][1][2] != control_sum[0][2] \
-                or self.finreport_dict_month['ИТОГО'][''][1][1] != control_sum[0][1]:
+        if self.finreport_dict_month['ИТОГО'][''][1][2] != control_sum[0][2] - smile[1] \
+                or self.finreport_dict_month['ИТОГО'][''][1][1] != control_sum[0][1] - smile[0]:
             self.show_dialog(
                 "Несоответствие Контрольных сумм.",
                 f"Итого по отчету ({self.finreport_dict_month['ИТОГО'][''][1][1]}: "

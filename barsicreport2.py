@@ -1470,6 +1470,7 @@ class BarsicReport2(App):
         :return - dict
         """
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета за месяц')
+        self.finreport_dict_month = {}
         control_sum_group = self.finreport_dict_month.setdefault('Контрольная сумма', {})
         control_sum = control_sum_group.setdefault('Cумма', [['Сумма', 0, 0.0]])
         for group in self.itogreport_group_dict:

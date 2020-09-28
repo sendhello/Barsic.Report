@@ -1473,39 +1473,41 @@ class BarsicReport2(App):
         self.finreport_dict_month = {}
         control_sum_group = self.finreport_dict_month.setdefault('Контрольная сумма', {})
         control_sum = control_sum_group.setdefault('Cумма', [['Сумма', 0, 0.0]])
-        for group in self.itogreport_group_dict:
-            finreport_group = self.finreport_dict_month.setdefault(group, {})
+        for group_name, groups in self.itogreport_group_dict.items():
+            finreport_group = self.finreport_dict_month.setdefault(group_name, {})
             finreport_group_total = finreport_group.setdefault('Итого по группе', [['Итого по группе', 0, 0.0]])
-            for oldgroup in self.itogreport_group_dict[group]:
+            for oldgroup in groups:
                 try:
                     for product_name in self.orgs_dict[oldgroup]:
-                        product = self.itog_report_month[product_name]
                         try:
-                            if product_name == 'Дата':
-                                product_group = finreport_group.setdefault(oldgroup, [])
-                                product_group.append([product_name, product[0], product[1]])
-                            elif product_name == 'Депозит':
-                                product_group = finreport_group.setdefault(oldgroup, [])
-                                product_group.append([product_name, 0, product[1]])
-                                finreport_group_total[0][2] += product[1]
-                                control_sum[0][2] += product[1]
-                            elif product_name == 'Организация':
-                                pass
-                            else:
-                                product_group = finreport_group.setdefault(product[2], [['Итого по папке', 0, 0.0]])
-                                product_group.append([product_name, product[0], product[1]])
-                                product_group[0][1] += product[0]
-                                product_group[0][2] += product[1]
-                                finreport_group_total[0][1] += product[0]
-                                finreport_group_total[0][2] += product[1]
-                                if product_name != 'Итого по отчету':
-                                    control_sum[0][1] += product[0]
-                                    control_sum[0][2] += product[1]
-
+                            product = self.itog_report_month[product_name]
                         except KeyError:
-                            pass
+                            continue
                         except TypeError:
+                            continue
+
+                        if product_name == 'Дата':
+                            product_group = finreport_group.setdefault(oldgroup, [])
+                            product_group.append([product_name, product[0], product[1]])
+                        elif product_name == 'Депозит':
+                            product_group = finreport_group.setdefault(oldgroup, [])
+                            product_group.append([product_name, 0, product[1]])
+                            finreport_group_total[0][2] += product[1]
+                            control_sum[0][2] += product[1]
+                        elif product_name == 'Организация':
                             pass
+                        else:
+                            product_group = finreport_group.setdefault(product[2], [['Итого по папке', 0, 0.0]])
+                            product_group.append([product_name, product[0], product[1]])
+                            product_group[0][1] += product[0]
+                            product_group[0][2] += product[1]
+                            finreport_group_total[0][1] += product[0]
+                            finreport_group_total[0][2] += product[1]
+                            if product_name != 'Итого по отчету':
+                                control_sum[0][1] += product[0]
+                                control_sum[0][2] += product[1]
+
+
                 except KeyError as e:
                     self.show_dialog('Несоответствие конфигураций XML-файлов', f'Группа {oldgroup} не существует!\n'
                     f'KeyError: {e}')

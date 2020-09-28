@@ -1523,11 +1523,9 @@ class BarsicReport2(App):
                     product_group[0][2] += smile[1]
                     finreport_group_total[0][1] += smile[0]
                     finreport_group_total[0][2] += smile[1]
-                    control_sum[0][1] += smile[0]
-                    control_sum[0][2] += smile[1]
 
-        if self.finreport_dict_month['ИТОГО'][''][1][2] != control_sum[0][2] - smile[1] \
-                or self.finreport_dict_month['ИТОГО'][''][1][1] != control_sum[0][1] - smile[0]:
+        if self.finreport_dict_month['ИТОГО'][''][1][2] != control_sum[0][2] \
+                or self.finreport_dict_month['ИТОГО'][''][1][1] != control_sum[0][1]:
             self.show_dialog(
                 "Несоответствие Контрольных сумм.",
                 f"Итого по отчету ({self.finreport_dict_month['ИТОГО'][''][1][1]}: "
@@ -1612,8 +1610,6 @@ class BarsicReport2(App):
         self.agentreport_dict_month = {}
         self.agentreport_dict_month['Контрольная сумма'] = {}
         self.agentreport_dict_month['Контрольная сумма']['Cумма'] = [['Сумма', 0, 0.0]]
-        print(f'self.itog_report_month = {self.itog_report_month}')
-        print(f'self.agent_dict = {self.agent_dict}')
         for org in self.agent_dict:
             self.agentreport_dict_month[org] = {}
             self.agentreport_dict_month[org]['Итого по группе'] = [
@@ -1648,8 +1644,6 @@ class BarsicReport2(App):
                                     self.itog_report_month[tariff][0]
                                 self.agentreport_dict_month[org]['Итого по группе'][0][2] += \
                                     self.itog_report_month[tariff][1]
-                                print(f'tariff = {tariff}')
-                                print(f'self.agentreport_dict_month[org]["Итого по группе"][0][2] = {self.agentreport_dict_month[org]["Итого по группе"][0][2]}')
                                 if tariff != 'Итого по отчету':
                                     self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
                                         self.itog_report_month[tariff][0]
@@ -1712,7 +1706,6 @@ class BarsicReport2(App):
                           f"{self.agentreport_dict_month['ИТОГО'][''][1][2]}) не равно Контрольной сумме услуг"
                           f"({self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][1]}: "
                           f"{self.agentreport_dict_month['Контрольная сумма']['Cумма'][0][2]})")
-        print(f'agentreport_dict_month = {self.agentreport_dict_month}')
 
     def export_fin_report(self):
         """
@@ -4171,8 +4164,6 @@ class BarsicReport2(App):
                 if group == 'Не учитывать':
                     continue
                 self.nex_line += 1
-                print(group)
-                print(self.agentreport_dict_month[group])
                 ss.prepare_setValues(
                     f"A{self.nex_line}:C{self.nex_line}",
                     [[

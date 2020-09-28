@@ -1525,6 +1525,10 @@ class BarsicReport2(App):
                     product_group[0][2] += smile[1]
                     finreport_group_total[0][1] += smile[0]
                     finreport_group_total[0][2] += smile[1]
+                    control_sum[0][1] += smile[0]
+                    control_sum[0][2] += smile[1]
+                    self.finreport_dict_month['ИТОГО'][''][1][1] += smile[0]
+                    self.finreport_dict_month['ИТОГО'][''][1][2] += smile[1]
 
         if self.finreport_dict_month['ИТОГО'][''][1][2] != control_sum[0][2] \
                 or self.finreport_dict_month['ИТОГО'][''][1][1] != control_sum[0][1]:

@@ -1513,7 +1513,7 @@ class BarsicReport2(App):
                                   f'Группа {oldgroup} не существует! \nKeyError: {e}')
 
                 if oldgroup == 'Общепит':
-                    product = [len(self.report_rk_month), sum([line['paid_sum'] for line in self.report_rk_month])]
+                    product = [len(self.report_rk_month), float(sum([line['paid_sum'] for line in self.report_rk_month]))]
                     product_group = finreport_group.setdefault(
                         'Общепит ------------------------------------------------------------------------------ ИП Салахова', [])
                     product_group.append(['Смайл', product[0], product[1]])

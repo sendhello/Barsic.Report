@@ -1418,6 +1418,8 @@ class BarsicReport2(App):
         self.finreport_dict['Online Продажи'][1] += self.report_bitrix[1]
         self.finreport_dict['Смайл'][0] = len(self.report_rk)
         self.finreport_dict['Смайл'][1] = sum([line['paid_sum'] for line in self.report_rk])
+        self.finreport_dict['Смайл old'][0] = len(self.report_rk_lastyear)
+        self.finreport_dict['Смайл old'][1] = sum([line['paid_sum'] for line in self.report_rk_lastyear])
 
     def fin_report_lastyear(self):
         """
@@ -1512,7 +1514,7 @@ class BarsicReport2(App):
                                   f'Группа {oldgroup} не существует! \nKeyError: {e}')
 
                 if oldgroup == 'Общепит':
-                    product = [len(self.report_rk), sum([line['paid_sum'] for line in self.report_rk])]
+                    product = [len(self.report_rk_month), sum([line['paid_sum'] for line in self.report_rk_month])]
                     product_group = finreport_group.setdefault(
                         'Общепит ------------------------------------------------------------------------------ ИП Салахова', [])
                     product_group.append(['Смайл', product[0], product[1]])
@@ -2428,7 +2430,7 @@ class BarsicReport2(App):
                                                                   'columnCount': self.sheet_width}}},
                                {'properties': {'sheetType': 'GRID',
                                                'sheetId': 1,
-                                               'title': 'План',
+                                               'title': 'Смайл',
                                                'gridProperties': {'rowCount': self.sheet2_height,
                                                                   'columnCount': self.sheet2_width}}},
                                {'properties': {'sheetType': 'GRID',
@@ -2643,7 +2645,7 @@ class BarsicReport2(App):
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:С2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:C2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -3272,7 +3274,6 @@ class BarsicReport2(App):
                 f"Рекомендуется проверить правильно ли разделены услуги по группам."
             )
 
-        smile_sum = float(sum([line['paid_sum'] for line in self.report_rk]))
         ss.prepare_setValues(
             f"A{self.nex_line}:AR{self.nex_line}",
             [
@@ -3284,7 +3285,7 @@ class BarsicReport2(App):
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
                     f'=\'План\'!E{self.nex_line}',
                     f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AO{self.nex_line}+"
-                        f"AQ{self.nex_line}+AR{self.nex_line}+{smile_sum}",
+                        f"AQ{self.nex_line}+AR{self.nex_line}+{str(self.finreport_dict['Смайл'][1]).replace('.', ',')}",
                     f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
                         f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
                     self.finreport_dict['Билеты аквапарка'][0],
@@ -3298,11 +3299,11 @@ class BarsicReport2(App):
                     f'=\'План\'!I{self.nex_line}',
                     f'=\'План\'!J{self.nex_line}',
                     f"=IFERROR(R{self.nex_line}/Q{self.nex_line};0)",
-                    self.finreport_dict['Общепит'][0] + len(self.report_rk),
-                    self.finreport_dict['Общепит'][1] + smile_sum,
+                    self.finreport_dict['Общепит'][0] + self.finreport_dict['Смайл'][0],
+                    self.finreport_dict['Общепит'][1] + self.finreport_dict['Смайл'][1],
                     f"=IFERROR(U{self.nex_line}/T{self.nex_line};0)",
-                    self.finreport_dict_lastyear['Общепит'][0],
-                    self.finreport_dict_lastyear['Общепит'][1],
+                    self.finreport_dict_lastyear['Общепит'][0] + self.finreport_dict['Смайл old'][0],
+                    self.finreport_dict_lastyear['Общепит'][1] + self.finreport_dict['Смайл old'][1],
                     f"=IFERROR(X{self.nex_line}/W{self.nex_line};0)",
                     self.finreport_dict['Билеты аквапарка КОРП'][0],
                     self.finreport_dict['Билеты аквапарка КОРП'][1],
@@ -3805,19 +3806,6 @@ class BarsicReport2(App):
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00[$ ₽]'},
                      'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
 
-                ]
-            ]
-        )
-        ss.prepare_setCellsFormats(
-            f"A{height_table + 1}:D{height_table + 1}",
-            [
-                [
-                    {'textFormat': {'bold': True}},
-                    {'textFormat': {'bold': True}},
-                    {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
-                     'numberFormat': {}},
-                    {'textFormat': {'bold': True}, 'horizontalAlignment': 'RIGHT',
-                     'numberFormat': {'type': 'CURRENCY', 'pattern': '#,##0.00%'}},
                 ]
             ]
         )
@@ -6029,6 +6017,16 @@ class BarsicReport2(App):
                     date_to=self.date_to,
                     hide_zeroes='0',
                     hide_internal='1',
+                )
+                self.report_rk_month = self.rk_report_request(
+                    server=self.server,
+                    database=self.database_rk,
+                    user=self.user,
+                    pwd=self.pwd,
+                    driver=self.driver,
+                    cash_id=15033,
+                    date_from=datetime.strptime('01' + (self.date_to - timedelta(1)).strftime('%m%y'), '%d%m%y'),
+                    date_to=self.date_to,
                 )
             else:
                 self.itog_report_month = None

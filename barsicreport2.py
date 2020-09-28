@@ -1418,8 +1418,6 @@ class BarsicReport2(App):
         self.finreport_dict['Online Продажи'][1] += self.report_bitrix[1]
         self.finreport_dict['Смайл'][0] = len(self.report_rk)
         self.finreport_dict['Смайл'][1] = sum([line['paid_sum'] for line in self.report_rk])
-        self.finreport_dict['Смайл old'][0] = len(self.report_rk_lastyear)
-        self.finreport_dict['Смайл old'][1] = sum([line['paid_sum'] for line in self.report_rk_lastyear])
 
     def fin_report_lastyear(self):
         """
@@ -3302,8 +3300,8 @@ class BarsicReport2(App):
                     self.finreport_dict['Общепит'][0] + self.finreport_dict['Смайл'][0],
                     self.finreport_dict['Общепит'][1] + self.finreport_dict['Смайл'][1],
                     f"=IFERROR(U{self.nex_line}/T{self.nex_line};0)",
-                    self.finreport_dict_lastyear['Общепит'][0] + self.finreport_dict['Смайл old'][0],
-                    self.finreport_dict_lastyear['Общепит'][1] + self.finreport_dict['Смайл old'][1],
+                    self.finreport_dict_lastyear['Общепит'][0] + self.finreport_dict_lastyear['Смайл'][0],
+                    self.finreport_dict_lastyear['Общепит'][1] + self.finreport_dict_lastyear['Смайл'][1],
                     f"=IFERROR(X{self.nex_line}/W{self.nex_line};0)",
                     self.finreport_dict['Билеты аквапарка КОРП'][0],
                     self.finreport_dict['Билеты аквапарка КОРП'][1],

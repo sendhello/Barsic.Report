@@ -1417,7 +1417,7 @@ class BarsicReport2(App):
         self.finreport_dict['Online Продажи'][0] += self.report_bitrix[0]
         self.finreport_dict['Online Продажи'][1] += self.report_bitrix[1]
         self.finreport_dict['Смайл'][0] = len(self.report_rk)
-        self.finreport_dict['Смайл'][1] = sum([line['paid_sum'] for line in self.report_rk])
+        self.finreport_dict['Смайл'][1] = float(sum([line['paid_sum'] for line in self.report_rk]))
 
     def fin_report_lastyear(self):
         """
@@ -1462,7 +1462,7 @@ class BarsicReport2(App):
         self.finreport_dict_lastyear['Online Продажи'][0] += self.report_bitrix_lastyear[0]
         self.finreport_dict_lastyear['Online Продажи'][1] += self.report_bitrix_lastyear[1]
         self.finreport_dict_lastyear['Смайл'][0] = len(self.report_rk_lastyear)
-        self.finreport_dict_lastyear['Смайл'][1] = sum([line['paid_sum'] for line in self.report_rk_lastyear])
+        self.finreport_dict_lastyear['Смайл'][1] = float(sum([line['paid_sum'] for line in self.report_rk_lastyear]))
 
     def fin_report_month(self):
         """

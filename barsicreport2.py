@@ -1471,6 +1471,120 @@ class BarsicReport2(App):
         """
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета за месяц')
         self.finreport_dict_month = {}
+        self.finreport_dict_month['Контрольная сумма'] = {}
+        self.finreport_dict_month['Контрольная сумма']['Cумма'] = [['Сумма', 0, 0.0]]
+        for group in self.itogreport_group_dict:
+            self.finreport_dict_month[group] = {}
+            self.finreport_dict_month[group]['Итого по группе'] = [
+                ['Итого по группе', 0, 0.0]
+            ]
+            for oldgroup in self.itogreport_group_dict[group]:
+                try:
+                    for serv in self.orgs_dict[oldgroup]:
+                        try:
+                            if serv == 'Дата':
+                                self.finreport_dict_month[group][oldgroup] = []
+                                self.finreport_dict_month[group][oldgroup].append(
+                                    [serv, self.itog_report_month[serv][0], self.itog_report_month[serv][1]]
+                                )
+                            elif serv == 'Депозит':
+                                self.finreport_dict_month[group][oldgroup] = []
+                                self.finreport_dict_month[group][oldgroup].append(
+                                    [serv, 0, self.itog_report_month[serv][1]]
+                                )
+                                self.finreport_dict_month[group]['Итого по группе'][0][2] += self.itog_report_month[serv][1]
+                                self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2] += self.itog_report_month[serv][1]
+                            elif serv == 'Организация':
+                                pass
+                            else:
+                                try:
+                                    if self.finreport_dict_month[group][self.itog_report_month[serv][2]]:
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]].\
+                                            append([serv, self.itog_report_month[serv][0], self.itog_report_month[serv][1]])
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]][0][1] += \
+                                            self.itog_report_month[serv][0]
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]][0][2] += \
+                                            self.itog_report_month[serv][1]
+                                        self.finreport_dict_month[group]['Итого по группе'][0][1] += \
+                                            self.itog_report_month[serv][0]
+                                        self.finreport_dict_month[group]['Итого по группе'][0][2] += \
+                                            self.itog_report_month[serv][1]
+                                        if serv != 'Итого по отчету':
+                                            self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
+                                                self.itog_report_month[serv][0]
+                                            self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2] += \
+                                                self.itog_report_month[serv][1]
+                                    else:
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]] = []
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]]. \
+                                            append(['Итого по папке', 0, 0.0])
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]]. \
+                                            append([serv, self.itog_report_month[serv][0], self.itog_report_month[serv][1]])
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]][0][1] += \
+                                            self.itog_report_month[serv][0]
+                                        self.finreport_dict_month[group][self.itog_report_month[serv][2]][0][2] += \
+                                            self.itog_report_month[serv][1]
+                                        self.finreport_dict_month[group]['Итого по группе'][0][1] += \
+                                            self.itog_report_month[serv][0]
+                                        self.finreport_dict_month[group]['Итого по группе'][0][2] += \
+                                            self.itog_report_month[serv][1]
+                                        if serv != 'Итого по отчету':
+                                            self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
+                                                self.itog_report_month[serv][0]
+                                            self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2] += \
+                                                self.itog_report_month[serv][1]
+                                except KeyError:
+                                    self.finreport_dict_month[group][self.itog_report_month[serv][2]] = []
+                                    self.finreport_dict_month[group][self.itog_report_month[serv][2]]. \
+                                        append(['Итого по папке', 0, 0.0])
+                                    self.finreport_dict_month[group][self.itog_report_month[serv][2]]. \
+                                        append((serv, self.itog_report_month[serv][0], self.itog_report_month[serv][1]))
+                                    self.finreport_dict_month[group][self.itog_report_month[serv][2]][0][1] += \
+                                        self.itog_report_month[serv][0]
+                                    self.finreport_dict_month[group][self.itog_report_month[serv][2]][0][2] += \
+                                        self.itog_report_month[serv][1]
+                                    self.finreport_dict_month[group]['Итого по группе'][0][1] += \
+                                        self.itog_report_month[serv][0]
+                                    self.finreport_dict_month[group]['Итого по группе'][0][2] += \
+                                        self.itog_report_month[serv][1]
+                                    if serv != 'Итого по отчету':
+                                        self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1] += \
+                                            self.itog_report_month[serv][0]
+                                        self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2] += \
+                                            self.itog_report_month[serv][1]
+                        except KeyError:
+                            pass
+                        except TypeError:
+                            pass
+                except KeyError as e:
+                    self.show_dialog('Несоответствие конфигураций XML-файлов', f'Группа {oldgroup} не существует!\n'
+                    f'KeyError: {e}')
+                    logging.error(f'{__name__}: {str(datetime.now())[:-7]}:    Несоответствие конфигураций XML-файлов\n'
+                                  f'Группа {oldgroup} не существует! \nKeyError: {e}')
+        if self.finreport_dict_month['ИТОГО'][''][1][2] != \
+                self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2] or \
+                self.finreport_dict_month['ИТОГО'][''][1][1] != \
+                self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1]:
+            self.show_dialog("Несоответствие Контрольных сумм.",
+                             f"Итого по отчету ({self.finreport_dict_month['ИТОГО'][''][1][1]}: "
+                             f"{self.finreport_dict_month['ИТОГО'][''][1][2]}) не равно Контрольной сумме услуг"
+                             f"({self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1]}: "
+                             f"{self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2]})"
+                             )
+            logging.error(f"{__name__}: {str(datetime.now())[:-7]}:    Несоответствие Контрольных сумм. "
+                            f"Итого по отчету ({self.finreport_dict_month['ИТОГО'][''][1][1]}: "
+                             f"{self.finreport_dict_month['ИТОГО'][''][1][2]}) не равно Контрольной сумме услуг"
+                             f"({self.finreport_dict_month['Контрольная сумма']['Cумма'][0][1]}: "
+                             f"{self.finreport_dict_month['Контрольная сумма']['Cумма'][0][2]})")
+
+
+    def fin_report_month(self):
+        """
+        Форминует финансовый отчет за месяц в установленном формате
+        :return - dict
+        """
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Формирование финансового отчета за месяц')
+        self.finreport_dict_month = {}
         control_sum_group = self.finreport_dict_month.setdefault('Контрольная сумма', {})
         control_sum = control_sum_group.setdefault('Cумма', [['Сумма', 0, 0.0]])
         for group_name, groups in self.itogreport_group_dict.items():
@@ -1481,32 +1595,31 @@ class BarsicReport2(App):
                     for product_name in self.orgs_dict[oldgroup]:
                         try:
                             product = self.itog_report_month[product_name]
+
+                            if product_name == 'Дата':
+                                product_group = finreport_group.setdefault(oldgroup, [])
+                                product_group.append([product_name, product[0], product[1]])
+                            elif product_name == 'Депозит':
+                                product_group = finreport_group.setdefault(oldgroup, [])
+                                product_group.append([product_name, 0, product[1]])
+                                finreport_group_total[0][2] += product[1]
+                                control_sum[0][2] += product[1]
+                            elif product_name == 'Организация':
+                                pass
+                            else:
+                                product_group = finreport_group.setdefault(product[2], [['Итого по папке', 0, 0.0]])
+                                product_group.append([product_name, product[0], product[1]])
+                                product_group[0][1] += product[0]
+                                product_group[0][2] += product[1]
+                                finreport_group_total[0][1] += product[0]
+                                finreport_group_total[0][2] += product[1]
+                                if product_name != 'Итого по отчету':
+                                    control_sum[0][1] += product[0]
+                                    control_sum[0][2] += product[1]
                         except KeyError:
                             continue
                         except TypeError:
                             continue
-
-                        if product_name == 'Дата':
-                            product_group = finreport_group.setdefault(oldgroup, [])
-                            product_group.append([product_name, product[0], product[1]])
-                        elif product_name == 'Депозит':
-                            product_group = finreport_group.setdefault(oldgroup, [])
-                            product_group.append([product_name, 0, product[1]])
-                            finreport_group_total[0][2] += product[1]
-                            control_sum[0][2] += product[1]
-                        elif product_name == 'Организация':
-                            pass
-                        else:
-                            product_group = finreport_group.setdefault(product[2], [['Итого по папке', 0, 0.0]])
-                            product_group.append([product_name, product[0], product[1]])
-                            product_group[0][1] += product[0]
-                            product_group[0][2] += product[1]
-                            finreport_group_total[0][1] += product[0]
-                            finreport_group_total[0][2] += product[1]
-                            if product_name != 'Итого по отчету':
-                                control_sum[0][1] += product[0]
-                                control_sum[0][2] += product[1]
-
 
                 except KeyError as e:
                     self.show_dialog('Несоответствие конфигураций XML-файлов', f'Группа {oldgroup} не существует!\n'

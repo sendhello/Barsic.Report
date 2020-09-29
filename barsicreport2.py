@@ -3425,7 +3425,7 @@ class BarsicReport2(App):
 
 
         self.sheet2_line = 1
-        for line_table in self.spreadsheet['sheets'][1]['data'][0]['rowData']:
+        for line_table in self.spreadsheet['sheets'][2]['data'][0]['rowData']:
             try:
                 if line_table['values'][0]['formattedValue'] == "ИТОГО":
                     break
@@ -3769,17 +3769,7 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Заполнение строки ИТОГО на листе 2...')
 
-        self.sheet3_line = 1
-        for line_table in self.spreadsheet['sheets'][1]['data'][0]['rowData']:
-            try:
-                if line_table['values'][0]['formattedValue'] == "ИТОГО":
-                    break
-                else:
-                    self.sheet3_line += 1
-            except KeyError:
-                self.sheet3_line += 1
-
-        for i, line_table in enumerate(self.spreadsheet['sheets'][0]['data'][0]['rowData']):
+        for i, line_table in enumerate(self.spreadsheet['sheets'][1]['data'][0]['rowData']):
             try:
                 if line_table['values'][0]['formattedValue'] == "ИТОГО":
                     # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
@@ -4377,7 +4367,7 @@ class BarsicReport2(App):
 
         # Заполнение листа 5
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                     f'Заполнение листа 5...')
+                     f'Заполнение листа 6...')
         sheetId = 5
         ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
                                           self.spreadsheet['sheets'][sheetId]['properties']['title'])
@@ -4478,7 +4468,7 @@ class BarsicReport2(App):
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
         # Вычисление последней строки в таблице
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                     f'Заполнение строки ИТОГО на листе 5...')
+                     f'Заполнение строки ИТОГО на листе 6...')
 
         for i, line_table in enumerate(self.spreadsheet['sheets'][4]['data'][0]['rowData']):
             try:

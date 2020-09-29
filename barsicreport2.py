@@ -4472,6 +4472,8 @@ class BarsicReport2(App):
 
         for i, line_table in enumerate(self.spreadsheet['sheets'][5]['data'][0]['rowData']):
             try:
+                print('*' * 100)
+                print(f"formattedValue = {line_table['values'][0]['formattedValue']}")
                 if line_table['values'][0]['formattedValue'] == "ИТОГО":
                     # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
                     height_table = i + self.reprint

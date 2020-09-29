@@ -4475,10 +4475,12 @@ class BarsicReport2(App):
                 print('*' * 100)
                 print(f"formattedValue = {line_table['values'][0]['formattedValue']}")
                 if line_table['values'][0]['formattedValue'] == "ИТОГО":
+                    print('!' * 100)
                     # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
                     height_table = i + self.reprint
                     break
                 else:
+                    print('?' * 100)
                     height_table = 4
             except KeyError:
                 pass

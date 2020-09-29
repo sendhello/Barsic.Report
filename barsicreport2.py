@@ -4466,8 +4466,6 @@ class BarsicReport2(App):
         ss.runPrepared()
 
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
-
-
         ss.prepare_setValues(f"A{height_table}:P{height_table}",
                              [[f'ИТОГО',
                                "",

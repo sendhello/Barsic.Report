@@ -4466,26 +4466,7 @@ class BarsicReport2(App):
         ss.runPrepared()
 
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
-        # Вычисление последней строки в таблице
-        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                     f'Заполнение строки ИТОГО на листе 6...')
 
-        for i, line_table in enumerate(self.spreadsheet['sheets'][5]['data'][0]['rowData']):
-            try:
-                print('*' * 100)
-                print(f"formattedValue = {line_table['values'][0]['formattedValue']}")
-                if line_table['values'][0]['formattedValue'] == "ИТОГО":
-                    print('!' * 100)
-                    print(f'i = {i}')
-                    # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
-                    height_table = i + self.reprint
-                    print(f'height_table = {height_table}')
-                    break
-                else:
-                    print('?' * 100)
-                    height_table = 4
-            except KeyError:
-                pass
 
         ss.prepare_setValues(f"A{height_table}:P{height_table}",
                              [[f'ИТОГО',

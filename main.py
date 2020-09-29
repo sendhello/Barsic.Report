@@ -18,6 +18,7 @@ import os
 import sys
 import traceback
 import logging
+import sentry_sdk
 
 logging.basicConfig(filename="barsicreport2.log", level=logging.INFO)
 
@@ -123,4 +124,15 @@ def main():
 
 
 if __name__ in ('__main__', '__android__'):
-    main()
+    sentry_sdk.init(
+        'https://ada8bc9717e344f7a0f6c3e186c0fb8c@o412552.ingest.sentry.io/5445543',
+        traces_sample_rate=1.0
+    )
+    try:
+        main()
+    except Exception as e:
+        with sentry_sdk.push_scope() as scope:
+            # scope.set_context("state", {})
+            # scope.set_tag("state_machine_name", '')
+            sentry_sdk.capture_exception(e)
+        raise e

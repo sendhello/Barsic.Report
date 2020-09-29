@@ -4476,8 +4476,10 @@ class BarsicReport2(App):
                 print(f"formattedValue = {line_table['values'][0]['formattedValue']}")
                 if line_table['values'][0]['formattedValue'] == "ИТОГО":
                     print('!' * 100)
+                    print(f'i = {i}')
                     # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
                     height_table = i + self.reprint
+                    print(f'height_table = {height_table}')
                     break
                 else:
                     print('?' * 100)

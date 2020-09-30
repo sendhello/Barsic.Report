@@ -4674,10 +4674,10 @@ class BarsicReport2(App):
         if self.finreport_dict['ИТОГО'][1]:
             resporse += f'Люди - {self.finreport_dict["Кол-во проходов"][0]};\n'
             resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1] + self.finreport_dict["Билеты аквапарка КОРП"][1]:.2f} ₽;\n'
-            resporse += f'По общепиту - {self.finreport_dict["Общепит"][1]:.2f} ₽;\n'
+            resporse += f"По общепиту - {(self.finreport_dict['Общепит'][1] + self.finreport_dict['Смайл'][1]):.2f} ₽;\n"
             resporse += f'Термозона - {self.finreport_dict["Термозона"][1] + self.finreport_dict["Термозона КОРП"][1]:.2f} ₽;\n'
             resporse += f'Прочее - {self.finreport_dict["Прочее"][1]:.2f} ₽;\n'
-            resporse += f'Общая по БАРСу - {self.finreport_dict["ИТОГО"][1]:.2f} ₽;\n'
+            resporse += f"Общая по БАРСу - {self.finreport_dict['ИТОГО'][1]:.2f} ₽;\n"
             resporse += f'ONLINE продажи - {self.finreport_dict["Online Продажи"][1]:.2f} ₽;\n'
         if self.itog_report_org2['Итого по отчету'][1]:
             # resporse += 'Отчет по пляжу за '

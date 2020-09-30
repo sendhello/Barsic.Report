@@ -4679,6 +4679,9 @@ class BarsicReport2(App):
             resporse += f'Прочее - {self.finreport_dict["Прочее"][1]:.2f} ₽;\n'
             resporse += f"Общая по БАРСу - {self.finreport_dict['ИТОГО'][1]:.2f} ₽;\n"
             resporse += f'ONLINE продажи - {self.finreport_dict["Online Продажи"][1]:.2f} ₽;\n'
+        if not re.search(r'По общепиту', resporse) and self.finreport_dict['Смайл'][1]:
+            resporse += f"По общепиту - {self.finreport_dict['Смайл'][1]:.2f} ₽;\n"
+            resporse += f"Общая по БАРСу - {self.finreport_dict['ИТОГО'][1]:.2f} ₽;\n"
         if self.itog_report_org2['Итого по отчету'][1]:
             # resporse += 'Отчет по пляжу за '
             # if beach_report['Дата'][0] + timedelta(1) == beach_report['Дата'][1]:

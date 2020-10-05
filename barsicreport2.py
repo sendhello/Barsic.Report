@@ -3768,7 +3768,6 @@ class BarsicReport2(App):
                           "endColumnIndex": j + 1},
                 "bottom": {"style": "SOLID", "width": 1,
                            "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
-        ss.runPrepared()
 
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
         # Вычисление последней строки в таблице
@@ -3842,9 +3841,9 @@ class BarsicReport2(App):
         ss.runPrepared()
 
         if self.itog_report_month:
-            # SHEET 3
+            # SHEET 4
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                         f'Заполнение  листа 3...')
+                         f'Заполнение  листа 4...')
             sheetId = 3
             ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
                                               self.spreadsheet['sheets'][sheetId]['properties']['title'])
@@ -4104,7 +4103,7 @@ class BarsicReport2(App):
 
             # SHEET 4
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                         f'Заполнение  листа 4...')
+                         f'Заполнение  листа 5...')
             sheetId = 4
             ss = to_google_sheets.Spreadsheet(self.spreadsheet['spreadsheetId'], sheetId, self.googleservice,
                                               self.spreadsheet['sheets'][sheetId]['properties']['title'])
@@ -4371,7 +4370,7 @@ class BarsicReport2(App):
                                    "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
             ss.runPrepared()
 
-        # Заполнение листа 5
+        # Заполнение листа 6
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Заполнение листа 6...')
         sheetId = 5
@@ -4469,9 +4468,22 @@ class BarsicReport2(App):
                           "endColumnIndex": j + 1},
                 "bottom": {"style": "SOLID", "width": 1,
                            "color": {"red": 0, "green": 0, "blue": 0, "alpha": 1.0}}}})
-        ss.runPrepared()
 
         # ------------------------------------------- Заполнение ИТОГО --------------------------------------
+        logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
+                     f'Заполнение строки ИТОГО на листе 2...')
+
+        for i, line_table in enumerate(self.spreadsheet['sheets'][1]['data'][0]['rowData']):
+            try:
+                if line_table['values'][0]['formattedValue'] == "ИТОГО":
+                    # Если строка переписывается - итого на 1 поз вниз, если новая - на 2 поз
+                    height_table = i + self.reprint
+                    break
+                else:
+                    height_table = 4
+            except KeyError:
+                pass
+
         ss.prepare_setValues(f"A{height_table}:P{height_table}",
                              [[f'ИТОГО',
                                "",

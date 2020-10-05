@@ -134,6 +134,9 @@ class BarsicReport2(App):
         config.setdefault('MSSQL', 'database1', 'database')
         config.setdefault('MSSQL', 'database2', 'database')
         config.setdefault('MSSQL', 'database_bitrix', 'database')
+        config.setdefault('MSSQL', 'server_rk', '127.0.0.1\\SQLEXPRESS')
+        config.setdefault('MSSQL', 'user_rk', 'sa')
+        config.setdefault('MSSQL', 'pwd_rk', 'password')
         config.setdefault('MSSQL', 'database_rk', 'database')
         config.adddefaultsection('PATH')
         config.setdefault('PATH', 'reportXML', 'data/org_for_report.xml')
@@ -187,6 +190,9 @@ class BarsicReport2(App):
         self.database1 = self.config.get('MSSQL', 'database1')
         self.database2 = self.config.get('MSSQL', 'database2')
         self.database_bitrix = self.config.get('MSSQL', 'database_bitrix')
+        self.server_rk = self.config.get('MSSQL', 'server_rk')
+        self.user_rk = self.config.get('MSSQL', 'user_rk')
+        self.pwd_rk = self.config.get('MSSQL', 'pwd_rk')
         self.database_rk = self.config.get('MSSQL', 'database_rk')
         self.reportXML = self.config.get('PATH', 'reportXML')
         self.agentXML = self.config.get('PATH', 'agentXML')
@@ -5910,20 +5916,20 @@ class BarsicReport2(App):
             date_to=self.date_to - relativedelta(years=1),
         )
         self.report_rk = self.rk_report_request(
-            server=self.server,
+            server=self.server_rk,
             database=self.database_rk,
-            user=self.user,
-            pwd=self.pwd,
+            user=self.user_rk,
+            pwd=self.pwd_rk,
             driver=self.driver,
             cash_id=15033,
             date_from=self.date_from,
             date_to=self.date_to,
         )
         self.report_rk_lastyear = self.rk_report_request(
-            server=self.server,
+            server=self.server_rk,
             database=self.database_rk,
-            user=self.user,
-            pwd=self.pwd,
+            user=self.user_rk,
+            pwd=self.pwd_rk,
             driver=self.driver,
             cash_id=15033,
             date_from=self.date_from - relativedelta(years=1),
@@ -5998,10 +6004,10 @@ class BarsicReport2(App):
                     hide_internal='1',
                 )
                 self.report_rk_month = self.rk_report_request(
-                    server=self.server,
+                    server=self.server_rk,
                     database=self.database_rk,
-                    user=self.user,
-                    pwd=self.pwd,
+                    user=self.user_rk,
+                    pwd=self.pwd_rk,
                     driver=self.driver,
                     cash_id=15033,
                     date_from=datetime.strptime('01' + (self.date_to - timedelta(1)).strftime('%m%y'), '%d%m%y'),

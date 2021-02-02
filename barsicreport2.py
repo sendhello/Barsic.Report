@@ -3293,7 +3293,7 @@ class BarsicReport2(App):
                     f"{self.finreport_dict['Кол-во проходов'][0]}",
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
                     f'=\'План\'!E{self.nex_line}',
-                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AO{self.nex_line}+"
+                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+"
                         f"AQ{self.nex_line}+AR{self.nex_line}+{str(self.finreport_dict['Смайл'][1]).replace('.', ',')}",
                     f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
                         f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",

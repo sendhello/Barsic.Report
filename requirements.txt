@@ -30,7 +30,7 @@ pyodbc==4.0.25
 pypiwin32==223
 PySocks==1.6.8
 python-dateutil==2.7.5
-pywin32==224
+pywin32==301
 requests==2.21.0
 rsa==4.0
 sentry-sdk==1.5.1

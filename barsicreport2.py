@@ -1417,13 +1417,19 @@ class BarsicReport2(App):
                         pass
                     except TypeError:
                         pass
+
         if not is_aquazona:
             self.finreport_dict['Кол-во проходов'] = [0, 0.00]
+
         self.finreport_dict.setdefault('Online Продажи', [0, 0.0])
         self.finreport_dict['Online Продажи'][0] += self.report_bitrix[0]
         self.finreport_dict['Online Продажи'][1] += self.report_bitrix[1]
+
         self.finreport_dict['Смайл'][0] = len(self.report_rk)
         self.finreport_dict['Смайл'][1] = float(sum([line['paid_sum'] for line in self.report_rk]))
+
+        total_cashdesk_report = self.cashdesk_report_org1['Итого'][0]
+        self.finreport_dict['MaxBonus'] = (0, total_cashdesk_report[6] - total_cashdesk_report[7])
 
     def fin_report_lastyear(self):
         """
@@ -1469,6 +1475,9 @@ class BarsicReport2(App):
         self.finreport_dict_lastyear['Online Продажи'][1] += self.report_bitrix_lastyear[1]
         self.finreport_dict_lastyear['Смайл'][0] = len(self.report_rk_lastyear)
         self.finreport_dict_lastyear['Смайл'][1] = float(sum([line['paid_sum'] for line in self.report_rk_lastyear]))
+
+        total_cashdesk_report = self.cashdesk_report_org1_lastyear['Итого'][0]
+        self.finreport_dict_lastyear['MaxBonus'] = (0, total_cashdesk_report[6] - total_cashdesk_report[7])
 
     def fin_report_month(self):
         """
@@ -3248,13 +3257,9 @@ class BarsicReport2(App):
 
         control_total_sum = sum([
             self.finreport_dict['Билеты аквапарка'][1],
-            self.finreport_dict['Термозона'][1],
             self.finreport_dict['Общепит'][1],
             self.finreport_dict['Билеты аквапарка КОРП'][1],
             self.finreport_dict['Прочее'][1],
-            self.finreport_dict['Термозона КОРП'][1],
-            self.finreport_dict['Билеты РЕГ'][1],
-            self.finreport_dict['Термозона РЕГ'][1],
             self.finreport_dict['Сопутствующие товары'][1],
             self.finreport_dict['Депозит'][1],
             self.finreport_dict['Штраф'][1]
@@ -3280,11 +3285,13 @@ class BarsicReport2(App):
                     f"{self.finreport_dict['Кол-во проходов'][0]}",
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
                     f'=\'План\'!E{self.nex_line}',
-                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}+AE{self.nex_line}+AG{self.nex_line}+AH{self.nex_line}",
+                    f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}"
+                    f"-I{self.nex_line}+AE{self.nex_line}+AG{self.nex_line}+AH{self.nex_line}",
                     f"=IFERROR(G{self.nex_line}/D{self.nex_line};0)",
-                    f"={0}",  # TODO тут должны быть бонусы
-                    f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}+"
-                        f"{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
+                    f"={str(self.finreport_dict['MaxBonus'][1]).replace('.', ',')}",
+                    f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}"
+                    f"-{str(self.finreport_dict_lastyear['MaxBonus'][1]).replace('.', ',')}"
+                    f"+{str(self.finreport_dict_lastyear['Online Продажи'][1]).replace('.', ',')}",
                     self.finreport_dict['Билеты аквапарка'][0],
                     self.finreport_dict['Билеты аквапарка'][1],
                     f"=IFERROR(L{self.nex_line}/K{self.nex_line};0)",
@@ -5976,6 +5983,15 @@ class BarsicReport2(App):
                 pwd=self.pwd,
                 date_from=self.date_from,
                 date_to=self.date_to,
+            )
+            self.cashdesk_report_org1_lastyear = self.cashdesk_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                date_from=self.date_from - relativedelta(years=1),
+                date_to=self.date_to - relativedelta(years=1),
             )
             self.client_count_totals_org1 = self.client_count_totals_period(
                 server=self.server,

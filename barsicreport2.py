@@ -2352,7 +2352,7 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Сохранение Финансового отчета в Google-таблицах...')
 
-        self.doc_version = 10
+        self.doc_version = 11
 
         self.sheet_width = 34
         self.sheet2_width = 3

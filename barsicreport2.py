@@ -1429,7 +1429,7 @@ class BarsicReport2(App):
         self.finreport_dict['Смайл'][1] = float(sum([line['paid_sum'] for line in self.report_rk]))
 
         total_cashdesk_report = self.cashdesk_report_org1['Итого'][0]
-        self.finreport_dict['MaxBonus'] = (0, total_cashdesk_report[6] - total_cashdesk_report[7])
+        self.finreport_dict['MaxBonus'] = (0, float(total_cashdesk_report[6] - total_cashdesk_report[7]))
 
     def fin_report_lastyear(self):
         """

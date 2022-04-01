@@ -2352,9 +2352,9 @@ class BarsicReport2(App):
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
                      f'Сохранение Финансового отчета в Google-таблицах...')
 
-        self.doc_version = 11
+        self.doc_version = 12
 
-        self.sheet_width = 34
+        self.sheet_width = 35
         self.sheet2_width = 3
         self.sheet3_width = 14
         self.sheet4_width = 3
@@ -2535,6 +2535,7 @@ class BarsicReport2(App):
                 ss.prepare_setColumnWidth(31, 100)
                 ss.prepare_setColumnWidth(32, 120)
                 ss.prepare_setColumnWidth(33, 120)
+                ss.prepare_setColumnWidth(34, 120)
 
                 # Объединение ячеек
                 ss.prepare_mergeCells("A1:A2")
@@ -2558,15 +2559,16 @@ class BarsicReport2(App):
                 ss.prepare_mergeCells("AD1:AF1")
                 ss.prepare_mergeCells("AG1:AG2")
                 ss.prepare_mergeCells("AH1:AH2")
+                ss.prepare_mergeCells("AI1:AI2")
 
                 # Задание параметров группе ячеек
                 # Жирный, по центру
-                ss.prepare_setCellsFormat('A1:AH2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
+                ss.prepare_setCellsFormat('A1:AI2', {'horizontalAlignment': 'CENTER', 'textFormat': {'bold': True}})
                 # ss.prepare_setCellsFormat('E4:E8', {'numberFormat': {'pattern': '[h]:mm:ss', 'type': 'TIME'}},
                 #                           fields='userEnteredFormat.numberFormat')
 
                 # Заполнение таблицы
-                ss.prepare_setValues("A1:AH2", [
+                ss.prepare_setValues("A1:AI2", [
                     [
                         "Дата", "День недели", "Кол-во проходов \nПЛАН", "Кол-во проходов \nФАКТ",
                         f"Кол-во проходов \n{self.data_report} "
@@ -2581,20 +2583,20 @@ class BarsicReport2(App):
                         f"Общепит {self.data_report} "
                         f"{datetime.strftime(self.finreport_dict['Дата'][0] - relativedelta(years=1), '%Y')}", "", "",
                         "Билеты КОРП", "", "", "Прочее", "",
-                        "Online Продажи", "", "", "Сумма безнал", "Фотоуслуги"
+                        "Online Продажи", "", "", "Сумма безнал", "Фотоуслуги", "Онлайн прочее"
                     ],
                     [
                         "", "", "", "", "", "", "", "", "", "", "Кол-во", "Сумма", "Средний чек", "", "",
                         "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
                         "Кол-во", "Сумма", "Средний чек", "Кол-во", "Сумма", "Средний чек",
-                        "Кол-во", "Сумма", "Кол-во", "Сумма", "Средний чек", "", ""
+                        "Кол-во", "Сумма", "Кол-во", "Сумма", "Средний чек", "", "", "",
                     ]
                 ],
                                      "ROWS")
                 # ss.prepare_setValues("D5:E6", [["This is D5", "This is D6"], ["This is E5", "=5+5"]], "COLUMNS")
 
                 # Цвет фона ячеек
-                ss.prepare_setCellsFormat("A1:AH2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
+                ss.prepare_setCellsFormat("A1:AI2", {"backgroundColor": functions.htmlColorToJSON("#f7cb4d")},
                                           fields="userEnteredFormat.backgroundColor")
 
                 # Бордер
@@ -3262,7 +3264,8 @@ class BarsicReport2(App):
             self.finreport_dict['Прочее'][1],
             self.finreport_dict['Сопутствующие товары'][1],
             self.finreport_dict['Депозит'][1],
-            self.finreport_dict['Штраф'][1]
+            self.finreport_dict['Штраф'][1],
+            self.finreport_dict['MaxBonus'][1]
         ])
 
         if self.finreport_dict['ИТОГО'][1] != control_total_sum:
@@ -3276,7 +3279,7 @@ class BarsicReport2(App):
             )
 
         ss.prepare_setValues(
-            f"A{self.nex_line}:AH{self.nex_line}",
+            f"A{self.nex_line}:AI{self.nex_line}",
             [
                 [
                     datetime.strftime(self.finreport_dict['Дата'][0], '%d.%m.%Y'),
@@ -3286,7 +3289,7 @@ class BarsicReport2(App):
                     f"{self.finreport_dict_lastyear['Кол-во проходов'][0]}",
                     f'=\'План\'!E{self.nex_line}',
                     f"={str(self.finreport_dict['ИТОГО'][1]).replace('.', ',')}"
-                    f"-I{self.nex_line}+AE{self.nex_line}+AG{self.nex_line}+AH{self.nex_line}",
+                    f"-I{self.nex_line}+AG{self.nex_line}+AH{self.nex_line}+AI{self.nex_line}+'Смайл'!C{self.nex_line}",
                     f"=IFERROR(G{self.nex_line}/D{self.nex_line};0)",
                     f"={str(self.finreport_dict['MaxBonus'][1]).replace('.', ',')}",
                     f"={str(self.finreport_dict_lastyear['ИТОГО'][1]).replace('.', ',')}"
@@ -3316,6 +3319,7 @@ class BarsicReport2(App):
                     f"=IFERROR(AE{self.nex_line}/AD{self.nex_line};0)",
                     0,
                     0,
+                    0,
                 ]
             ],
             "ROWS"
@@ -3323,7 +3327,7 @@ class BarsicReport2(App):
 
         # Задание форматы вывода строки
         ss.prepare_setCellsFormats(
-            f"A{self.nex_line}:AH{self.nex_line}",
+            f"A{self.nex_line}:AI{self.nex_line}",
             [
                 [
                     {'numberFormat': {'type': 'DATE', 'pattern': 'dd.mm.yyyy'}, 'horizontalAlignment': 'LEFT'},
@@ -3360,12 +3364,13 @@ class BarsicReport2(App):
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'}},
                 ]
             ]
         )
         # Цвет фона ячеек
         if self.nex_line % 2 != 0:
-            ss.prepare_setCellsFormat(f"A{self.nex_line}:AH{self.nex_line}",
+            ss.prepare_setCellsFormat(f"A{self.nex_line}:AI{self.nex_line}",
                                       {"backgroundColor": functions.htmlColorToJSON("#fef8e3")},
                                       fields="userEnteredFormat.backgroundColor")
 
@@ -3424,7 +3429,7 @@ class BarsicReport2(App):
             except KeyError:
                 pass
 
-        ss.prepare_setValues(f"A{height_table}:AH{height_table}",
+        ss.prepare_setValues(f"A{height_table}:AI{height_table}",
                              [[f'ИТОГО',
                                "",
                                f"=SUM(C3:C{height_table - 1})",
@@ -3459,6 +3464,7 @@ class BarsicReport2(App):
                                f"=IFERROR(ROUND(AE{height_table}/AD{height_table};2);0)",
                                f"=SUM(AG3:AG{height_table - 1})",
                                f"=SUM(AH3:AH{height_table - 1})",
+                               f"=SUM(AI3:AI{height_table - 1})",
                                ]],
                              "ROWS")
         ss.prepare_setValues(f"A{height_table + 1}:D{height_table + 1}",
@@ -3478,7 +3484,7 @@ class BarsicReport2(App):
 
         # Задание формата вывода строки
         ss.prepare_setCellsFormats(
-            f"A{height_table}:AH{height_table}",
+            f"A{height_table}:AI{height_table}",
             [
                 [
                     {'textFormat': {'bold': True}},
@@ -3529,6 +3535,8 @@ class BarsicReport2(App):
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'},
                      'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
+                    {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'},
+                     'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'},
                      'horizontalAlignment': 'RIGHT', 'textFormat': {'bold': True}},
                     {'numberFormat': {'type': 'CURRENCY', 'pattern': '#0[$ ₽]'},
@@ -3568,7 +3576,7 @@ class BarsicReport2(App):
         )
 
         # Цвет фона ячеек
-        ss.prepare_setCellsFormat(f"A{height_table}:AH{height_table}",
+        ss.prepare_setCellsFormat(f"A{height_table}:AI{height_table}",
                                   {"backgroundColor": functions.htmlColorToJSON("#fce8b2")},
                                   fields="userEnteredFormat.backgroundColor")
         ss.prepare_setCellsFormat(f"A{height_table+1}:D{height_table+1}",
@@ -4632,21 +4640,38 @@ class BarsicReport2(App):
         """
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Составление SMS-отчета...')
         resporse = 'Отчет по аквапарку за '
+
         if self.finreport_dict['Дата'][0] == self.finreport_dict['Дата'][1] - timedelta(1):
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")}:\n'
+
         else:
             resporse += f'{datetime.strftime(self.finreport_dict["Дата"][0], "%d.%m.%Y")} - {datetime.strftime(self.finreport_dict["Дата"][1] - timedelta(1), "%d.%m.%Y")}:\n'
+
+        def get_sum(field_name: str) -> float:
+            return self.finreport_dict.get(field_name, [0, 0])[1]
+
+        bars_sum = get_sum('ИТОГО')
+        smile = get_sum('Смайл')
+        bonuses = get_sum('MaxBonus')
+        other = get_sum('Прочее') + get_sum('Сопутствующие товары')
+        total_sum = bars_sum - bonuses + smile
+
         if self.finreport_dict['ИТОГО'][1]:
             resporse += f'Люди - {self.finreport_dict["Кол-во проходов"][0]};\n'
-            resporse += f'По аквапарку - {self.finreport_dict["Билеты аквапарка"][1] + self.finreport_dict["Билеты аквапарка КОРП"][1]:.2f} ₽;\n'
-            resporse += f"По общепиту - {(self.finreport_dict['Общепит'][1] + self.finreport_dict['Смайл'][1]):.2f} ₽;\n"
-            resporse += f'Термозона - {self.finreport_dict["Термозона"][1] + self.finreport_dict["Термозона КОРП"][1]:.2f} ₽;\n'
-            resporse += f'Прочее - {self.finreport_dict["Прочее"][1]:.2f} ₽;\n'
-            resporse += f"Общая по БАРСу - {self.finreport_dict['ИТОГО'][1]:.2f} ₽;\n"
-            resporse += f'ONLINE продажи - {self.finreport_dict["Online Продажи"][1]:.2f} ₽;\n'
-        if not re.search(r'По общепиту', resporse) and self.finreport_dict['Смайл'][1]:
-            resporse += f"По общепиту - {self.finreport_dict['Смайл'][1]:.2f} ₽;\n"
-            resporse += f"Общая по БАРСу - {self.finreport_dict['ИТОГО'][1]:.2f} ₽;\n"
+            resporse += f"По аквапарку - {get_sum('Билеты аквапарка') + get_sum('Билеты аквапарка КОРП'):.2f} ₽;\n"
+            resporse += f"По общепиту - {(get_sum('Общепит') + smile):.2f} ₽;\n"
+
+            resporse += f"Прочее - {other:.2f} ₽;\n"
+            resporse += f"Общая по БАРСу - {bars_sum:.2f} ₽;\n"
+            resporse += f"Бонусы - {bonuses:.2f} ₽;\n"
+            resporse += f"ONLINE продажи - {get_sum('Online Продажи'):.2f} ₽;\n"
+
+        if not re.search(r'По общепиту', resporse) and smile:
+            resporse += f"По общепиту - {smile:.2f} ₽;\n"
+            resporse += f"Общая по БАРСу - {bars_sum:.2f} ₽;\n"
+
+        resporse += f"Общая ИТОГО - {total_sum:.2f} ₽;\n\n"
+
         if self.itog_report_org2['Итого по отчету'][1]:
             # resporse += 'Отчет по пляжу за '
             # if beach_report['Дата'][0] + timedelta(1) == beach_report['Дата'][1]:
@@ -4658,7 +4683,9 @@ class BarsicReport2(App):
             except KeyError:
                 pass
             resporse += f'Итого по пляжу - {self.itog_report_org2["Итого по отчету"][1]:.2f} ₽;\n'
+
         resporse += f'Без ЧП.'
+
         with open(f'reports/{self.date_from.strftime("%Y.%m.%d")}_sms.txt', 'w', encoding='utf-8') as f:
             f.write(resporse)
         return resporse
@@ -4671,23 +4698,27 @@ class BarsicReport2(App):
         if self.telegram_proxy_use:
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Соединение с прокси-сервером {self.telegram_proxy_ip}...')
             if self.telegram_proxy_auth:
-                socks.setdefaultproxy(proxy_type=getattr(socks, self.telegram_proxy_type),
-                                      addr=self.telegram_proxy_ip,
-                                      port=int(self.telegram_proxy_port),
-                                      rdns=True,
-                                      username=self.telegram_proxy_username,
-                                      password=self.telegram_proxy_password,
-                                      )
+                socks.setdefaultproxy(
+                    proxy_type=getattr(socks, self.telegram_proxy_type),
+                    addr=self.telegram_proxy_ip,
+                    port=int(self.telegram_proxy_port),
+                    rdns=True,
+                    username=self.telegram_proxy_username,
+                    password=self.telegram_proxy_password,
+                )
             else:
-                socks.setdefaultproxy(proxy_type=getattr(socks, self.telegram_proxy_type),
-                                      addr=self.telegram_proxy_ip,
-                                      port=int(self.telegram_proxy_port),
-                                      )
+                socks.setdefaultproxy(
+                    proxy_type=getattr(socks, self.telegram_proxy_type),
+                    addr=self.telegram_proxy_ip,
+                    port=int(self.telegram_proxy_port),
+                )
             socket.socket = socks.socksocket
         bot = telepot.Bot(self.telegram_token)
         for line in self.sms_report_list:
-            logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    '
-                         f'Отправка сообщения {self.sms_report_list.index(line) + 1} из {len(self.sms_report_list)}')
+            logging.info(
+                f'{__name__}: {str(datetime.now())[:-7]}:    '
+                f'Отправка сообщения {self.sms_report_list.index(line) + 1} из {len(self.sms_report_list)}'
+            )
             bot.sendMessage(self.telegram_chanel_id, line)
         if self.telegram_proxy_use:
             logging.info(

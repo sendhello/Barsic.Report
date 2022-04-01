@@ -3265,7 +3265,7 @@ class BarsicReport2(App):
             self.finreport_dict['Сопутствующие товары'][1],
             self.finreport_dict['Депозит'][1],
             self.finreport_dict['Штраф'][1],
-            self.finreport_dict['MaxBonus'][1]
+            self.finreport_dict['Online Продажи'][1]
         ])
 
         if self.finreport_dict['ИТОГО'][1] != control_total_sum:

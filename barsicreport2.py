@@ -3437,7 +3437,7 @@ class BarsicReport2(App):
                                f"=SUM(E3:E{height_table - 1})",
                                f"=SUM(F3:F{height_table - 1})",
                                f"=SUM(G3:G{height_table - 1})",
-                               f"=SUM(H3:H{height_table - 1})",
+                               f"=IFERROR(ROUND(G{height_table}/D{height_table};2);0)",
                                f"=SUM(I3:I{height_table - 1})",
                                f"=SUM(J3:J{height_table - 1})",
                                f"=SUM(K3:K{height_table - 1})",

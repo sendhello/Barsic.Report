@@ -100,6 +100,7 @@ class BarsicReport2(App):
         self.org1 = None
         self.org2 = None
         self.org3 = None
+        self.org4 = None
 
         self.count_sql_error = 0
         self.org_for_finreport = {}
@@ -681,6 +682,9 @@ class BarsicReport2(App):
                 self.org1 = (org[0], org[2])
             if org[0] == 7203673:
                 self.org3 = (org[0], org[2])
+            if org[0] == 7203674:
+                self.org4 = (org[0], org[2])
+
         self.org2 = (org_list2[0][0], org_list2[0][2])
         logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Выбраны организации {org_list1[0][2]} и {org_list2[0][2]}')
 
@@ -1249,6 +1253,8 @@ class BarsicReport2(App):
         self.find_new_agentservice(self.itog_report_org1_lastyear, self.agent_dict)
         self.find_new_agentservice(self.itog_report_org3, self.agent_dict)
         self.find_new_agentservice(self.itog_report_org3_lastyear, self.agent_dict)
+        self.find_new_agentservice(self.itog_report_org4, self.agent_dict)
+        self.find_new_agentservice(self.itog_report_org4_lastyear, self.agent_dict)
         if self.itog_report_month:
             self.find_new_agentservice(self.itog_report_month, self.agent_dict)
         self.distibution_agentservice()
@@ -1413,6 +1419,9 @@ class BarsicReport2(App):
                             if self.itog_report_org3.get(serv) and self.itog_report_org3[serv][1] != 0.0:
                                 self.finreport_dict[org][0] += self.itog_report_org3[serv][0]
                                 self.finreport_dict[org][1] += self.itog_report_org3[serv][1]
+                            if self.itog_report_org4.get(serv) and self.itog_report_org4[serv][1] != 0.0:
+                                self.finreport_dict[org][0] += self.itog_report_org4[serv][0]
+                                self.finreport_dict[org][1] += self.itog_report_org4[serv][1]
                     except KeyError:
                         pass
                     except TypeError:
@@ -1464,6 +1473,10 @@ class BarsicReport2(App):
                                     and self.itog_report_org3_lastyear[serv][1] != 0.0:
                                 self.finreport_dict_lastyear[org][0] += self.itog_report_org3_lastyear[serv][0]
                                 self.finreport_dict_lastyear[org][1] += self.itog_report_org3_lastyear[serv][1]
+                            if self.itog_report_org4_lastyear.get(serv) \
+                                    and self.itog_report_org4_lastyear[serv][1] != 0.0:
+                                self.finreport_dict_lastyear[org][0] += self.itog_report_org4_lastyear[serv][0]
+                                self.finreport_dict_lastyear[org][1] += self.itog_report_org4_lastyear[serv][1]
                     except KeyError:
                         pass
                     except TypeError:
@@ -3265,7 +3278,8 @@ class BarsicReport2(App):
             self.finreport_dict['Сопутствующие товары'][1],
             self.finreport_dict['Депозит'][1],
             self.finreport_dict['Штраф'][1],
-            self.finreport_dict['Online Продажи'][1]
+            self.finreport_dict['Online Продажи'][1],
+            self.finreport_dict['Фотоуслуги'][1],
         ])
 
         if self.finreport_dict['ИТОГО'][1] != control_total_sum:
@@ -3318,7 +3332,7 @@ class BarsicReport2(App):
                     self.finreport_dict['Online Продажи'][1],
                     f"=IFERROR(AE{self.nex_line}/AD{self.nex_line};0)",
                     0,
-                    0,
+                    self.finreport_dict['Фотоуслуги'][1],
                     0,
                 ]
             ],
@@ -5865,6 +5879,8 @@ class BarsicReport2(App):
                 self.path_list.append(self.save_organisation_total(self.itog_report_org2))
             if self.itog_report_org3['Итого по отчету'][1]:
                 self.path_list.append(self.save_organisation_total(self.itog_report_org3))
+            if self.itog_report_org4['Итого по отчету'][1]:
+                self.path_list.append(self.save_organisation_total(self.itog_report_org4))
         if self.check_cashreport_xls:
             if self.cashdesk_report_org1['Итого'][0][1]:
                 self.path_list.append(self.save_cashdesk_report(self.cashdesk_report_org1))
@@ -5883,6 +5899,7 @@ class BarsicReport2(App):
         self.itog_report_org1 = None
         self.itog_report_org2 = None
         self.itog_report_org3 = None
+        self.itog_report_org4 = None
         self.report_bitrix = None
 
         self.click_select_org()
@@ -5974,6 +5991,32 @@ class BarsicReport2(App):
                 pwd=self.pwd,
                 org=self.org3[0],
                 org_name=self.org3[1],
+                date_from=self.date_from - relativedelta(years=1),
+                date_to=self.date_to - relativedelta(years=1),
+                hide_zeroes='0',
+                hide_internal='1',
+            )
+            self.itog_report_org4 = self.itog_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org4[0],
+                org_name=self.org4[1],
+                date_from=self.date_from,
+                date_to=self.date_to,
+                hide_zeroes='0',
+                hide_internal='1',
+            )
+            self.itog_report_org4_lastyear = self.itog_report(
+                server=self.server,
+                database=self.database1,
+                driver=self.driver,
+                user=self.user,
+                pwd=self.pwd,
+                org=self.org4[0],
+                org_name=self.org4[1],
                 date_from=self.date_from - relativedelta(years=1),
                 date_to=self.date_to - relativedelta(years=1),
                 hide_zeroes='0',
@@ -6077,6 +6120,8 @@ class BarsicReport2(App):
         self.find_new_service(self.itog_report_org1_lastyear, self.orgs_dict)
         self.find_new_service(self.itog_report_org3, self.orgs_dict)
         self.find_new_service(self.itog_report_org3_lastyear, self.orgs_dict)
+        self.find_new_service(self.itog_report_org4, self.orgs_dict)
+        self.find_new_service(self.itog_report_org4_lastyear, self.orgs_dict)
         if self.itog_report_month:
             self.find_new_service(self.itog_report_month, self.orgs_dict)
         self.distibution_service()

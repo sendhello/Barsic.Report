@@ -580,8 +580,6 @@ class BarsicReport2(App):
                     org_name=self.org1[1],
                     date_from=datetime.now(),
                     date_to=datetime.now()+timedelta(1),
-                    hide_zeroes='0',
-                    hide_internal='1',
                 )['Аквазона'][0])
         except KeyError:
             count_clients = 0
@@ -754,6 +752,7 @@ class BarsicReport2(App):
             date_to,
             hide_zeroes='0',
             hide_internal='1',
+            hide_discount='0'
     ):
         """
         Делает запрос в базу Барс и возвращает итоговый отчет за запрашиваемый период
@@ -766,15 +765,26 @@ class BarsicReport2(App):
         :param date_to:  str - Конец отчетного периода в формате: 'YYYYMMDD 00:00:00'
         :param hide_zeroes: 0 or 1 - Скрывать нулевые позиции?
         :param hide_internal: 0 or 1 - Скрывать внутренние точки обслуживания?
+        :param hide_discount: 0 or 1 - Скрывать бонусы?
         :return: Итоговый отчет
         """
         cnxn = pyodbc.connect(f'DRIVER={driver};SERVER={server};DATABASE={database};UID={user};PWD={pwd}')
         date_from = date_from.strftime('%Y%m%d 00:00:00')
         date_to = date_to.strftime('%Y%m%d 00:00:00')
         cursor = cnxn.cursor()
-        cursor.execute(
-            f"exec sp_reportOrganizationTotals_v2 @sa={org},@from='{date_from}',@to='{date_to}',@hideZeroes={hide_zeroes},"
-            f"@hideInternal={hide_internal}")
+        SQL_REQUEST = (
+            f"exec sp_reportOrganizationTotals_v2 "
+            f"@sa={org},"
+            f"@from='{date_from}',"
+            f"@to='{date_to}',"
+            f"@hideZeroes={hide_zeroes},"
+            f"@hideInternal={hide_internal}"
+        )
+        # В аквапарке новая версия БД, добавляем новое поле в запрос
+        if database == 'Aquapark_Ulyanovsk':
+            SQL_REQUEST += f",@hideDiscount={hide_discount}"
+
+        cursor.execute(SQL_REQUEST)
         report = []
         while True:
             row = cursor.fetchone()
@@ -786,8 +796,8 @@ class BarsicReport2(App):
         report.append((0, 0, 0, 0, str(org), 0, 'ID организации', 'ID организации'))
         if len(report) > 1:
             logging.info(f'{__name__}: {str(datetime.now())[:-7]}:    Итоговый отчет сформирован ID организации = {org}, '
-                         f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, .'
-                         f'Скрывать внутренние точки обслуживания: {hide_internal})')
+                         f'Период: {date_from[:8]}-{date_to[:8]}, Скрывать нули = {hide_zeroes}, '
+                         f'Скрывать внутренние точки обслуживания: {hide_internal}, Cкрывать бонусы: {hide_discount})')
         return report
 
     def reportClientCountTotals(
@@ -5954,8 +5964,6 @@ class BarsicReport2(App):
                 org_name=self.org1[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
-                hide_zeroes='0',
-                hide_internal='1',
             )
             self.itog_report_org1_lastyear = self.itog_report(
                 server=self.server,
@@ -5967,8 +5975,6 @@ class BarsicReport2(App):
                 org_name=self.org1[1],
                 date_from=self.date_from - relativedelta(years=1),
                 date_to=self.date_to - relativedelta(years=1),
-                hide_zeroes='0',
-                hide_internal='1',
             )
             self.itog_report_org3 = self.itog_report(
                 server=self.server,
@@ -5980,8 +5986,6 @@ class BarsicReport2(App):
                 org_name=self.org3[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
-                hide_zeroes='0',
-                hide_internal='1',
             )
             self.itog_report_org3_lastyear = self.itog_report(
                 server=self.server,
@@ -5993,8 +5997,6 @@ class BarsicReport2(App):
                 org_name=self.org3[1],
                 date_from=self.date_from - relativedelta(years=1),
                 date_to=self.date_to - relativedelta(years=1),
-                hide_zeroes='0',
-                hide_internal='1',
             )
             self.itog_report_org4 = self.itog_report(
                 server=self.server,
@@ -6006,8 +6008,6 @@ class BarsicReport2(App):
                 org_name=self.org4[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
-                hide_zeroes='0',
-                hide_internal='1',
             )
             self.itog_report_org4_lastyear = self.itog_report(
                 server=self.server,
@@ -6019,8 +6019,6 @@ class BarsicReport2(App):
                 org_name=self.org4[1],
                 date_from=self.date_from - relativedelta(years=1),
                 date_to=self.date_to - relativedelta(years=1),
-                hide_zeroes='0',
-                hide_internal='1',
             )
             if int((self.date_to - timedelta(1)).strftime('%y%m')) < int(self.date_to.strftime('%y%m')):
                 self.itog_report_month = self.itog_report(
@@ -6033,8 +6031,6 @@ class BarsicReport2(App):
                     org_name=self.org1[1],
                     date_from=datetime.strptime('01' + (self.date_to - timedelta(1)).strftime('%m%y'), '%d%m%y'),
                     date_to=self.date_to,
-                    hide_zeroes='0',
-                    hide_internal='1',
                 )
                 self.report_rk_month = self.rk_report_request(
                     server=self.server_rk,
@@ -6089,8 +6085,6 @@ class BarsicReport2(App):
                 org_name=self.org2[1],
                 date_from=self.date_from,
                 date_to=self.date_to,
-                hide_zeroes='0',
-                hide_internal='1',
             )
             self.cashdesk_report_org2 = self.cashdesk_report(
                 server=self.server,
